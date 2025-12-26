@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
-import ResetPasswordPage from './ResetPasswordPage';
+import LoginPage from './LoginPage';
 
-export default function ResetPassword() {
+export default function Login() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -11,7 +11,7 @@ export default function ResetPassword() {
         </div>
       </div>
     }>
-      <ResetPasswordPage />
+      <LoginPage />
     </Suspense>
   );
 }
