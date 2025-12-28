@@ -19,7 +19,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-5 z-[100] mx-5">
+    <header className="relative z-[50] mx-5 mt-4">
       <div className="bg-transparent pt-6">
         <div className="max-w-[1800px] mx-auto px-4">
           {/* MAIN BAR */}

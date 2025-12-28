@@ -11,7 +11,7 @@ const articles = [
     date: "December 15, 2024",
     excerpt:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    image: "/news/i1.jpg",
+    image: "/News/i1.jpg",
     featured: true,
   },
   {
@@ -20,7 +20,7 @@ const articles = [
     category: "Compliance Updates",
     date: "December 15, 2024",
     excerpt: "Updated guidelines for insurance-backed guarantees.",
-    image: "/news/i1.jpg",
+    image: "/News/i1.jpg",
   },
   {
     id: 3,
@@ -28,7 +28,7 @@ const articles = [
     category: "Compliance Updates",
     date: "December 15, 2024",
     excerpt: "UK sees 40% increase in heat pump installations.",
-    image: "/news/i2.png",
+    image: "/News/i2.png",
   },
   {
     id: 4,
@@ -36,7 +36,7 @@ const articles = [
     category: "Compliance Updates",
     date: "December 15, 2024",
     excerpt: "New security features for Renewably UK users.",
-    image: "/news/i3.jpg",
+    image: "/News/i3.jpg",
   },
   {
     id: 5,
@@ -52,7 +52,7 @@ const articles = [
     category: "Market & Data",
     date: "December 15, 2024",
     excerpt: "Annual review of solar installation trends.",
-    image: "/news/i5.jpg",
+    image: "/News/i5.jpg",
   },
   {
     id: 7,
@@ -60,7 +60,7 @@ const articles = [
     category: "Platform Updates",
     date: "December 15, 2024",
     excerpt: "Updated IBG templates for battery storage.",
-    image: "/news/i6.png",
+    image: "/News/i6.png",
   },
 ];
 

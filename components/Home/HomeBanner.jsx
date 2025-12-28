@@ -2,7 +2,7 @@ import Image from "next/image";
 
 const HomeBanner = () => {
   return (
-    <section className="w-full -mt-[76px]">
+    <section className="w-full">
       <div className="mx-auto px-4">
         <div className="relative h-[680px] rounded-[24px] overflow-hidden">
           {/* Background image */}
