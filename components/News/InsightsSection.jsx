@@ -44,7 +44,7 @@ const articles = [
     category: "Compliance Updates",
     date: "December 15, 2024",
     excerpt: "Step-by-step guide to meeting ECO4 requirements.",
-    image: "/news/i4.png",
+    image: "/News/i4.png",
   },
   {
     id: 6,
