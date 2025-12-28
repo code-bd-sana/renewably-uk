@@ -1,7 +1,118 @@
-export default function Footer(){
-    return(
-        <div>
-            Footer
+import Image from "next/image";
+import Link from "next/link";
+import { Phone, Mail, MapPin } from "lucide-react";
+
+const Footer = () => {
+  return (
+    <footer className="w-full bg-[#0F47A8] pt-[72px] pb-[32px]">
+      <div className="max-w-[1200px] mx-auto px-4">
+
+        {/* TOP GRID */}
+        <div
+          className="
+            grid
+            grid-cols-1
+            gap-[48px]
+            sm:grid-cols-2
+            lg:grid-cols-[1.2fr_1fr_1fr_1.2fr]
+            lg:gap-[80px]
+          "
+        >
+          {/* BRAND */}
+          <div>
+            <div className="mb-[20px]">
+              <Link href="/">
+                <Image
+                  src="/foot-logo.png"
+                  alt="Renewably UK"
+                  width={160}
+                  height={40}
+                />
+              </Link>
+            </div>
+
+            <p className="text-[13px] leading-[1.6] text-white/80 max-w-[260px]">
+              A portal designed for Installation Companies, Built for Compliance
+            </p>
+          </div>
+
+          {/* COMPANY */}
+          <div>
+            <h4 className="text-[14px] font-semibold text-white mb-[16px]">
+              Company
+            </h4>
+
+            <ul className="flex flex-col gap-[10px] text-[13px] text-white/80">
+              <li><Link href="/">Home</Link></li>
+              <li><Link href="/insurance">Insurance</Link></li>
+              <li><Link href="/funding">Funding</Link></li>
+              <li><Link href="/accreditation">Accreditation</Link></li>
+              <li><Link href="/news">News</Link></li>
+              <li><Link href="/contact">Contact us</Link></li>
+            </ul>
+          </div>
+
+          {/* SERVICES */}
+          <div>
+            <h4 className="text-[14px] font-semibold text-white mb-[16px]">
+              Services
+            </h4>
+
+            <ul className="flex flex-col gap-[10px] text-[13px] text-white/80">
+              <li>
+                <Link href="/services/ibg-generator">
+                  Hosted IBG Certificate Generator
+                </Link>
+              </li>
+              <li>
+                <Link href="/services/product-coverage">
+                  Renewable Energy Product Coverage
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* CONNECT */}
+          <div>
+            <h4 className="text-[14px] font-semibold text-white mb-[16px]">
+              Connect
+            </h4>
+
+            <ul className="flex flex-col gap-[12px] text-[13px] text-white/80">
+              <li className="flex items-start gap-[10px]">
+                <Phone size={14} className="mt-[2px]" />
+                <a href="tel:+441615243512">+44 161 524 3512</a>
+              </li>
+
+              <li className="flex items-start gap-[10px]">
+                <Mail size={14} className="mt-[2px]" />
+                <a href="mailto:contact@renewably.energy">
+                  contact@renewably.energy
+                </a>
+              </li>
+
+              <li className="flex items-start gap-[10px]">
+                <MapPin size={14} className="mt-[2px]" />
+                <span className="leading-[1.6]">
+                  Lumenaire House, Blythe Gate, Blythe Valley Park, Solihull,
+                  West Midlands, United Kingdom, B90 8AH
+                </span>
+              </li>
+            </ul>
+          </div>
         </div>
-    )
-}
+
+        {/* DIVIDER */}
+        <div className="w-full h-[1px] bg-white/20 my-[40px]" />
+
+        {/* BOTTOM */}
+        <div className="text-center text-[12px] text-white/70">
+          © 2025 Renewably UK — Powering Renewables. All rights reserved.
+        </div>
+
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
