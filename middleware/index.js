@@ -25,7 +25,7 @@ export async function middleware(request) {
       return NextResponse.redirect(homeUrl);
     }
     
-    console.log('✅ Admin access granted for:', authResult.userEmail);
+    console.log('Admin access granted for:', authResult.userEmail);
     // User is admin, allow access
     return NextResponse.next();
   }
