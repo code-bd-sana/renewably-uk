@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const navItems = [
   { label: "Insurance", href: "/insurance" },
@@ -16,17 +16,85 @@ const navItems = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Check auth status on component mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsLoggedIn(data.isAuthenticated);
+        // Store user data including role
+        if (data.user) {
+          setUserData(data.user);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserData(null);
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setIsLoggedIn(false);
+      setUserData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        setIsLoggedIn(false);
+        setUserData(null); // Clear user data
+        setOpen(false);
+        router.push('/');
+        router.refresh();
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <header className="relative z-50 mx-5 mt-4">
+        <div className="bg-transparent pt-6">
+          <div className="max-w-450 mx-auto px-4">
+            <div className="flex items-center h-18 px-6 bg-white rounded-[18px] shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+              <div className="h-10 w-25 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
-    <header className="relative z-[50] mx-5 mt-4">
+    <header className="relative z-50 mx-5 mt-4">
       <div className="bg-transparent pt-6">
-        <div className="max-w-[1800px] mx-auto px-4">
+        <div className="max-w-450 mx-auto px-4">
           {/* MAIN BAR */}
           <div
             className="
               flex items-center
-              h-[72px]
+              h-18
               px-6
               bg-white
               rounded-[18px]
@@ -45,7 +113,7 @@ export default function Navbar() {
             </Link>
 
             {/* DESKTOP NAV */}
-            <nav className="hidden md:flex items-center gap-8 ml-[64px]">
+            <nav className="hidden md:flex items-center gap-8 ml-16">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
 
@@ -55,10 +123,9 @@ export default function Navbar() {
                     href={item.href}
                     className={`
                       text-[14px]
-                      ${
-                        isActive
-                          ? "font-semibold text-[#0F172A]"
-                          : "font-medium text-[#6B7280] hover:text-[#0F172A]"
+                      ${isActive
+                        ? "font-semibold text-[#0F172A]"
+                        : "font-medium text-[#6B7280] hover:text-[#0F172A]"
                       }
                     `}
                   >
@@ -70,32 +137,75 @@ export default function Navbar() {
 
             {/* DESKTOP ACTIONS */}
             <div className="ml-auto hidden md:flex items-center gap-4">
-              <Link
-                href="/login"
-                className={`text-[14px] ${
-                  pathname === "/login"
-                    ? "font-semibold text-[#0F172A]"
-                    : "font-medium text-[#0F172A]"
-                }`}
-              >
-                Login
-              </Link>
+              {isLoggedIn ? (
+                <>
+                  <Link
+                    href={userData?.role === 'admin' ? '/admin' : '/dashboard'}
+                    className={`
+        h-10
+        px-5
+        flex items-center
+        rounded-[10px]
+        text-[14px]
+        font-medium
+        ${pathname === (userData?.role === 'admin' ? '/admin' : '/dashboard')
+                        ? "bg-[#0F172A] text-white"
+                        : "bg-gray-100 text-[#0F172A] hover:bg-gray-200"
+                      }
+      `}
+                  >
+                    {userData?.role === 'admin' ? 'Admin Dashboard' : 'Dashboard'}
+                  </Link>
 
-              <Link
-                href="/signup"
-                className="
-                  h-[40px]
-                  px-5
-                  flex items-center
-                  rounded-[10px]
-                  bg-[#0F47A8]
-                  text-white
-                  text-[14px]
-                  font-medium
-                "
-              >
-                Sign up
-              </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="
+        h-10
+        px-5
+        flex items-center
+        rounded-[10px]
+        bg-[#EF4444]
+        text-white
+        text-[14px]
+        font-medium
+        hover:bg-[#DC2626]
+        transition-colors
+      "
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className={`text-[14px] ${pathname === "/login"
+                      ? "font-semibold text-[#0F172A]"
+                      : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
+                      }`}
+                  >
+                    Login
+                  </Link>
+
+                  <Link
+                    href="/signup"
+                    className="
+                      h-10
+                      px-5
+                      flex items-center
+                      rounded-[10px]
+                      bg-[#0F47A8]
+                      text-white
+                      text-[14px]
+                      font-medium
+                      hover:bg-[#0D3E95]
+                      transition-colors
+                    "
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* MOBILE TOGGLE */}
@@ -130,11 +240,10 @@ export default function Navbar() {
                       key={item.label}
                       href={item.href}
                       onClick={() => setOpen(false)}
-                      className={`text-[15px] ${
-                        isActive
-                          ? "font-semibold text-[#0F172A]"
-                          : "font-medium text-[#0F172A]"
-                      }`}
+                      className={`text-[15px] ${isActive
+                        ? "font-semibold text-[#0F172A]"
+                        : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
+                        }`}
                     >
                       {item.label}
                     </Link>
@@ -142,33 +251,78 @@ export default function Navbar() {
                 })}
 
                 <div className="pt-4 border-t flex flex-col gap-3">
-                  <Link
-                    href="/login"
-                    onClick={() => setOpen(false)}
-                    className={`text-[14px] ${
-                      pathname === "/login"
-                        ? "font-semibold text-[#0F172A]"
-                        : "font-medium text-[#0F172A]"
-                    }`}
-                  >
-                    Login
-                  </Link>
+                  {isLoggedIn ? (
+                    <>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setOpen(false)}
+                        className={`
+                          h-11
+                          flex items-center justify-center
+                          rounded-[10px]
+                          text-[14px]
+                          font-medium
+                          ${pathname === "/dashboard"
+                            ? "bg-[#0F172A] text-white"
+                            : "bg-gray-100 text-[#0F172A]"
+                          }
+                        `}
+                      >
+                        Dashboard
+                      </Link>
 
-                  <Link
-                    href="/signup"
-                    onClick={() => setOpen(false)}
-                    className="
-                      h-[44px]
-                      flex items-center justify-center
-                      rounded-[10px]
-                      bg-[#0F47A8]
-                      text-white
-                      text-[14px]
-                      font-medium
-                    "
-                  >
-                    Sign up
-                  </Link>
+                      <button
+                        onClick={() => {
+                          setOpen(false);
+                          handleLogout();
+                        }}
+                        className="
+                          h-11
+                          flex items-center justify-center
+                          rounded-[10px]
+                          bg-[#EF4444]
+                          text-white
+                          text-[14px]
+                          font-medium
+                          hover:bg-[#DC2626]
+                          transition-colors
+                        "
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login"
+                        onClick={() => setOpen(false)}
+                        className={`text-[14px] text-center ${pathname === "/login"
+                          ? "font-semibold text-[#0F172A]"
+                          : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
+                          }`}
+                      >
+                        Login
+                      </Link>
+
+                      <Link
+                        href="/signup"
+                        onClick={() => setOpen(false)}
+                        className="
+                          h-11
+                          flex items-center justify-center
+                          rounded-[10px]
+                          bg-[#0F47A8]
+                          text-white
+                          text-[14px]
+                          font-medium
+                          hover:bg-[#0D3E95]
+                          transition-colors
+                        "
+                      >
+                        Sign up
+                      </Link>
+                    </>
+                  )}
                 </div>
               </nav>
             </div>
