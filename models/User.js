@@ -32,6 +32,8 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "contractor"],
       default: "contractor",
     },
+    companyName: String,
+    officeAddress: String,
     resetPasswordToken: {
       type: String,
       default: null,
