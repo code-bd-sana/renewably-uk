@@ -4,10 +4,10 @@ import Footer from "@/components/shared/Footer";
 export default function HomeLayout({ children }) {
   return (
     <>
-      <div className="relative z-50">
+      <div className='relative z-50'>
         <Navbar />
       </div>
-      <main className="relative -mt-[90px] z-10">{children}</main>
+      <main className='relative -mt-[105px] z-10'>{children}</main>
       <Footer />
     </>
   );
