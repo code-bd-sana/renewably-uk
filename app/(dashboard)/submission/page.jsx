@@ -18,6 +18,7 @@ export default function SubmissionPage() {
   const [openModal, setOpenModal] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [files, setFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   /* ---------------- FETCH DATA ---------------- */
   useEffect(() => {
@@ -72,15 +73,71 @@ export default function SubmissionPage() {
   };
 
   const handleUpload = async () => {
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
-    formData.append("certificateId", selectedCertificate.id);
+    if (files.length === 0) {
+      alert("Please select at least one file to upload");
+      return;
+    }
 
-    // 🔥 API CALL HERE
-    console.log("Uploading:", files);
+    setUploading(true);
 
-    setOpenModal(false);
-    setFiles([]);
+    try {
+      // Create FormData
+      const formData = new FormData();
+
+      // Append each file with a unique name
+      files.forEach((file, index) => {
+        formData.append(`files`, file);
+      });
+
+      // Append certificate ID
+      formData.append("certificateId", selectedCertificate.id);
+
+      // Upload files to server
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log("Upload successful! File URLs:", result.fileUrls);
+        alert(`Successfully uploaded ${files.length} file(s)`);
+
+        // Reset modal and files
+        setOpenModal(false);
+        setFiles([]);
+
+        // Refresh certificate data to show new files
+        refreshCertificates();
+      } else {
+        console.error("Upload failed:", result.error);
+        alert(`Upload failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      alert("Error uploading files. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Function to refresh certificate data
+  const refreshCertificates = async () => {
+    try {
+      const res = await fetch("/api/certificates", {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setCertificates(data.certificates || []);
+        }
+      }
+    } catch (err) {
+      console.error("Error refreshing certificates:", err);
+    }
   };
 
   /* ---------------- UI ---------------- */
@@ -234,15 +291,18 @@ export default function SubmissionPage() {
               </label>
 
               <p className='mt-3 text-xs text-gray-400'>
-                PDF, Images, Videos (Max 10MB)
+                PDF, Images, Videos (Max 100MB per file)
               </p>
             </div>
 
             {files.length > 0 && (
               <div className='px-6 pb-4'>
+                <h3 className='mb-2 font-medium'>Selected Files:</h3>
                 <ul className='space-y-1 text-sm text-gray-600'>
                   {files.map((file, i) => (
-                    <li key={i}>📄 {file.name}</li>
+                    <li key={i}>
+                      📄 {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -254,14 +314,16 @@ export default function SubmissionPage() {
                   setOpenModal(false);
                   setFiles([]);
                 }}
-                className='rounded border px-4 py-2 text-sm'>
+                disabled={uploading}
+                className='rounded border px-4 py-2 text-sm disabled:opacity-50'>
                 Cancel
               </button>
 
               <button
                 onClick={handleUpload}
-                className='rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700'>
-                Submit Files
+                disabled={uploading || files.length === 0}
+                className='rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50'>
+                {uploading ? "Uploading..." : "Submit Files"}
               </button>
             </div>
           </div>
