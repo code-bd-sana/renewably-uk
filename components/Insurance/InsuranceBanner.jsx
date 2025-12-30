@@ -7,7 +7,7 @@ const InsuranceBanner = () => {
         <div className="relative h-[680px] rounded-[24px] overflow-hidden">
           {/* Background image */}
           <Image
-            src="/Insurance/Banner.jpg"
+            src="/Insurance/Banner2.jpg"
             alt="Renewable energy installation"
             fill
             priority
