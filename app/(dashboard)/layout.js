@@ -110,7 +110,7 @@ function DashboardLayout({ children }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white w-64 transform transition-transform duration-300 ease-in-out z-50 shadow-lg ${
+        className={`fixed bg-[#EAF1FD] top-0 left-0 h-full  w-64 transform transition-transform duration-300 ease-in-out z-50 shadow-lg ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}>
         {/* Close button for mobile */}
@@ -147,10 +147,10 @@ function DashboardLayout({ children }) {
               key={index}
               href={item.href}
               onClick={() => setSidebarOpen(false)}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+              className={`w-full  flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
                 pathname === item.href
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "bg-[#0F47A8] text-white"
+                  : "text-[#0F47A8] hover:bg-gray-100"
               }`}>
               <item.icon size={18} />
               <span>{item.label}</span>
