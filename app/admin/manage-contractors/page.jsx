@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { jsPDF } from "jspdf";
 import {
   Search,
   Eye,
@@ -83,23 +84,37 @@ export default function ManageContractorsPage() {
   // Handle download contractor data
   const handleDownload = async (contractorId) => {
     try {
-      const res = await fetch(`/api/admin/contractor/${contractorId}/export`, {
-        method: "GET",
-      });
-
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `contractor-${contractorId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+      // Find the contractor
+      const contractor = contractors.find((c) => c.id === contractorId);
+      if (!contractor) {
+        alert("Contractor not found");
+        return;
       }
+
+      // Create PDF
+      const doc = new jsPDF();
+
+      // Add contractor details
+      doc.setFontSize(16);
+      doc.text("Contractor Report", 20, 20);
+
+      doc.setFontSize(12);
+      doc.text(`Name: ${contractor.name}`, 20, 40);
+      doc.text(`Company: ${contractor.companyName || "N/A"}`, 20, 50);
+      doc.text(`Email: ${contractor.email}`, 20, 60);
+      doc.text(`Phone: ${contractor.phone || "N/A"}`, 20, 70);
+      doc.text(
+        `Status: ${contractor.isApproved ? "Active" : "Inactive"}`,
+        20,
+        80
+      );
+      doc.text(`Registered: ${formatDate(contractor.createdAt)}`, 20, 90);
+
+      // Save the PDF
+      doc.save(`contractor-${contractorId}-${Date.now()}.pdf`);
     } catch (error) {
       console.error("Download error:", error);
+      alert("Failed to generate PDF. Please try again.");
     }
   };
 
@@ -209,7 +224,7 @@ export default function ManageContractorsPage() {
     <div className="min-h-screen bg-white p-4 md:p-8">
       {/* Contractor Details Modal */}
       {showContractorModal && selectedContractor && (
-        <div className="fixed inset-0  bg-opacity-80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200">
