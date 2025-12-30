@@ -1,23 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
-  Menu,
-  X,
-  LayoutDashboard,
   FileText,
-  Upload,
   FolderOpen,
-  Ticket,
+  LayoutDashboard,
   LogOut,
+  Menu,
+  Ticket,
+  Upload,
+  X,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import logo from "@/public/shared/logo.png";
+import Image from "next/image";
 
 function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userData, setUserData] = useState(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   const menuItems = [
     {
@@ -88,73 +91,54 @@ function DashboardLayout({ children }) {
 
   if (!userData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+      <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
+        <div className='text-center'>
+          <div className='w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4'></div>
+          <p className='text-gray-600'>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className='min-h-screen bg-gray-50'>
       {/* Sidebar Overlay for Mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden backdrop-blur-sm"
+          className='fixed inset-0  z-40 lg:hidden '
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white w-64 transform transition-transform duration-300 ease-in-out z-50 shadow-lg ${
+        className={`fixed bg-[#EAF1FD] top-0 left-0 h-full  w-64 transform transition-transform duration-300 ease-in-out z-50 shadow-lg ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0`}
-      >
+        } lg:translate-x-0`}>
         {/* Close button for mobile */}
         <button
           onClick={() => setSidebarOpen(false)}
-          className="absolute top-4 right-4 lg:hidden p-2 hover:bg-gray-100 rounded-lg"
-        >
+          className='absolute top-4 right-4 lg:hidden p-2 hover:bg-gray-100 rounded-lg'>
           <X size={20} />
         </button>
 
         {/* Logo */}
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-              <div
-                className="w-6 h-6 bg-white rounded-sm"
-                style={{
-                  clipPath:
-                    "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                }}
-              ></div>
-            </div>
-            <div className="text-xs">
-              <div className="font-bold text-blue-600">RENEWABLY UK</div>
-              <div className="text-gray-500 text-[10px]">
-                POWERING RENEWABLES
-              </div>
-            </div>
-          </div>
+        <div className='p-4 border-b'>
+          <Image src={logo} />
         </div>
 
         {/* Menu Items */}
-        <nav className="py-4">
+        <nav className='py-4'>
           {menuItems.map((item, index) => (
             <Link
               key={index}
               href={item.href}
               onClick={() => setSidebarOpen(false)}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                window.location.pathname === item.href
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
+              className={`w-full  flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                pathname === item.href
+                  ? "bg-[#0F47A8] text-white"
+                  : "text-[#0F47A8] hover:bg-gray-100"
+              }`}>
               <item.icon size={18} />
               <span>{item.label}</span>
             </Link>
@@ -164,35 +148,33 @@ function DashboardLayout({ children }) {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="absolute bottom-4 left-4 flex items-center gap-2 text-red-500 text-sm hover:text-red-600"
-        >
+          className='absolute bottom-4 left-4 flex items-center gap-2 text-red-500 text-sm hover:text-red-600'>
           <LogOut size={18} />
           <span>Logout</span>
         </button>
       </aside>
 
       {/* Main Content Area */}
-      <div className="lg:ml-64 min-h-screen">
+      <div className='lg:ml-64 min-h-screen'>
         {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
+        <header className='bg-white shadow-sm sticky top-0 z-30'>
+          <div className='flex items-center justify-between px-4 py-3'>
+            <div className='flex items-center gap-3'>
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
-              >
+                className='lg:hidden p-2 hover:bg-gray-100 rounded-lg'>
                 <Menu size={24} />
               </button>
-              <h1 className="text-lg font-normal">
+              <h1 className='text-lg font-normal'>
                 Welcome Back, {userData.name} 👋
               </h1>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600">
+            <div className='flex items-center gap-4'>
+              <div className='text-sm text-gray-600'>
                 {userData.companyName}
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center">
-                <span className="text-blue-600 font-semibold">
+              <div className='w-10 h-10 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center'>
+                <span className='text-blue-600 font-semibold'>
                   {userData.name.charAt(0)}
                 </span>
               </div>
