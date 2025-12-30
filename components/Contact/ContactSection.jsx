@@ -7,7 +7,7 @@ const ContactSection = () => {
     <section className="w-full bg-white py-[120px]">
       <div className="max-w-[1200px] mx-auto px-4">
         {/* MAIN GRID */}
-        <div className="grid grid-cols-[420px_1fr] gap-[80px] items-center">
+        <div className="grid grid-cols-1 md:grid-cols-[420px_1fr] gap-[80px] items-center">
           {/* LEFT INFO CARDS */}
           <div className="flex flex-col gap-[16px]">
             {/* Email */}
