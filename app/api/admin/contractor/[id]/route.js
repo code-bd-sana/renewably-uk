@@ -1,9 +1,86 @@
 import connectDB from "@/lib/db";
 import User from "@/models/User";
 import { authenticate } from "@/middleware/auth";
+import Insurance from "@/models/Insurance";
+
+
+export async function GET(request, { params }) {
+  try {
+    // AUTH CHECK
+    const auth = await authenticate(request);
+
+    if (!auth.success) {
+      return Response.json(
+        { success: false, error: auth.error },
+        { status: auth.status || 401 }
+      );
+    }
+
+    // ADMIN CHECK
+    if (auth.userRole !== "admin") {
+      return Response.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    await connectDB();
+
+    // Await params in Next.js 13/14
+    const { id } = await params;
+    
+    console.log("Fetching contractor with ID:", id);
+
+    // Find contractor by ID
+    const contractor = await User.findOne({ 
+      _id: id, 
+      role: "contractor" 
+    }).select('-passwordHash').lean();
+
+    if (!contractor) {
+      console.log("Contractor not found for ID:", id);
+      return Response.json(
+        { success: false, error: "Contractor not found" },
+        { status: 404 }
+      );
+    }
+
+    console.log("Contractor found:", contractor.email);
+
+    // Get certificate count for this contractor (optional)
+    const certificateCount = await Insurance.countDocuments({ 
+      email: contractor.email // Assuming email links contractor to insurances
+    });
+
+    return Response.json({
+      success: true,
+      contractor: {
+        id: contractor._id.toString(),
+        name: contractor.name,
+        email: contractor.email,
+        phone: contractor.phone || "",
+        companyName: contractor.companyName || "",
+        companyAddress: contractor.companyAddress || "",
+        position: contractor.position || "",
+        role: contractor.role,
+        isApproved: contractor.isApproved,
+        createdAt: contractor.createdAt,
+        updatedAt: contractor.updatedAt,
+        certificateCount: certificateCount, // Add this for stats
+      }
+    });
+    
+  } catch (error) {
+    console.error("GET /api/admin/contractor/[id] error:", error);
+    return Response.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 
 // POST
-// Add this POST method to your existing file
 export async function POST(request, { params }) {
   try {
     // AUTH CHECK

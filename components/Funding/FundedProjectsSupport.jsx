@@ -7,6 +7,7 @@ import {
   Briefcase,
   TrendingUp,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function FundedProjectsSupport() {
   return (
@@ -144,7 +145,8 @@ export default function FundedProjectsSupport() {
             Ready to Support Your Funded Projects?
           </p>
 
-          <button
+          <Link
+          href={"/contact"}
             className="
               h-[36px]
               px-[18px]
@@ -153,10 +155,11 @@ export default function FundedProjectsSupport() {
               text-white
               text-[13px]
               font-medium
+              p-2
             "
           >
             Speak to Our Team
-          </button>
+          </Link>
         </div>
       </div>
     </section>

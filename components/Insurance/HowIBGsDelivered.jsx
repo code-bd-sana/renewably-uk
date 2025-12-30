@@ -41,7 +41,7 @@ export default function HowRenewablyDeliversIBGs() {
 
         {/* Cards */}
         <div
-          className=" flex justify-center gap-5"
+          className="grid grid-cols-2 md:grid-cols-4 gap-5"
         >
           {steps.map((s, idx) => {
             const Icon = s.icon;
@@ -49,7 +49,7 @@ export default function HowRenewablyDeliversIBGs() {
               <div
                 key={idx}
                 className="
-                  w-[295px]
+                  max-w-[295px]
                   h-[182px]
                   rounded-[16px]
                   bg-gradient-to-r

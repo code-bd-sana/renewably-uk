@@ -94,20 +94,22 @@ export default function Navbar() {
           <div
             className="
               flex items-center
-              h-18
-              px-6
+              h-20
+              p-3
+              md:px-6
+              
               bg-white
               rounded-[18px]
               shadow-[0_10px_30px_rgba(0,0,0,0.08)]
             "
           >
             {/* LOGO */}
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center py-2">
               <Image
                 src="/FullLogo_Transparent.png"
                 alt="Renewably UK"
-                width={72}
-                height={72}
+                width={130}
+                height={130}
                 priority
               />
             </Link>
