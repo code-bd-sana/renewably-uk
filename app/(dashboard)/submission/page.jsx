@@ -80,7 +80,8 @@ export default function SubmissionPage() {
   };
 
   /* ---------------- DOWNLOAD FILE ---------------- */
-  const handleDownload = (documentUrl, fileName) => {
+  const handleDownload = (documentUrl, fileName, item) => {
+    console.log(item, "bal ");
     if (!documentUrl) {
       toast.error("No document available to download");
       return;
@@ -212,7 +213,7 @@ export default function SubmissionPage() {
       {/* Table */}
       <div className='overflow-x-auto rounded-lg bg-white shadow'>
         <table className='w-full text-left text-sm'>
-          <thead className='bg-gray-100 text-gray-600'>
+          <thead className='bg-[#FAFAF9] border-gray-200 text-gray-600'>
             <tr>
               <th className='px-4 py-3'>Policy Holder</th>
               <th className='px-4 py-3'>Product</th>
@@ -244,7 +245,9 @@ export default function SubmissionPage() {
             )}
 
             {paginatedData.map((item) => (
-              <tr key={item.id} className='border-t hover:bg-gray-50'>
+              <tr
+                key={item.id}
+                className='border-t border-gray-200 hover:bg-gray-50'>
                 <td className='px-4 py-3 font-medium'>{item.holderName}</td>
                 <td className='px-4 py-3'>{item.productType}</td>
                 <td className='px-4 py-3'>{item.policyNo}</td>
@@ -269,7 +272,7 @@ export default function SubmissionPage() {
                   {item ? (
                     <button
                       onClick={() =>
-                        handleDownload(item.document, item.documentName)
+                        handleDownload(item.document, item.documentName, item)
                       }
                       title='Download Document'
                       className='text-blue-600 hover:text-blue-800 hover:scale-110 transition-transform p-1 rounded hover:bg-blue-50'>
