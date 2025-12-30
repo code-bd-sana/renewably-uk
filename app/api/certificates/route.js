@@ -1,9 +1,9 @@
 // app/api/certificates/route.js
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import connectDB from "@/lib/db";
 import Insurance from "@/models/Insurance";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET(request) {
   try {
@@ -39,6 +39,8 @@ export async function GET(request) {
           insuranceId: insurance._id.toString(),
           policyNo: insurance.policyNumber,
           holderName: insurance.policyHolderName,
+          document: insurance.document,
+
           productType: product.productType,
           contractValue: `€ ${product.contractValue.toFixed(2)}`,
           inceptionDate: new Date(product.inceptionDate).toLocaleDateString(
@@ -59,7 +61,7 @@ export async function GET(request) {
               country: insurance.country,
               postcode: insurance.postcode,
               status: insurance.status,
-              requestData: insurance.requestData, 
+              requestData: insurance.requestData,
             },
             product: product,
           },
