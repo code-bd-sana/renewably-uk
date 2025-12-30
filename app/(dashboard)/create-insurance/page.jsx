@@ -103,6 +103,7 @@ export default function CreateInsuranceForm() {
       }
     } catch (error) {
       console.error("Error fetching contractor data:", error);
+      toast.error("Failed to load contractor data");
     }
   };
 
@@ -422,7 +423,14 @@ export default function CreateInsuranceForm() {
       });
 
       if (validationErrors.length > 0) {
-        throw new Error(validationErrors.join("\n"));
+        const errorMessage = validationErrors.join("\n");
+        toast.error(errorMessage, {
+          duration: 5000,
+          position: "top-right",
+        });
+        setError(errorMessage);
+        setLoading(false);
+        return;
       }
 
       // 2. Prepare products data with proper formatting
@@ -497,20 +505,46 @@ export default function CreateInsuranceForm() {
       console.log("Api Response -->", result);
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to create insurance");
+        let errorMessage = "Failed to create insurance";
+
+        if (result.error) {
+          errorMessage = result.error;
+        } else if (result.message) {
+          errorMessage = result.message;
+        } else if (result.details) {
+          errorMessage = result.details;
+        } else if (Array.isArray(result.errors)) {
+          errorMessage = result.errors.map((err) => err.message).join(", ");
+        }
+
+        throw new Error(errorMessage);
       }
 
       // 6. Success handling
-      alert("Insurance application created successfully!");
-      router.push("/certificates");
+      toast.success("Insurance application created successfully!", {
+        duration: 4000,
+        position: "top-right",
+      });
+
+      // Optional: Add a small delay before redirecting
+      setTimeout(() => {
+        router.push("/certificates");
+      }, 1500);
     } catch (error) {
       console.error("Submission error:", error);
-      toast.error();
+
+      // Show error toast with proper message
+      toast.error(error.message || "Failed to submit form. Please try again.", {
+        duration: 5000,
+        position: "top-right",
+      });
+
       setError(error.message || "Failed to submit form. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
   const handleCancel = () => {
     if (
       confirm("Are you sure you want to cancel? All unsaved data will be lost.")
@@ -521,7 +555,30 @@ export default function CreateInsuranceForm() {
 
   return (
     <main className='p-4 lg:p-6 max-w-7xl mx-auto'>
-      <Toaster />
+      <Toaster
+        toastOptions={{
+          duration: 4000,
+          position: "top-right",
+          style: {
+            background: "#363636",
+            color: "#fff",
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: "#10B981",
+              secondary: "#fff",
+            },
+          },
+          error: {
+            duration: 5000,
+            iconTheme: {
+              primary: "#EF4444",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
       {/* Logo */}
       <div className='mb-6'>
         <div className='inline-flex items-center gap-2'>

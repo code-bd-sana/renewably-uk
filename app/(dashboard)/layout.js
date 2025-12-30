@@ -13,6 +13,8 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import logo from "@/public/shared/logo.png";
+import Image from "next/image";
 
 function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -103,7 +105,7 @@ function DashboardLayout({ children }) {
       {/* Sidebar Overlay for Mobile */}
       {sidebarOpen && (
         <div
-          className='fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden backdrop-blur-sm'
+          className='fixed inset-0  z-40 lg:hidden '
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -122,22 +124,7 @@ function DashboardLayout({ children }) {
 
         {/* Logo */}
         <div className='p-4 border-b'>
-          <div className='flex items-center gap-2'>
-            <div className='w-8 h-8 bg-blue-600 rounded flex items-center justify-center'>
-              <div
-                className='w-6 h-6 bg-white rounded-sm'
-                style={{
-                  clipPath:
-                    "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                }}></div>
-            </div>
-            <div className='text-xs'>
-              <div className='font-bold text-blue-600'>RENEWABLY UK</div>
-              <div className='text-gray-500 text-[10px]'>
-                POWERING RENEWABLES
-              </div>
-            </div>
-          </div>
+          <Image src={logo} />
         </div>
 
         {/* Menu Items */}
