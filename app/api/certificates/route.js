@@ -1,14 +1,12 @@
-// app/api/insurance/[id]/route.js
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+// app/api/certificates/route.js
 import connectDB from "@/lib/db";
 import Insurance from "@/models/Insurance";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
-export async function GET(request, { params }) {
+export async function GET(request) {
   try {
-    const { id } = await params;
-
     // Check authentication
     const cookieStore = await cookies();
     const token = cookieStore.get("auth_token")?.value;
@@ -26,49 +24,71 @@ export async function GET(request, { params }) {
     // Connect to database
     await connectDB();
 
-    // Find the insurance
-    const insurance = await Insurance.findById(id);
+    // Get user's certificates
+    const insurances = await Insurance.find({ userId: decoded.userId })
+      .sort({ createdAt: -1 })
+      .lean();
 
-    if (!insurance) {
-      return NextResponse.json(
-        { success: false, error: "Insurance not found" },
-        { status: 404 }
-      );
-    }
+    // Flatten products into individual certificates
+    const certificates = [];
 
-    // Check if user owns this insurance
-    if (insurance.userId.toString() !== decoded.userId) {
-      return NextResponse.json(
-        { success: false, error: "Not authorized" },
-        { status: 403 }
-      );
-    }
+    insurances.forEach((insurance) => {
+      insurance.products.forEach((product, productIndex) => {
+        const certificate = {
+          id: `${insurance._id}-${productIndex}`,
+          insuranceId: insurance._id.toString(),
+          policyNo: insurance.policyNumber,
+          holderName: insurance.policyHolderName,
+          productType: product.productType,
+          contractValue: `€ ${product.contractValue.toFixed(2)}`,
+          inceptionDate: new Date(product.inceptionDate).toLocaleDateString(
+            "en-GB"
+          ),
+          expiryDate: new Date(product.expiryDate).toLocaleDateString("en-GB"),
+          transactionType: "Certificate Generated",
+          price: `€ ${product.price.toFixed(2)}`,
+          status: insurance.status,
+          rawData: {
+            insurance: {
+              contractorName: insurance.contractorName,
+              contractorAddress: insurance.contractorAddress,
+              policyHolderName: insurance.policyHolderName,
+              email: insurance.email,
+              phone: insurance.phone,
+              address: insurance.address,
+              country: insurance.country,
+              postcode: insurance.postcode,
+              status: insurance.status,
+              requestData: insurance.requestData,
+            },
+            product: product,
+          },
+        };
 
-    // Return insurance data
+        certificates.push(certificate);
+      });
+    });
+
     return NextResponse.json({
       success: true,
-      insurance: {
-        id: insurance._id,
-        policyNumber: insurance.policyNumber,
-        contractorName: insurance.contractorName,
-        contractorAddress: insurance.contractorAddress,
-        policyHolderName: insurance.policyHolderName,
-        email: insurance.email,
-        phone: insurance.phone,
-        address: insurance.address,
-        country: insurance.country,
-        postcode: insurance.postcode,
-        products: insurance.products,
-        status: insurance.status,
-        requestData: insurance.requestData,
-        createdAt: insurance.createdAt,
-        updatedAt: insurance.updatedAt,
-      },
+      certificates,
+      total: certificates.length,
     });
   } catch (error) {
-    console.error("Insurance fetch error:", error);
+    console.error("Fetch certificates error:", error);
+
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Invalid or expired token" },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: "Failed to fetch insurance" },
+      { success: false, error: "Failed to fetch certificates" },
       { status: 500 }
     );
   }

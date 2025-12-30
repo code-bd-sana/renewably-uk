@@ -1,8 +1,15 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Plus,
+  Search,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function CreateInsuranceForm() {
@@ -18,9 +25,9 @@ export default function CreateInsuranceForm() {
   const [showABS, setShowABS] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [products, setProducts] = useState([]);
   const [activeProductId, setActiveProductId] = useState(null);
   const [selectedTime, setSelectedTime] = useState({
     hour: "01",
@@ -28,6 +35,8 @@ export default function CreateInsuranceForm() {
     period: "AM",
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showProductDropdown, setShowProductDropdown] = useState({});
 
   const [formData, setFormData] = useState({
     contractorName: "",
@@ -55,15 +64,39 @@ export default function CreateInsuranceForm() {
     abs: "",
   });
 
-  const productTypes = [
-    "Cavity Wall Insulation - Up to 4 Stores High",
-    "External Wall Insulation",
-    "Loft Insulation",
-    "Room-in-Roof Insulation",
-    "Internal Wall Insulation",
-    "Flat Roof Insulation",
-    "Park Home Insulation",
-  ];
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/admin/products");
+      const data = await response.json();
+      if (data.success) {
+        setProducts(data.products.filter((p) => p.Measures)); // Filter out empty rows
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    fetchContractorData();
+  }, []);
+
+  // Filter products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return products;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return products.filter((product) =>
+      product.Measures.toLowerCase().includes(query)
+    );
+  }, [products, searchQuery]);
+
   const countries = [
     "United Kingdom",
     "United States",
@@ -78,10 +111,6 @@ export default function CreateInsuranceForm() {
     "Pending Assignment",
     "External Provider",
   ];
-
-  useEffect(() => {
-    fetchContractorData();
-  }, []);
 
   const fetchContractorData = async () => {
     try {
@@ -143,6 +172,22 @@ export default function CreateInsuranceForm() {
     }));
   };
 
+  // Product dropdown handler
+  const toggleProductDropdown = (productId) => {
+    setShowProductDropdown((prev) => ({
+      ...prev,
+      [productId]: !prev[productId],
+    }));
+  };
+
+  const selectProductType = (productId, measure) => {
+    updateProduct(productId, "productType", measure);
+    setShowProductDropdown((prev) => ({
+      ...prev,
+      [productId]: false,
+    }));
+  };
+
   // drop down
   useEffect(() => {
     // Close all dropdowns when clicking outside
@@ -154,6 +199,9 @@ export default function CreateInsuranceForm() {
         setShowFundingPartner(false);
         setShowSchemeProvider(false);
         setShowABS(false);
+
+        // Close all product dropdowns
+        setShowProductDropdown({});
       }
     };
 
@@ -375,6 +423,71 @@ export default function CreateInsuranceForm() {
         ))}
       </div>
     );
+
+  // Product Dropdown Component
+  const ProductDropdown = ({ productId, show }) => {
+    const currentProduct = formData.products.find((p) => p.id === productId);
+    const selectedMeasure = currentProduct?.productType || "";
+
+    return (
+      show && (
+        <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border w-full max-w-md max-h-96 overflow-hidden'>
+          {/* Search Input */}
+          <div className='p-3 border-b'>
+            <div className='relative'>
+              <Search
+                size={18}
+                className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
+              />
+              <input
+                type='text'
+                placeholder='Search products...'
+                className='w-full pl-10 pr-3 py-2 border rounded-lg text-sm'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+
+          {/* Product List */}
+          <div className='overflow-y-auto max-h-72'>
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product, index) => (
+                <button
+                  key={product._id}
+                  onClick={() => selectProductType(productId, product.Measures)}
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${
+                    index === 0 ? "" : "border-t"
+                  }`}>
+                  <div>
+                    <span className='font-medium'>{product.Measures}</span>
+                    <div className='text-xs text-gray-500 mt-1'>
+                      <span>Guarantee Period: {product.Year} years</span>
+                      {product.Month > 0 && (
+                        <span>, {product.Month} months</span>
+                      )}
+                      {product.Days > 0 && <span>, {product.Days} days</span>}
+                    </div>
+                  </div>
+                  {selectedMeasure === product.Measures && (
+                    <Check
+                      size={18}
+                      className='text-white bg-blue-600 rounded-full p-0.5'
+                    />
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className='px-4 py-3 text-center text-gray-500'>
+                No products found
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    );
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -745,24 +858,31 @@ export default function CreateInsuranceForm() {
               </div>
 
               <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                <div>
+                <div className='relative dropdown-container'>
                   <label className='block text-sm font-medium mb-2'>
                     Product Type *
                   </label>
-                  <select
-                    className='w-full border rounded-lg px-3 py-2'
-                    value={product.productType}
-                    onChange={(e) =>
-                      updateProduct(product.id, "productType", e.target.value)
-                    }
-                    required>
-                    <option value=''>Select product type</option>
-                    {productTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
+                  <button
+                    type='button'
+                    onClick={() => toggleProductDropdown(product.id)}
+                    className='w-full border rounded-lg px-3 py-2 text-left flex items-center justify-between hover:border-gray-400'>
+                    <span
+                      className={
+                        product.productType ? "text-gray-900" : "text-gray-400"
+                      }>
+                      {product.productType || "Select product type"}
+                    </span>
+                    <ChevronRight
+                      size={18}
+                      className={`transition-transform ${
+                        showProductDropdown[product.id] ? "rotate-90" : ""
+                      }`}
+                    />
+                  </button>
+                  <ProductDropdown
+                    productId={product.id}
+                    show={showProductDropdown[product.id]}
+                  />
                 </div>
                 <div>
                   <label className='block text-sm font-medium mb-2'>
