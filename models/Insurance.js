@@ -29,6 +29,7 @@ const insuranceSchema = new mongoose.Schema(
       type: String,
       default: "Not provided",
     },
+    document: String,
 
     // Policy Holder Details
     policyHolderName: {
@@ -86,7 +87,7 @@ const insuranceSchema = new mongoose.Schema(
         price: {
           type: Number,
           required: false,
-          default: 0, 
+          default: 0,
         },
       },
     ],
