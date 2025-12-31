@@ -3,7 +3,6 @@ import User from "@/models/User";
 import { authenticate } from "@/middleware/auth";
 import Insurance from "@/models/Insurance";
 
-
 export async function GET(request, { params }) {
   try {
     // AUTH CHECK
@@ -28,14 +27,16 @@ export async function GET(request, { params }) {
 
     // Await params in Next.js 13/14
     const { id } = await params;
-    
+
     console.log("Fetching contractor with ID:", id);
 
     // Find contractor by ID
-    const contractor = await User.findOne({ 
-      _id: id, 
-      role: "contractor" 
-    }).select('-passwordHash').lean();
+    const contractor = await User.findOne({
+      _id: id,
+      role: "contractor",
+    })
+      .select("-passwordHash")
+      .lean();
 
     if (!contractor) {
       console.log("Contractor not found for ID:", id);
@@ -48,8 +49,8 @@ export async function GET(request, { params }) {
     console.log("Contractor found:", contractor.email);
 
     // Get certificate count for this contractor (optional)
-    const certificateCount = await Insurance.countDocuments({ 
-      email: contractor.email // Assuming email links contractor to insurances
+    const certificateCount = await Insurance.countDocuments({
+      email: contractor.email, // Assuming email links contractor to insurances
     });
 
     return Response.json({
@@ -67,9 +68,8 @@ export async function GET(request, { params }) {
         createdAt: contractor.createdAt,
         updatedAt: contractor.updatedAt,
         certificateCount: certificateCount, // Add this for stats
-      }
+      },
     });
-    
   } catch (error) {
     console.error("GET /api/admin/contractor/[id] error:", error);
     return Response.json(
@@ -78,7 +78,6 @@ export async function GET(request, { params }) {
     );
   }
 }
-
 
 // POST
 export async function POST(request, { params }) {
@@ -130,6 +129,7 @@ export async function POST(request, { params }) {
 
 // Helper function to handle insurance requests
 async function handleInsuranceRequest(insuranceId, request) {
+  console.log(insuranceId, "ami hola insurance id");
   const { action, notes } = await request.json();
 
   if (!action || !["approve", "reject"].includes(action)) {

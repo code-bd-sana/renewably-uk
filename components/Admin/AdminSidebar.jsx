@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Users,
-  Package,
-  FileText,
-  Menu,
-  X,
   ChevronLeft,
   ChevronRight,
+  FileText,
+  LayoutDashboard,
+  Menu,
+  Package,
+  Users,
+  X,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 const menuItems = [
   {
@@ -116,7 +116,7 @@ export default function AdminSidebar() {
                         transition-colors duration-200
                         ${
                           isActive
-                            ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700"
+                            ? "bg-[#2C2C2C] text-white border-l-4 border-blue-700"
                             : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                         }
                       `}>

@@ -1,23 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Users,
-  Package,
   FileText,
-  Menu,
-  X,
   Home,
+  LayoutDashboard,
   LogOut,
+  Menu,
+  Package,
+  Users,
+  X,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const router = useRouter();
 
   const menuItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -51,43 +53,45 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className='min-h-screen bg-gray-50'>
       {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-blue-700 rounded-md text-white"
-      >
+        className='md:hidden fixed top-4 left-4 z-50 p-2 bg-blue-700 rounded-md text-white'>
         {sidebarOpen ? <X size={2} /> : <Menu size={24} />}
       </button>
 
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          className='md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40'
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <div className="flex">
+      <div className='flex'>
         {/* Sidebar */}
         <aside
           className={`
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0
           fixed top-0 left-0
-          w-64 h-screen bg-white border-r border-gray-200
+          w-64 min-w-64 h-screen bg-white border-r border-gray-200
           z-40 transition-transform duration-300
           overflow-y-auto 
     md:sticky md:top-0 md:h-screen
-        `}
-        >
-          <div className="p-4 border-b">
+        `}>
+          <div
+            className='p-4 border-b cursor-pointer'
+            onClick={() => {
+              router.push("/");
+            }}>
             <Image
-              src="/FullLogo_Transparent_NoBuffer-3.png"
+              src='/FullLogo_Transparent_NoBuffer-3.png'
               height={250}
               width={250}
-              alt="Renewably UK"
-              className="h-auto w-auto"
+              alt='Renewably UK'
+              className='h-auto w-auto'
               onError={(e) => {
                 e.target.style.display = "none";
                 e.target.nextSibling.style.display = "flex";
@@ -95,8 +99,8 @@ export default function AdminLayout({ children }) {
             />
           </div>
 
-          <nav className="p-4">
-            <ul className="space-y-2">
+          <nav className='p-4'>
+            <ul className='space-y-2'>
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -110,11 +114,10 @@ export default function AdminLayout({ children }) {
                         flex items-center gap-3 px-3 py-3 rounded-lg
                         ${
                           isActive
-                            ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700 hover:bg-gray-50"
+                            ? "bg-[#0F47A8] text-white"
+                            : "text-[#0F47A8] hover:bg-gray-50"
                         }
-                      `}
-                    >
+                      `}>
                       <Icon size={20} />
                       <span>{item.name}</span>
                     </Link>
@@ -124,31 +127,28 @@ export default function AdminLayout({ children }) {
             </ul>
           </nav>
 
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-            <div className="flex items-center justify-between">
+          <div className='absolute bottom-0 left-0 right-0 p-4 border-t'>
+            <div className='flex items-center justify-between'>
               <Link
-                href="/"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-              >
+                href='/'
+                className='flex items-center gap-2 text-gray-600 hover:text-gray-900'>
                 <Home size={18} />
-                <span className="text-sm">Main Site</span>
+                <span className='text-sm'>Main Site</span>
               </Link>
-              <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-                <div className="flex items-center justify-between">
+              <div className='absolute bottom-0 left-0 right-0 p-4 border-t'>
+                <div className='flex items-center justify-between'>
                   <Link
-                    href="/"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-                  >
+                    href='/'
+                    className='flex items-center gap-2 text-gray-600 hover:text-gray-900'>
                     <Home size={18} />
-                    <span className="text-sm">Main Site</span>
+                    <span className='text-sm'>Main Site</span>
                   </Link>
 
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 text-red-600 hover:text-red-800"
-                  >
+                    className='flex items-center gap-2 text-red-600 hover:text-red-800'>
                     <LogOut size={18} />
-                    <span className="text-sm">Logout</span>
+                    <span className='text-sm'>Logout</span>
                   </button>
                 </div>
               </div>
@@ -157,8 +157,8 @@ export default function AdminLayout({ children }) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6">
-          <div className=" mx-auto">{children}</div>
+        <main className='flex-1 p-4 md:p-6'>
+          <div className=' mx-auto'>{children}</div>
         </main>
       </div>
     </div>
