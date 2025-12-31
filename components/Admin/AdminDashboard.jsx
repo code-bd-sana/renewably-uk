@@ -401,6 +401,7 @@ export default function AdminDashboard() {
   }, [checkAdminAndLoadData, fetchPendingRequests]);
 
   const handleApproveUser = async (userId) => {
+    alert("Are You Sure");
     try {
       const res = await fetch("/api/admin/approve-user", {
         method: "POST",
@@ -409,6 +410,7 @@ export default function AdminDashboard() {
       });
 
       const data = await res.json();
+      checkAdminAndLoadData();
 
       if (data.success) {
         // Remove approved user from list
@@ -427,6 +429,7 @@ export default function AdminDashboard() {
   };
 
   const handleRejectUser = async (userId) => {
+    alert("Are You Sure?");
     try {
       const res = await fetch("/api/admin/reject-user", {
         method: "POST",
@@ -435,6 +438,7 @@ export default function AdminDashboard() {
       });
 
       const data = await res.json();
+      checkAdminAndLoadData();
 
       if (data.success) {
         // Remove rejected user from list
@@ -451,6 +455,8 @@ export default function AdminDashboard() {
     }
   };
   const handleApproveRequest = async (requestId) => {
+    alert("Are You Sure");
+    console.log(requestId, "this is request id");
     try {
       const res = await fetch(`/api/admin/contractor/${requestId}`, {
         method: "POST",
@@ -651,19 +657,19 @@ export default function AdminDashboard() {
                       <td className='px-6 py-4 whitespace-nowrap text-sm'>
                         <div className='flex items-center gap-2'>
                           <button
-                            onClick={() => handleViewRequest(request)}
+                            onClick={() => handleViewRequest(user)}
                             className='p-2 text-gray-600 hover:bg-gray-100 rounded'
                             title='View Request Details'>
                             <Eye size={16} />
                           </button>
                           <button
-                            onClick={() => handleApproveRequest(request.id)}
+                            onClick={() => handleApproveUser(user.id)}
                             className='p-2 text-green-600 hover:bg-green-50 rounded'
                             title='Approve Request'>
                             <CheckCircle size={16} />
                           </button>
                           <button
-                            onClick={() => handleRejectRequest(request.id)}
+                            onClick={() => handleRejectUser(user.id)}
                             className='p-2 text-red-600 hover:bg-red-50 rounded'
                             title='Reject Request'>
                             <XCircle size={16} />
@@ -1042,7 +1048,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className='text-3xl font-bold text-gray-900'>
-            {stats.editRequests}
+            {pendingRequests?.length}
           </div>
         </div>
       </div>
