@@ -369,11 +369,11 @@ export default function AdminDashboard() {
       }
 
       if (statsData.success) {
-  setStats(prev => ({
-    ...prev,
-    ...statsData.stats,  // Merge with existing stats
-  }));
-}
+        setStats((prev) => ({
+          ...prev,
+          ...statsData.stats, // Merge with existing stats
+        }));
+      }
     } catch (error) {
       console.error("Error:", error);
       router.push("/login");
@@ -412,6 +412,7 @@ export default function AdminDashboard() {
   }, [checkAdminAndLoadData, fetchPendingRequests]);
 
   const handleApproveUser = async (userId) => {
+    alert("Are You Sure?");
     try {
       const res = await fetch("/api/admin/approve-user", {
         method: "POST",
@@ -420,6 +421,7 @@ export default function AdminDashboard() {
       });
 
       const data = await res.json();
+      checkAdminAndLoadData();
 
       if (data.success) {
         // Remove approved user from list
@@ -438,6 +440,7 @@ export default function AdminDashboard() {
   };
 
   const handleRejectUser = async (userId) => {
+    alert("Are You Sure?");
     try {
       const res = await fetch("/api/admin/reject-user", {
         method: "POST",
@@ -446,6 +449,7 @@ export default function AdminDashboard() {
       });
 
       const data = await res.json();
+      checkAdminAndLoadData();
 
       if (data.success) {
         // Remove rejected user from list
@@ -461,6 +465,10 @@ export default function AdminDashboard() {
       console.error("Reject error:", error);
     }
   };
+
+  useEffect(() => {
+    checkAdminAndLoadData();
+  }, [handleRejectUser, handleApproveUser]);
   const handleApproveRequest = async (requestId) => {
     try {
       const res = await fetch(`/api/admin/contractor/${requestId}`, {
@@ -607,46 +615,46 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-          <p className="text-gray-600">Loading dashboard...</p>
+      <div className='min-h-screen bg-gray-50 p-8 flex items-center justify-center'>
+        <div className='text-center'>
+          <Loader2 className='w-8 h-8 animate-spin text-blue-600 mx-auto mb-3' />
+          <p className='text-gray-600'>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 mt-12 md:mt-0">
+    <div className='min-h-screen  mt-12 md:mt-0'>
       {/* Header */}
-      <div className="bg-linear-to-r from-blue-700 to-blue-600 text-white p-8 rounded-lg mb-6">
-        <h1 className="text-3xl font-semibold flex items-center gap-2">
+      <div className='bg-[#0F47A8] to-blue-600 text-white p-8 rounded-lg mb-6'>
+        <h1 className='text-3xl font-semibold flex items-center gap-2'>
           Welcome Back, Admin 👋
         </h1>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-gray-600 text-sm">Total Policies</div>
-            <div className="bg-blue-50 p-2 rounded">
-              <FileText className="w-5 h-5 text-blue-600" />
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
+        <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
+          <div className='flex items-center justify-between mb-3'>
+            <div className='text-gray-600 text-sm'>Total Policies</div>
+            <div className='bg-blue-50 p-2 rounded'>
+              <FileText className='w-5 h-5 text-blue-600' />
             </div>
           </div>
-          <div className="text-3xl font-bold text-gray-900">
+          <div className='text-3xl font-bold text-gray-900'>
             {stats.totalPolicies}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-gray-600 text-sm">Premium Total</div>
-            <div className="bg-green-50 p-2 rounded">
-              <DollarSign className="w-5 h-5 text-green-600" />
+        <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
+          <div className='flex items-center justify-between mb-3'>
+            <div className='text-gray-600 text-sm'>Premium Total</div>
+            <div className='bg-green-50 p-2 rounded'>
+              <DollarSign className='w-5 h-5 text-green-600' />
             </div>
           </div>
-          <div className="text-3xl font-bold text-gray-900">
+          <div className='text-3xl font-bold text-gray-900'>
             £
             {stats.premiumTotal.toLocaleString("en-GB", {
               minimumFractionDigits: 2,
@@ -655,103 +663,128 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-gray-600 text-sm">This Month Policies</div>
-            <div className="bg-purple-50 p-2 rounded">
-              <Calendar className="w-5 h-5 text-purple-600" />
+        <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
+          <div className='flex items-center justify-between mb-3'>
+            <div className='text-gray-600 text-sm'>This Month Policies</div>
+            <div className='bg-purple-50 p-2 rounded'>
+              <Calendar className='w-5 h-5 text-purple-600' />
             </div>
           </div>
-          <div className="text-3xl font-bold text-gray-900">
+          <div className='text-3xl font-bold text-gray-900'>
             {stats.thisMonthPolicies}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-gray-600 text-sm">Total Contractors</div>
-            <div className="bg-orange-50 p-2 rounded">
-              <Users className="w-5 h-5 text-orange-600" />
+        <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
+          <div className='flex items-center justify-between mb-3'>
+            <div className='text-gray-600 text-sm'>Total Contractors</div>
+            <div className='bg-orange-50 p-2 rounded'>
+              <Users className='w-5 h-5 text-orange-600' />
             </div>
           </div>
-          <div className="text-3xl font-bold text-gray-900">
+          <div className='text-3xl font-bold text-gray-900'>
             {stats.totalContractors}
+          </div>
+        </div>
+
+        <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
+          <div className='flex items-center justify-between mb-3'>
+            <div className='text-gray-600 text-sm'>Months Premium Total</div>
+            <div className='bg-blue-50 p-2 rounded'>
+              <DollarSign className='w-5 h-5 text-blue-600' />
+            </div>
+          </div>
+          <div className='text-3xl font-bold text-gray-900'>
+            £
+            {stats.premiumTotal.toLocaleString("en-GB", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </div>
+        </div>
+
+        <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
+          <div className='flex items-center justify-between mb-3'>
+            <div className='text-gray-600 text-sm'>Edit Request Pending</div>
+            <div className='bg-yellow-50 p-2 rounded'>
+              <FileText className='w-5 h-5 text-yellow-600' />
+            </div>
+          </div>
+          <div className='text-3xl font-bold text-gray-900'>
+            {stats.editRequests}
           </div>
         </div>
       </div>
 
-      <div className="grid ">
+      <div className='grid mt-16'>
         {/* Pending Approvals Section */}
-        <div className="cols-span-2 bg-white rounded-lg shadow-sm border border-gray-100 mb-6">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
+        <div className='cols-span-2 bg-white rounded-lg shadow-sm border border-gray-100 mb-6'>
+          <div className='px-6 py-4 border-b border-gray-200'>
+            <h2 className='text-xl font-semibold text-gray-900'>
               New Contractor Request ({pendingUsers.length})
             </h2>
           </div>
 
           {pendingUsers.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
+            <div className='p-12 text-center text-gray-500'>
               No pending approvals
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+            <div className='overflow-x-auto'>
+              <table className='w-full'>
+                <thead className='bg-gray-50 border-b border-gray-200'>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Apply Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Company Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Contractor Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Email Address
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Action
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className='bg-white divide-y divide-gray-200'>
                   {pendingUsers.map((user) => (
-                    <tr key={user.id || user._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <tr key={user.id || user._id} className='hover:bg-gray-50'>
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
                         {new Date(user.createdAt).toLocaleDateString("en-GB")}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
                         {user.companyName}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
                         {user.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
                         {user.email}
                       </td>
                       {/* In the pending requests table, update the actions column */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex items-center gap-2">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm'>
+                        <div className='flex items-center gap-2'>
                           <button
                             onClick={() => handleViewRequest(request)}
-                            className="p-2 text-gray-600 hover:bg-gray-100 rounded"
-                            title="View Request Details"
-                          >
+                            className='p-2 text-gray-600 hover:bg-gray-100 rounded'
+                            title='View Request Details'>
                             <Eye size={16} />
                           </button>
                           <button
-                            onClick={() => handleApproveRequest(request.id)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded"
-                            title="Approve Request"
-                          >
+                            onClick={() => handleApproveUser(user.id)}
+                            className='p-2 text-green-600 hover:bg-green-50 rounded'
+                            title='Approve Request'>
                             <CheckCircle size={16} />
                           </button>
                           <button
-                            onClick={() => handleRejectRequest(request.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded"
-                            title="Reject Request"
-                          >
+                            onClick={() => handleRejectUser(user.id)}
+                            className='p-2 text-red-600 hover:bg-red-50 rounded'
+                            title='Reject Request'>
                             <XCircle size={16} />
                           </button>
                         </div>
@@ -765,45 +798,43 @@ export default function AdminDashboard() {
         </div>
         {/* Admin View Request Modal */}
         {showRequestModal && selectedRequest && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
+            <div className='bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden'>
               {/* Header */}
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-4">
+              <div className='p-6 border-b border-gray-200'>
+                <div className='flex items-center justify-between mb-4'>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
+                    <h1 className='text-2xl font-bold text-gray-900'>
                       Request Review: {selectedRequest.policyNumber}
                     </h1>
-                    <p className="text-sm text-gray-600">
+                    <p className='text-sm text-gray-600'>
                       Submitted by: {selectedRequest.contractor?.name} (
                       {selectedRequest.contractor?.companyName})
                     </p>
                   </div>
                   <button
                     onClick={() => setShowRequestModal(false)}
-                    className="p-2 hover:bg-gray-100 rounded"
-                  >
+                    className='p-2 hover:bg-gray-100 rounded'>
                     <X size={20} />
                   </button>
                 </div>
 
                 {/* Request Info Badges */}
-                <div className="flex gap-3 mb-4">
+                <div className='flex gap-3 mb-4'>
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
                       selectedRequest.requestType === "edit"
                         ? "bg-blue-100 text-blue-800"
                         : "bg-red-100 text-red-800"
-                    }`}
-                  >
+                    }`}>
                     {selectedRequest.requestType === "edit"
                       ? "📝 Edit Request"
                       : "❌ Cancellation Request"}
                   </span>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                  <span className='px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm'>
                     ⏳ Pending Review
                   </span>
-                  <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                  <span className='px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm'>
                     📅{" "}
                     {new Date(selectedRequest.requestedAt).toLocaleDateString()}
                   </span>
@@ -811,47 +842,47 @@ export default function AdminDashboard() {
               </div>
 
               {/* Main Content */}
-              <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className='p-6 overflow-y-auto max-h-[60vh]'>
                 {/* Reason Section */}
-                <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                  <h3 className="font-medium text-gray-700 mb-2">
+                <div className='mb-6 p-4 bg-blue-50 rounded-lg'>
+                  <h3 className='font-medium text-gray-700 mb-2'>
                     Reason for Request:
                   </h3>
-                  <p className="text-gray-800">
+                  <p className='text-gray-800'>
                     {selectedRequest.reason || "No reason provided"}
                   </p>
                 </div>
 
                 {/* Current Details */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                <div className='mb-6'>
+                  <h3 className='text-lg font-semibold text-gray-800 mb-3'>
                     Current Policy Details
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                     <div>
-                      <p className="text-sm text-gray-500">Policy Holder</p>
-                      <p className="font-medium">
+                      <p className='text-sm text-gray-500'>Policy Holder</p>
+                      <p className='font-medium'>
                         {selectedRequest.policyHolderName}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Contractor</p>
-                      <p className="font-medium">
+                      <p className='text-sm text-gray-500'>Contractor</p>
+                      <p className='font-medium'>
                         {selectedRequest.contractor?.name}
                       </p>
-                      <p className="text-sm text-gray-600">
+                      <p className='text-sm text-gray-600'>
                         {selectedRequest.contractor?.companyName}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Contractor Email</p>
-                      <p className="font-medium">
+                      <p className='text-sm text-gray-500'>Contractor Email</p>
+                      <p className='font-medium'>
                         {selectedRequest.contractor?.email}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Requested On</p>
-                      <p className="font-medium">
+                      <p className='text-sm text-gray-500'>Requested On</p>
+                      <p className='font-medium'>
                         {new Date(selectedRequest.requestedAt).toLocaleString()}
                       </p>
                     </div>
@@ -861,21 +892,21 @@ export default function AdminDashboard() {
                 {/* Changes (for edit requests) */}
                 {selectedRequest.requestType === "edit" &&
                   selectedRequest.changes && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                    <div className='mb-6'>
+                      <h3 className='text-lg font-semibold text-gray-800 mb-3'>
                         Requested Changes
                       </h3>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <table className="w-full">
+                      <div className='bg-gray-50 p-4 rounded-lg'>
+                        <table className='w-full'>
                           <thead>
-                            <tr className="border-b">
-                              <th className="text-left py-2 text-sm font-medium text-gray-700">
+                            <tr className='border-b'>
+                              <th className='text-left py-2 text-sm font-medium text-gray-700'>
                                 Field
                               </th>
-                              <th className="text-left py-2 text-sm font-medium text-gray-700">
+                              <th className='text-left py-2 text-sm font-medium text-gray-700'>
                                 Current Value
                               </th>
-                              <th className="text-left py-2 text-sm font-medium text-gray-700">
+                              <th className='text-left py-2 text-sm font-medium text-gray-700'>
                                 Requested Change
                               </th>
                             </tr>
@@ -883,15 +914,15 @@ export default function AdminDashboard() {
                           <tbody>
                             {Object.entries(selectedRequest.changes).map(
                               ([field, newValue]) => (
-                                <tr key={field} className="border-b">
-                                  <td className="py-2 text-sm capitalize">
+                                <tr key={field} className='border-b'>
+                                  <td className='py-2 text-sm capitalize'>
                                     {field.replace(/([A-Z])/g, " $1")}
                                   </td>
-                                  <td className="py-2 text-sm text-gray-600">
+                                  <td className='py-2 text-sm text-gray-600'>
                                     {/* You would need to get current values from database */}
                                     Current value
                                   </td>
-                                  <td className="py-2 text-sm font-medium text-blue-600">
+                                  <td className='py-2 text-sm font-medium text-blue-600'>
                                     {newValue}
                                   </td>
                                 </tr>
@@ -904,18 +935,18 @@ export default function AdminDashboard() {
                   )}
 
                 {/* Admin Notes */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                <div className='mb-6'>
+                  <h3 className='text-lg font-semibold text-gray-800 mb-3'>
                     Admin Notes
                   </h3>
                   <textarea
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    rows="3"
-                    placeholder="Add notes for the contractor (optional)..."
+                    className='w-full px-3 py-2 border border-gray-300 rounded-lg'
+                    rows='3'
+                    placeholder='Add notes for the contractor (optional)...'
                   />
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className='text-sm text-gray-500 mt-1'>
                     These notes will be visible to the contractor after
                     decision.
                   </p>
@@ -923,14 +954,14 @@ export default function AdminDashboard() {
               </div>
 
               {/* Action Buttons */}
-              <div className="p-6 border-t border-gray-200 bg-gray-50">
-                <div className="flex justify-between items-center">
+              <div className='p-6 border-t border-gray-200 bg-gray-50'>
+                <div className='flex justify-between items-center'>
                   <div>
-                    <p className="text-sm text-gray-600">
+                    <p className='text-sm text-gray-600'>
                       Review and take action on this request
                     </p>
                   </div>
-                  <div className="flex gap-3">
+                  <div className='flex gap-3'>
                     <button
                       onClick={() => {
                         if (
@@ -942,8 +973,7 @@ export default function AdminDashboard() {
                           setShowRequestModal(false);
                         }
                       }}
-                      className="px-4 py-2 text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
-                    >
+                      className='px-4 py-2 text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100'>
                       Reject Request
                     </button>
                     <button
@@ -957,8 +987,7 @@ export default function AdminDashboard() {
                           setShowRequestModal(false);
                         }
                       }}
-                      className="px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700"
-                    >
+                      className='px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700'>
                       Approve Request
                     </button>
                   </div>
@@ -968,21 +997,20 @@ export default function AdminDashboard() {
           </div>
         )}
         {/* Pending Policy Requests Section */}
-        <div className="cols-span-1 bg-white rounded-lg shadow-sm border border-gray-100 mb-6">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className='cols-span-1 bg-white rounded-lg shadow-sm border border-gray-100 mb-6'>
+          <div className='px-6 py-4 border-b border-gray-200 flex items-center justify-between'>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className='text-xl font-semibold text-gray-900'>
                 Pending Policy Requests ({pendingRequests.length})
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className='text-sm text-gray-500 mt-1'>
                 Edit and cancellation requests from contractors
               </p>
             </div>
             <button
               onClick={handleRefreshRequests}
               disabled={requestsLoading}
-              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
-            >
+              className='flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50'>
               <RefreshCw
                 className={`w-4 h-4 ${requestsLoading ? "animate-spin" : ""}`}
               />
@@ -991,84 +1019,82 @@ export default function AdminDashboard() {
           </div>
 
           {requestsLoading ? (
-            <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="text-gray-500 mt-2">Loading requests...</p>
+            <div className='p-12 text-center'>
+              <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
+              <p className='text-gray-500 mt-2'>Loading requests...</p>
             </div>
           ) : pendingRequests.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
+            <div className='p-12 text-center text-gray-500'>
               No pending requests
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+            <div className='overflow-x-auto'>
+              <table className='w-full'>
+                <thead className='bg-gray-50 border-b border-gray-200'>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Policy Number
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Contractor
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Request Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Requested At
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className='bg-white divide-y divide-gray-200'>
                   {pendingRequests.map((request) => (
-                    <tr key={request.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                    <tr key={request.id} className='hover:bg-gray-50'>
+                      <td className='px-6 py-4 whitespace-nowrap'>
+                        <div className='text-sm font-medium text-gray-900'>
                           {request.policyNumber}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className='text-xs text-gray-500'>
                           {request.policyHolderName}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                      <td className='px-6 py-4 whitespace-nowrap'>
+                        <div className='text-sm text-gray-900'>
                           {request.contractor?.name || "Unknown"}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className='text-xs text-gray-500'>
                           {request.contractor?.companyName || "No company"}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className='text-xs text-gray-500'>
                           {request.contractor?.email}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className='px-6 py-4 whitespace-nowrap'>
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             request.requestType === "edit"
                               ? "bg-blue-100 text-blue-800"
                               : "bg-red-100 text-red-800"
-                          }`}
-                        >
+                          }`}>
                           {request.requestType === "edit"
                             ? "Edit Request"
                             : "Cancel Request"}
                         </span>
                         {request.reason && (
                           <div
-                            className="text-xs text-gray-500 mt-1 max-w-xs truncate"
-                            title={request.reason}
-                          >
+                            className='text-xs text-gray-500 mt-1 max-w-xs truncate'
+                            title={request.reason}>
                             Reason: {request.reason}
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                         {new Date(request.requestedAt).toLocaleDateString(
                           "en-GB"
                         )}
-                        <div className="text-xs">
+                        <div className='text-xs'>
                           {new Date(request.requestedAt).toLocaleTimeString(
                             "en-GB",
                             {
@@ -1078,28 +1104,25 @@ export default function AdminDashboard() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex gap-2">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm'>
+                        <div className='flex gap-2'>
                           <button
                             onClick={() => handleViewRequest(request)}
-                            className="p-2 text-gray-600 hover:bg-gray-100 rounded"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
+                            className='p-2 text-gray-600 hover:bg-gray-100 rounded'
+                            title='View Details'>
+                            <Eye className='w-4 h-4' />
                           </button>
                           <button
                             onClick={() => handleApproveRequest(request.id)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded"
-                            title="Approve Request"
-                          >
-                            <CheckCircle className="w-4 h-4" />
+                            className='p-2 text-green-600 hover:bg-green-50 rounded'
+                            title='Approve Request'>
+                            <CheckCircle className='w-4 h-4' />
                           </button>
                           <button
                             onClick={() => handleRejectRequest(request.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded"
-                            title="Reject Request"
-                          >
-                            <XCircle className="w-4 h-4" />
+                            className='p-2 text-red-600 hover:bg-red-50 rounded'
+                            title='Reject Request'>
+                            <XCircle className='w-4 h-4' />
                           </button>
                         </div>
                       </td>
@@ -1112,86 +1135,21 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Certificates</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                {stats.totalCertificates}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <FileText className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="flex items-center text-sm text-green-600">
-              <TrendingUp className="w-4 h-4 mr-1" />
-              <span>{stats.thisMonthCertificates} this month</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Contractors</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                {stats.totalContractors}
-              </p>
-            </div>
-            <div className="p-3 bg-green-50 rounded-lg">
-              <Users className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                {formatCurrency(stats.totalRevenue)}
-              </p>
-            </div>
-            <div className="p-3 bg-purple-50 rounded-lg">
-              <DollarSign className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">This Month</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                {stats.thisMonthCertificates}
-              </p>
-            </div>
-            <div className="p-3 bg-orange-50 rounded-lg">
-              <Calendar className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className='grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6'>
         {/* Bar Chart - Insurance Backed Guarantee Policies */}
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
+        <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
+          <div className='flex justify-between items-center mb-6'>
+            <h3 className='text-lg font-semibold text-gray-900'>
               Insurance Backed Guarantee Policies
             </h3>
-            <span className="text-sm text-gray-500">
+            <span className='text-sm text-gray-500'>
               {new Date().getFullYear()}
             </span>
           </div>
-          <div className="relative">
+          <div className='relative'>
             {/* Y-axis labels */}
-            <div className="absolute left-0 top-0 flex flex-col justify-between h-64 text-xs text-gray-500 pr-2">
+            <div className='absolute left-0 top-0 flex flex-col justify-between h-64 text-xs text-gray-500 pr-2'>
               <span>{maxValue}</span>
               <span>{Math.round(maxValue * 0.75)}</span>
               <span>{Math.round(maxValue * 0.5)}</span>
@@ -1200,95 +1158,96 @@ export default function AdminDashboard() {
             </div>
 
             {/* Chart bars */}
-            <div className="ml-8 flex items-end justify-between h-64 gap-2 border-l border-b border-gray-200 pl-4 pb-8">
-              {monthlyStats.map((data, index) => (
-                <div key={index} className="flex flex-col items-center flex-1">
-                  <button
-                    onClick={() => handleMonthClick(data.monthNumber)}
-                    className="w-full bg-blue-600 rounded-t transition-all hover:bg-blue-700 group relative"
-                    style={{
-                      height: `${(data.value / maxValue) * 100}%`,
-                      minHeight: "10px",
-                    }}
-                    title={`${data.month}: ${data.value} certificates`}
-                  >
-                    <div className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                      {data.value} certificates
-                    </div>
-                  </button>
-                  <span className="text-xs text-gray-600 mt-3 whitespace-nowrap">
-                    {data.month}
-                  </span>
-                </div>
-              ))}
+            <div className='ml-4 md:ml-8 h-64 border-l border-b border-gray-200 pl-4 pb-8'>
+              <div className='grid grid-cols-2 sm:grid-cols-3 md:flex items-end justify-between gap-3 h-full'>
+                {monthlyStats.map((data, index) => (
+                  <div
+                    key={index}
+                    className='flex flex-col items-center flex-1'>
+                    <button
+                      onClick={() => handleMonthClick(data.monthNumber)}
+                      className='w-full bg-[#0F47A8] rounded-t transition-all hover:bg-blue-700 group relative'
+                      style={{
+                        height: `${(data.value / maxValue) * 100}%`,
+                        minHeight: "10px",
+                      }}
+                      title={`${data.month}: ${data.value} certificates`}>
+                      <div className='absolute bottom-full mb-1 hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap'>
+                        {data.value} certificates
+                      </div>
+                    </button>
+
+                    <span className='text-xs text-gray-600 mt-3 whitespace-nowrap'>
+                      {data.month}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Top Contractors Table */}
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
+        <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
+          <div className='flex justify-between items-center mb-6'>
+            <h3 className='text-lg font-semibold text-gray-900'>
               Top Contractors
             </h3>
             <Link
-              href="/admin/manage-contractors"
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-            >
+              href='/admin/manage-contractors'
+              className='text-sm text-blue-600 hover:text-blue-800 hover:underline'>
               View All →
             </Link>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-gray-200">
+          <div className='overflow-x-auto'>
+            <table className='w-full'>
+              <thead className='border-b border-gray-200'>
                 <tr>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     #
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     Contractor Name
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     Company Name
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     Total Certificate
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className='divide-y divide-gray-100'>
                 {topContractors.map((contractor, index) => (
-                  <tr key={contractor.userId} className="hover:bg-gray-50">
-                    <td className="py-4 text-sm text-gray-500 font-medium">
+                  <tr key={contractor.userId} className='hover:bg-gray-50'>
+                    <td className='py-4 text-sm text-gray-500 font-medium'>
                       {index + 1}
                     </td>
-                    <td className="py-4 text-sm text-gray-900">
+                    <td className='py-4 text-sm text-gray-900'>
                       {contractor.name}
                     </td>
-                    <td className="py-4 text-sm text-gray-900">
+                    <td className='py-4 text-sm text-gray-900'>
                       {contractor.companyName}
                     </td>
-                    <td className="py-4 text-sm text-gray-900 font-medium">
+                    <td className='py-4 text-sm text-gray-900 font-medium'>
                       {contractor.certificates}
                     </td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-3">
+                    <td className='py-4'>
+                      <div className='flex items-center gap-3'>
                         <Link
                           href={`/admin/manage-contractors/${contractor.userId}`}
-                          className="text-blue-600 hover:text-blue-700 p-1"
-                          title="View Contractor"
-                        >
-                          <Eye className="w-4 h-4" />
+                          className='text-blue-600 hover:text-blue-700 p-1'
+                          title='View Contractor'>
+                          <Eye className='w-4 h-4' />
                         </Link>
                         <Link
                           href={`/admin/certificates?contractorId=${contractor.userId}`}
-                          className="text-gray-600 hover:text-gray-700 p-1"
-                          title="View Certificates"
-                        >
-                          <FileText className="w-4 h-4" />
+                          className='text-gray-600 hover:text-gray-700 p-1'
+                          title='View Certificates'>
+                          <FileText className='w-4 h-4' />
                         </Link>
                       </div>
                     </td>
@@ -1300,35 +1259,6 @@ export default function AdminDashboard() {
         </div>
       </div>
       {/* Additional Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-gray-600 text-sm">Months Premium Total</div>
-            <div className="bg-blue-50 p-2 rounded">
-              <DollarSign className="w-5 h-5 text-blue-600" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-gray-900">
-            £
-            {stats.premiumTotal.toLocaleString("en-GB", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-gray-600 text-sm">Edit Request Pending</div>
-            <div className="bg-yellow-50 p-2 rounded">
-              <FileText className="w-5 h-5 text-yellow-600" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-gray-900">
-            {stats.editRequests}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

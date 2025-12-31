@@ -13,7 +13,6 @@ export default function DocumentUploadForm() {
   const [existingDocuments, setExistingDocuments] = useState([]);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
 
-  // Fetch user data on component mount
   useEffect(() => {
     fetchUserData();
   }, []);

@@ -12,6 +12,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "framer-motion": "^12.23.26",
+    "html2canvas": "^1.4.1",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.562.0",
@@ -20,6 +21,7 @@
     "next": "16.1.1",
     "nodemailer": "^7.0.12",
     "postcss": "^8.5.6",
+    "puppeteer": "^24.34.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hot-toast": "^2.6.0"
