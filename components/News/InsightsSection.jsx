@@ -10,7 +10,7 @@ const articles = [
     category: "Compliance Updates",
     date: "December 15, 2024",
     excerpt:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Guarantees in renewable energy installations.",
     image: "/News/i1.jpg",
     featured: true,
   },

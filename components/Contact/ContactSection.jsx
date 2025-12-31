@@ -1,6 +1,7 @@
 "use client";
 
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import Link from "next/link";
 
 const ContactSection = () => {
   return (
@@ -19,9 +20,12 @@ const ContactSection = () => {
                 <p className="text-[14px] font-semibold text-[#0F172A]">
                   Email
                 </p>
-                <p className="text-[13px] text-[#2563EB]">
+                <Link
+                  href="mailto:support@renewablyuk.com"
+                  className="text-[13px] text-[#2563EB] hover:underline"
+                >
                   support@renewablyuk.com
-                </p>
+                </Link>
                 <p className="text-[12px] text-[#6B7280] mt-[2px]">
                   We respond within 24 hours
                 </p>
