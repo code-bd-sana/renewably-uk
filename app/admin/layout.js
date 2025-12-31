@@ -1,23 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Users,
-  Package,
   FileText,
-  Menu,
-  X,
   Home,
+  LayoutDashboard,
   LogOut,
+  Menu,
+  Package,
+  Users,
+  X,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const router = useRouter();
 
   const menuItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -79,7 +81,11 @@ export default function AdminLayout({ children }) {
           overflow-y-auto 
     md:sticky md:top-0 md:h-screen
         `}>
-          <div className='p-4 border-b'>
+          <div
+            className='p-4 border-b cursor-pointer'
+            onClick={() => {
+              router.push("/");
+            }}>
             <Image
               src='/FullLogo_Transparent_NoBuffer-3.png'
               height={250}
