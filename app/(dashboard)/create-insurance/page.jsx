@@ -1133,13 +1133,13 @@ export default function CreateInsuranceForm() {
           <button
             type='button'
             onClick={handleCancel}
-            className='px-6 py-2 border border-gray-200 bg-[#FEE2E2] text-[#DC2626] border border-gray-200-red-300 text-red-500 rounded-lg hover:bg-red-50'
+            className='px-6 py-2 border cursor-pointer border-gray-200 bg-[#FEE2E2] text-[#DC2626] border border-gray-200-red-300 text-red-500 rounded-lg hover:bg-red-50'
             disabled={loading}>
             Cancel
           </button>
           <button
             type='submit'
-            className='px-6 py-2 bg-[#DCFCE7] text-[#16A34A]  rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2'
+            className='px-6 py-2 bg-[#DCFCE7] text-[#16A34A]  rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2'
             disabled={loading}>
             {loading ? (
               <>

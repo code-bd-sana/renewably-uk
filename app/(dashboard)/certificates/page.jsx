@@ -1187,7 +1187,7 @@ Renewably UK - Powering Renewables
                           View
                         </button>
                         <button
-                          onClick={() => handleDownloadSingle(cert)}
+                          onClick={() => handleDownload(cert.id)}
                           disabled={downloading}
                           className='flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50'>
                           {downloading ? (

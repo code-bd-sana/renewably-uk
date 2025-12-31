@@ -2,13 +2,16 @@
 
 import logo from "@/public/shared/logo.png";
 import {
+  ChevronDown,
   FileText,
   FolderOpen,
   LayoutDashboard,
   LogOut,
   Menu,
+  Settings,
   Ticket,
   Upload,
+  User,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -21,6 +24,7 @@ function DashboardLayout({ children }) {
   const [userData, setUserData] = useState(null);
   const router = useRouter();
   const pathname = usePathname();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const menuItems = [
     {
@@ -159,6 +163,7 @@ function DashboardLayout({ children }) {
       </aside>
 
       {/* Main Content Area */}
+      {/* Main Content Area */}
       <div className='lg:ml-64 min-h-screen'>
         {/* Header */}
         <header className='bg-white shadow-sm sticky top-0 z-30'>
@@ -173,14 +178,56 @@ function DashboardLayout({ children }) {
                 Welcome Back, {userData.name} 👋
               </h1>
             </div>
-            <div className='flex items-center gap-4'>
-              <div className='text-sm text-gray-600'>
+
+            {/* Profile Dropdown */}
+            <div className='flex items-center gap-4 relative'>
+              <div className='text-sm text-gray-600 hidden sm:block'>
                 {userData.companyName}
               </div>
-              <div className='w-10 h-10 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center'>
-                <span className='text-blue-600 font-semibold'>
-                  {userData.name.charAt(0)}
-                </span>
+              <div className='relative group'>
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className='flex items-center gap-2 hover:bg-gray-50 rounded-lg p-2 transition-colors'>
+                  <div className='w-10 h-10 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center'>
+                    <span className='text-blue-600 font-semibold'>
+                      {userData.name.charAt(0)}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform ${
+                      isProfileOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isProfileOpen && (
+                  <div className='absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50'>
+                    <div className='px-4 py-3 border-b border-gray-100'>
+                      <p className='text-sm font-medium text-gray-900'>
+                        {userData.name}
+                      </p>
+                      <p className='text-xs text-gray-500 mt-1'>
+                        {userData.companyName}
+                      </p>
+                      <p className='text-xs text-gray-500'>{userData.email}</p>
+                    </div>
+                    <div className='py-1'>
+                      <button
+                        onClick={() => {
+                          router.push("/profile");
+                          setIsProfileOpen(false);
+                        }}
+                        className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 flex items-center gap-2'>
+                        <User size={16} />
+                        Profile
+                      </button>
+
+                      <div className='border-t border-gray-100 my-1'></div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
