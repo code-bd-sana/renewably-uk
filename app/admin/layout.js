@@ -76,7 +76,7 @@ export default function AdminLayout({ children }) {
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0
           fixed top-0 left-0
-          w-64 min-w-64 h-screen bg-white border-r border-gray-200
+          w-64 min-w-64 h-screen bg-[#E2E8F0] border-r border-gray-200
           z-40 transition-transform duration-300
           overflow-y-auto 
     md:sticky md:top-0 md:h-screen
