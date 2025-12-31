@@ -1,6 +1,6 @@
 "use client";
 
-import logo2 from "@/public/shared/logo2.png";
+import logo2 from "@/public/shared/logo3.jpg";
 import jsPDF from "jspdf";
 import {
   ChevronLeft,
