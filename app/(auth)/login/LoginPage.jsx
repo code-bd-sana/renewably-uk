@@ -186,7 +186,7 @@ export default function LoginPage() {
           </div>
 
           {/* Right Side - Login Form */}
-          <div className="w-full lg:w-1/2 max-w-md">
+          <div className="w-full lg:w-1/2 max-w-md md:mt-44">
             <div className="space-y-6">
               {/* Email Verified Alert - Only shows when approved */}
               {showVerified && (

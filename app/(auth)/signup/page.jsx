@@ -110,7 +110,7 @@ export default function SignUpPage() {
       </div>
 
       {/* Main Content */}
-      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="min-h-screen flex items-center justify-center px-4 ">
         <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16">
           {/* Left Side */}
           <div className="hidden lg:block w-full lg:w-1/2 max-w-xl">
@@ -210,7 +210,7 @@ export default function SignUpPage() {
           </div>
 
           {/* Right Side - Sign Up Form */}
-          <div className="w-full lg:w-1/2 max-w-md">
+          <div className="w-full lg:w-1/2 max-w-md md:mt-44">
             <div className="space-y-6">
               {/* Sign Up Card */}
               <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
