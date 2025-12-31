@@ -1107,10 +1107,11 @@ export default function AdminDashboard() {
                       <td className='px-6 py-4 whitespace-nowrap text-sm'>
                         <div className='flex gap-2'>
                           <button
-                            onClick={() => handleViewRequest(request)}
+                            onClick={() => handleViewRequest(request.id)}
                             className='p-2 text-gray-600 hover:bg-gray-100 rounded'
                             title='View Details'>
                             <Eye className='w-4 h-4' />
+                            aaaaa
                           </button>
                           <button
                             onClick={() => handleApproveRequest(request.id)}
