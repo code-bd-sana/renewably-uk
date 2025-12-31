@@ -1,5 +1,6 @@
 "use client";
 
+import logo from "@/public/shared/logo.png";
 import {
   FileText,
   FolderOpen,
@@ -10,11 +11,10 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import logo from "@/public/shared/logo.png";
-import Image from "next/image";
 
 function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -123,7 +123,11 @@ function DashboardLayout({ children }) {
         </button>
 
         {/* Logo */}
-        <div className='p-4 border-b'>
+        <div
+          onClick={() => {
+            router.push("/");
+          }}
+          className='p-4 border-b cursor-pointer'>
           <Image src={logo} />
         </div>
 
