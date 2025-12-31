@@ -27,7 +27,17 @@ export default function ManageContractorsPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedContractor, setSelectedContractor] = useState(null);
   const [showContractorModal, setShowContractorModal] = useState(false);
+  const [contractor, setContractor] = useState(null);
+  const [certificates, setCertificates] = useState(null);
   const itemsPerPage = 10;
+
+  console.log(
+    "contractors --->",
+    contractors,
+    "certificat --->",
+    certificates,
+    "ya allah please"
+  );
 
   // Fetch contractors
   const fetchContractors = useCallback(async () => {
@@ -66,6 +76,82 @@ export default function ManageContractorsPage() {
       return [];
     } finally {
       setDocumentsLoading(false);
+    }
+  };
+
+  const fetchData = async (contractorId) => {
+    try {
+      setLoading(true);
+
+      console.log("Fetching data for contractor ID:", contractorId);
+
+      // Fetch contractor details
+      const contractorRes = await fetch(
+        `/api/admin/contractor/${contractorId}`
+      );
+
+      console.log("Contractor response status:", contractorRes.status);
+
+      if (!contractorRes.ok) {
+        throw new Error(`Failed to fetch contractor: ${contractorRes.status}`);
+      }
+
+      const contractorText = await contractorRes.text();
+      console.log(
+        "Contractor response text (first 500 chars):",
+        contractorText.substring(0, 500)
+      );
+
+      if (!contractorText) {
+        throw new Error("Empty response from contractor API");
+      }
+
+      const contractorData = JSON.parse(contractorText);
+
+      if (!contractorData.success) {
+        throw new Error(
+          contractorData.error || "Failed to fetch contractor data"
+        );
+      }
+
+      setContractor(contractorData.contractor);
+
+      // Fetch certificates for this contractor
+      const certsRes = await fetch(
+        `/api/admin/certificates?contractorId=${contractorId}`
+      );
+
+      console.log("Certificates response status:", certsRes);
+
+      if (!certsRes.ok) {
+        throw new Error(`Failed to fetch certificates: ${certsRes.status}`);
+      }
+
+      const certsText = await certsRes.text();
+      console.log(
+        "Certificates response text (first 500 chars):",
+        certsText.substring(0, 500)
+      );
+
+      if (!certsText) {
+        console.warn("Empty response from certificates API, using empty array");
+        setCertificates([]);
+        return;
+      }
+
+      const certsData = JSON.parse(certsText);
+
+      if (certsData.success) {
+        setCertificates(certsData.certificates || []);
+      } else {
+        console.error("Certificates API error:", certsData.error);
+        setCertificates([]);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -142,13 +228,28 @@ export default function ManageContractorsPage() {
   const currentContractors = filteredContractors.slice(startIndex, endIndex);
 
   // Handle download contractor data - Generate certificate PDF
-  const handleDownload = async (contractorId) => {
-    try {
-      const contractor = contractors.find((c) => c.id === contractorId);
-      if (!contractor) {
-        alert("Contractor not found");
-        return;
+  // আপডেটেড handleDownload ফাংশন
+
+  const downloadHandler = async (id) => {
+    await fetchData(id);
+
+    if (!certificates || certificates.length === 0) return;
+
+    // যদি একটাই certificate থাকে
+    if (certificates.length === 1) {
+      await handleDownload(certificates[0]);
+    }
+    // যদি একাধিক certificate থাকে
+    else {
+      for (const certificate of certificates) {
+        await handleDownload(certificate);
       }
+    }
+  };
+
+  const handleDownload = async (certificate) => {
+    try {
+      // Find the certificate
 
       // Create PDF with large size to fit everything
       const doc = new jsPDF({
@@ -175,20 +276,20 @@ export default function ManageContractorsPage() {
       doc.rect(margin, yPos, contentWidth, pageHeight - margin * 2, "F");
       doc.rect(margin, yPos, contentWidth, pageHeight - margin * 2, "S");
 
-      yPos += 8; // কম padding
+      yPos += 8;
 
       // Page Title
       doc.setFontSize(16);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "normal");
 
-      yPos += 12; // কম padding
+      yPos += 12;
 
       // Divider
       doc.setDrawColor(229, 231, 235);
       doc.line(margin + 10, yPos, pageWidth - margin - 10, yPos);
 
-      yPos += 15; // কম padding
+      yPos += 15;
 
       // Main Header
       doc.setFontSize(28);
@@ -198,7 +299,7 @@ export default function ManageContractorsPage() {
         align: "center",
       });
 
-      yPos += 8; // কম padding
+      yPos += 8;
 
       doc.setFontSize(16);
       doc.setTextColor(15, 71, 168);
@@ -211,27 +312,27 @@ export default function ManageContractorsPage() {
       doc.setFontSize(10);
       doc.setTextColor(150, 150, 150);
 
-      yPos += 15; // কম padding
+      yPos += 15;
 
       // Cover Section
       doc.setFillColor(240, 247, 255);
-      const coverHeight = 40; // কম height
+      const coverHeight = 40;
       doc.rect(margin + 10, yPos, contentWidth - 20, coverHeight, "F");
 
       doc.setFontSize(14);
       doc.setTextColor(15, 71, 168);
       doc.setFont("helvetica", "bold");
-      doc.text("Cover Option", margin + 20, yPos + 12); // কম padding
+      doc.text("Cover Option", margin + 20, yPos + 12);
 
       doc.setFontSize(14);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "medium");
-      doc.text("Insurance Backed Guarantee", margin + 20, yPos + 20); // কম padding
+      doc.text("Insurance Backed Guarantee", margin + 20, yPos + 20);
 
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
-      const policyNumber = `BDIGWE${contractorId.slice(0, 6).toUpperCase()}`;
-      doc.text(`Policy Number: ${policyNumber}`, margin + 20, yPos + 28); // কম padding
+      const policyNumber = `BDIGWE${certificateId.slice(0, 6).toUpperCase()}`;
+      doc.text(`Policy Number: ${policyNumber}`, margin + 20, yPos + 28);
 
       doc.setFontSize(10);
       doc.setTextColor(156, 163, 175);
@@ -241,30 +342,30 @@ export default function ManageContractorsPage() {
         yPos + 34
       );
 
-      yPos += 46; // কম spacing
+      yPos += 46;
 
       // Two Column Section
       const columnWidth = (contentWidth - 30) / 2;
 
       // Left Column - Agent/Broker
-      const colHeight = 40; // কম height
+      const colHeight = 40;
       doc.setFillColor(249, 250, 251);
       doc.rect(margin + 10, yPos, columnWidth, colHeight, "F");
 
       doc.setFontSize(14);
       doc.setTextColor(15, 71, 168);
       doc.setFont("helvetica", "bold");
-      doc.text("Agent/Broker", margin + 20, yPos + 12); // কম padding
+      doc.text("Agent/Broker", margin + 20, yPos + 12);
 
       doc.setFontSize(10);
       doc.setTextColor(156, 163, 175);
-      doc.text("SERVICES", margin + 20, yPos + 22); // কম padding
+      doc.text("SERVICES", margin + 20, yPos + 22);
 
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
       const agentAddress = "The Mill Suite, Hardmans Business Centre";
-      const agentLines = doc.splitTextToSize(agentAddress, columnWidth - 30); // কম width
-      doc.text(agentLines, margin + 20, yPos + 32); // কম padding
+      const agentLines = doc.splitTextToSize(agentAddress, columnWidth - 30);
+      doc.text(agentLines, margin + 20, yPos + 32);
 
       // Right Column - Installation Contractor
       doc.setFillColor(249, 250, 251);
@@ -273,54 +374,57 @@ export default function ManageContractorsPage() {
       doc.setFontSize(14);
       doc.setTextColor(15, 71, 168);
       doc.setFont("helvetica", "bold");
-      doc.text("Installation Contractor", margin + 30 + columnWidth, yPos + 12); // কম padding
+      doc.text("Installation Contractor", margin + 30 + columnWidth, yPos + 12);
 
-      doc.setFontSize(16); // কম font size
+      doc.setFontSize(16);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "bold");
       const companyName =
-        contractor.companyName || "North West Energy Grants Ltd";
+        contractor?.companyName || "North West Energy Grants Ltd";
       const companyLines = doc.splitTextToSize(companyName, columnWidth - 25);
-      doc.text(companyLines, margin + 30 + columnWidth, yPos + 20); // কম padding
+      doc.text(companyLines, margin + 30 + columnWidth, yPos + 20);
 
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
       const address =
-        contractor.address || "2464 Royal Ln. Mesa, New Jersey 45463";
+        contractor?.address || "2464 Royal Ln. Mesa, New Jersey 45463";
       const addressLines = doc.splitTextToSize(address, columnWidth - 35);
-      doc.text(addressLines, margin + 30 + columnWidth, yPos + 30); // কম padding
+      doc.text(addressLines, margin + 30 + columnWidth, yPos + 30);
 
-      yPos += 50; // কম spacing
+      yPos += 50;
 
       // Insured/Policyholder Details
-      const insuredHeight = 100; // কম height
+      const insuredHeight = 100;
       doc.setFillColor(249, 250, 251);
       doc.rect(margin + 10, yPos, contentWidth - 20, insuredHeight, "F");
 
       doc.setFontSize(14);
       doc.setTextColor(15, 71, 168);
       doc.setFont("helvetica", "bold");
-      doc.text("Insured / Policyholder Details", margin + 20, yPos + 12); // কম padding
+      doc.text("Insured / Policyholder Details", margin + 20, yPos + 12);
 
       // Row 1: Name & Inception Date
       doc.setFontSize(12);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "bold");
-      doc.text("Name", margin + 20, yPos + 20); // কম padding
+      doc.text("Name", margin + 20, yPos + 20);
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
       doc.setFont("helvetica", "normal");
-      doc.text(contractor.name || "Mr Leslie Corcoran", margin + 20, yPos + 30); // কম padding
+      doc.text(
+        certificate.holderName || "Mr Leslie Corcoran",
+        margin + 20,
+        yPos + 30
+      );
 
       doc.setFontSize(12);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "bold");
       doc.text("Inception Date", margin + 20 + columnWidth + 10, yPos + 20);
-      const inceptionDate = new Date();
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
       doc.text(
-        inceptionDate.toISOString().split("T")[0],
+        certificate.inceptionDate || new Date().toISOString().split("T")[0],
         margin + 20 + columnWidth + 10,
         yPos + 30
       );
@@ -329,27 +433,28 @@ export default function ManageContractorsPage() {
       doc.setFontSize(12);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "bold");
-      doc.text("Address", margin + 20, yPos + 40); // কম padding
+      doc.text("Address", margin + 20, yPos + 40);
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
       const insuredAddress =
-        contractor.address || "Shadyview Gn, Richardson, California 62639";
+        certificate.address || "Shadyview Gn, Richardson, California 62639";
       const insuredAddrLines = doc.splitTextToSize(
         insuredAddress,
         columnWidth - 15
       );
-      doc.text(insuredAddrLines, margin + 20, yPos + 48); // কম padding
+      doc.text(insuredAddrLines, margin + 20, yPos + 48);
 
       doc.setFontSize(12);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "bold");
       doc.text("Expiry Date", margin + 20 + columnWidth + 10, yPos + 40);
-      const expiryDate = new Date();
-      expiryDate.setFullYear(expiryDate.getFullYear() + 2);
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
       doc.text(
-        expiryDate.toISOString().split("T")[0],
+        certificate.expiryDate ||
+          new Date(new Date().setFullYear(new Date().getFullYear() + 2))
+            .toISOString()
+            .split("T")[0],
         margin + 20 + columnWidth + 10,
         yPos + 48
       );
@@ -358,20 +463,28 @@ export default function ManageContractorsPage() {
       doc.setFontSize(12);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "bold");
-      doc.text("Type of Installation", margin + 20, yPos + 60); // কম padding
+      doc.text("Type of Installation", margin + 20, yPos + 60);
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
-      doc.text("Gas-Fired Condensing Boiler", margin + 20, yPos + 70); // কম padding
+      doc.text(
+        certificate.productType || "Gas-Fired Condensing Boiler",
+        margin + 20,
+        yPos + 70
+      );
 
       doc.setFontSize(12);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "bold");
       doc.text("Premium", margin + 20 + columnWidth + 10, yPos + 60);
-      doc.setFontSize(24); // কম font size
+      doc.setFontSize(24);
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "bold");
-      doc.text("£19.04", margin + 20 + columnWidth + 10, yPos + 70); // কম padding
-      doc.setFontSize(9); // কম font size
+      doc.text(
+        certificate.price || "£19.04",
+        margin + 20 + columnWidth + 10,
+        yPos + 70
+      );
+      doc.setFontSize(9);
       doc.setTextColor(156, 163, 175);
       doc.setFont("helvetica", "normal");
       doc.text(
@@ -380,17 +493,17 @@ export default function ManageContractorsPage() {
         yPos + 78
       );
 
-      yPos += 105; // কম spacing
+      yPos += 105;
 
       // Scheme Information
       doc.setFillColor(249, 250, 251);
-      const schemeHeight = 50; // কম height
+      const schemeHeight = 50;
       doc.rect(margin + 10, yPos, contentWidth - 20, schemeHeight, "F");
 
       doc.setFontSize(14);
       doc.setTextColor(15, 71, 168);
       doc.setFont("helvetica", "bold");
-      doc.text("Scheme Information", margin + 20, yPos + 12); // কম padding
+      doc.text("Scheme Information", margin + 20, yPos + 12);
 
       const schemeItems = [
         { label: "Retrofit Assessor", value: "Savannah Nguyen" },
@@ -402,8 +515,8 @@ export default function ManageContractorsPage() {
       // Calculate positions for 2x2 grid
       const schemeCol1X = margin + 20;
       const schemeCol2X = margin + 20 + columnWidth + 10;
-      const schemeRow1Y = yPos + 20; // কম padding
-      const schemeRow2Y = yPos + 36; // কম padding
+      const schemeRow1Y = yPos + 20;
+      const schemeRow2Y = yPos + 36;
 
       // Row 1, Col 1
       doc.setFontSize(12);
@@ -413,7 +526,7 @@ export default function ManageContractorsPage() {
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
       doc.setFont("helvetica", "normal");
-      doc.text(schemeItems[0].value, schemeCol1X, schemeRow1Y + 7); // কম padding
+      doc.text(schemeItems[0].value, schemeCol1X, schemeRow1Y + 7);
 
       // Row 1, Col 2
       doc.setFontSize(12);
@@ -445,26 +558,26 @@ export default function ManageContractorsPage() {
       doc.setFont("helvetica", "normal");
       doc.text(schemeItems[3].value, schemeCol2X, schemeRow2Y + 7);
 
-      yPos += 60; // কম spacing
+      yPos += 60;
 
       // Information Text
       doc.setFillColor(255, 251, 239);
-      const infoHeight = 46; // কম height
+      const infoHeight = 46;
       doc.rect(margin + 10, yPos, contentWidth - 20, infoHeight, "F");
 
       // First paragraph
-      doc.setFontSize(10); // কম font size
+      doc.setFontSize(10);
       doc.setTextColor(75, 85, 99);
       const para1 =
         "This document includes information provided to us. It shows you who is insured, the period of insurance, the level of cover, and the premium paid. This policy is made up of this document, the IBG and the Policy Wording documents. These documents can be found at:";
       const para1Lines = doc.splitTextToSize(para1, contentWidth - 40);
-      doc.text(para1Lines, margin + 20, yPos + 15); // কম padding
+      doc.text(para1Lines, margin + 20, yPos + 15);
 
-      const para1Height = para1Lines.length * 3.5; // কম line height
+      const para1Height = para1Lines.length * 3.5;
 
       // Website URL
       doc.setTextColor(15, 71, 168);
-      doc.setFontSize(10); // কম font size
+      doc.setFontSize(10);
       doc.text(
         "www.bluedropservices.co.uk/Insurance-Backed-Guarantee",
         margin + 20,
@@ -478,7 +591,7 @@ export default function ManageContractorsPage() {
       const para2Lines = doc.splitTextToSize(para2, contentWidth - 40);
       doc.text(para2Lines, margin + 20, yPos + para1Height + 30);
 
-      yPos += 60; // কম spacing
+      yPos += 60;
 
       // Insurer Section
       doc.setFontSize(16);
@@ -490,52 +603,49 @@ export default function ManageContractorsPage() {
         yPos
       );
 
-      yPos += 16; // কম spacing
+      yPos += 16;
 
       // Phone section
-      doc.setFontSize(20); // কম font size
+      doc.setFontSize(20);
       doc.setTextColor(15, 71, 168);
       doc.text("", margin + 20, yPos);
 
-      doc.setFontSize(10); // কম font size
+      doc.setFontSize(10);
       doc.setTextColor(107, 114, 128);
       doc.setFont("helvetica", "normal");
       doc.text("Claims Line", margin + 40, yPos - 3);
 
-      doc.setFontSize(13); // কম font size
+      doc.setFontSize(13);
       doc.setTextColor(31, 41, 55);
       doc.text("01760 658687", margin + 40, yPos + 4);
 
       // Email section
-      doc.setFontSize(20); // কম font size
+      doc.setFontSize(20);
       doc.setTextColor(15, 71, 168);
       doc.text("", margin + 140, yPos);
 
-      doc.setFontSize(10); // কম font size
+      doc.setFontSize(10);
       doc.setTextColor(107, 114, 128);
       doc.setFont("helvetica", "normal");
       doc.text("Claims Email", margin + 160, yPos - 3);
 
-      doc.setFontSize(13); // কম font size
+      doc.setFontSize(13);
       doc.setTextColor(31, 41, 55);
       doc.text("claims@bluedropservices.co.uk", margin + 160, yPos + 4);
 
-      yPos += 25; // কম spacing
+      yPos += 25;
 
       // Verified & Authenticated Certificate
       doc.setFillColor(220, 252, 231);
       doc.setTextColor(21, 128, 61);
 
-      const badgeWidth = 120; // কম width
-      const badgeHeight = 12; // কম height
+      const badgeWidth = 120;
+      const badgeHeight = 12;
       const badgeX = (pageWidth - badgeWidth) / 2;
       doc.rect(badgeX, yPos, badgeWidth, badgeHeight, "F");
 
-      // Checkmark
-      doc.setFontSize(20); // কম font size
-
       // Text
-      doc.setFontSize(14); // কম font size
+      doc.setFontSize(14);
       doc.setFont("helvetica", "medium");
       doc.text(
         "Verified & Authenticated Certificate",
@@ -548,7 +658,7 @@ export default function ManageContractorsPage() {
       doc.setFillColor(37, 99, 235);
       doc.rect(margin, footerY, contentWidth, 15, "F");
 
-      doc.setFontSize(10); // কম font size
+      doc.setFontSize(10);
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "normal");
       doc.text(
@@ -566,14 +676,53 @@ export default function ManageContractorsPage() {
       );
 
       // Save the PDF
-      const fileName = `certificate-${companyName.replace(
-        /\s+/g,
-        "-"
-      )}-${Date.now()}.pdf`;
+      const fileName = `certificate-${
+        certificate.holderName?.replace(/\s+/g, "-") || "certificate"
+      }-${Date.now()}.pdf`;
       doc.save(fileName);
     } catch (error) {
       console.error("PDF generation error:", error);
       alert("Failed to generate certificate. Please try again.");
+    }
+  };
+
+  // আরো গুরুত্বপূর্ণ - handleDownloadSelected ফাংশন ঠিক করুন
+  const handleDownloadSelected = async () => {
+    if (selectedRows.length === 0) {
+      alert("Please select certificates to download");
+      return;
+    }
+
+    try {
+      setDownloadingAll(true);
+      const selectedCerts = certificates.filter((cert) =>
+        selectedRows.includes(cert.id)
+      );
+
+      // প্রতিটি সিলেক্টেড সার্টিফিকেটের জন্য ডাউনলোড করুন
+      for (const cert of selectedCerts) {
+        await handleDownload(cert.id);
+        // প্রতিটি ডাউনলোডের মধ্যে 500ms ডিলে
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download certificates");
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
+
+  // handleDownloadSingle ফাংশন আপডেট করুন
+  const handleDownloadSingle = async (certificate) => {
+    try {
+      setDownloading(true);
+      await handleDownload(certificate.id);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download certificate");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -1030,7 +1179,7 @@ export default function ManageContractorsPage() {
                           <Eye className='w-5 h-5' />
                         </button>
                         <button
-                          onClick={() => handleDownload(contractor.id)}
+                          onClick={() => downloadHandler(contractor.id)}
                           className='text-green-600 hover:text-green-800 transition-colors p-1'
                           title='Download Data'>
                           <Download className='w-5 h-5' />
