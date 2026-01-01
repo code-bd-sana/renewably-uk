@@ -13,6 +13,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -947,7 +948,130 @@ export default function ManageContractorsPage() {
             <div className='p-6'>
               {/* Details Grid */}
               <div className='space-y-4'>
-                {/* ... existing contractor details ... */}
+                <div className='space-y-4'>
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Create Account Date
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      {formatDate(selectedContractor.createdAt)}
+                    </div>
+                  </div>
+
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Contractor Name
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      <Link
+                        href={`/admin/manage-contractors/${selectedContractor.id}`}
+                        className='text-blue-600 hover:text-blue-800 hover:underline transition-colors'
+                        target='_blank'>
+                        {selectedContractor.name || "N/A"}
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Company Name
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      {selectedContractor.companyName || "N/A"}
+                    </div>
+                  </div>
+
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Company Address
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      {selectedContractor.address || "N/A"}
+                    </div>
+                  </div>
+
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Phone Number
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      {selectedContractor.phone || "N/A"}
+                    </div>
+                  </div>
+
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Email Address
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      <a
+                        href={`mailto:${selectedContractor.email}`}
+                        className='text-blue-600 hover:text-blue-800 hover:underline'>
+                        {selectedContractor.email}
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Additional Stats - Replace with real API data */}
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Total Certificate
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      {getContractorStats(selectedContractor).totalCertificates}
+                    </div>
+                  </div>
+
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Pending Edit Request
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      {
+                        getContractorStats(selectedContractor)
+                          .pendingEditRequests
+                      }
+                    </div>
+                  </div>
+
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Last Certificate Generated
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      {formatDate(
+                        getContractorStats(selectedContractor)
+                          .lastCertificateDate
+                      )}
+                    </div>
+                  </div>
+
+                  <div className='flex justify-between items-start py-3'>
+                    <div className='text-sm font-medium text-gray-700'>
+                      Documents
+                    </div>
+                    <div className='text-sm text-gray-900 text-right'>
+                      <div className='space-y-1'>
+                        {getContractorDocuments(selectedContractor).map(
+                          (doc, index) => (
+                            <div
+                              key={index}
+                              className='flex items-center justify-end gap-1'>
+                              <a
+                                href={`/api/admin/documents/${doc.id}`}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                className='text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1'>
+                                <FileText className='w-3 h-3' />
+                                <span>files:{doc.id}</span>
+                              </a>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Documents Section */}
                 <div className='pt-4 border-t border-gray-100'>

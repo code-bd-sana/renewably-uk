@@ -607,7 +607,6 @@ export default function CertificatesPage() {
     }
   };
 
-  // আপডেটেড ফাংশন:
   const handleDownloadSelected = async () => {
     if (selectedRows.length === 0) {
       alert("Please select certificates to download");
@@ -620,10 +619,8 @@ export default function CertificatesPage() {
         selectedRows.includes(cert.id)
       );
 
-      // প্রতিটি সিলেক্টেড সার্টিফিকেটের জন্য handleDownload কল করুন
       for (const cert of selectedCerts) {
-        await handleDownload(cert.id); // এখানে সার্টিফিকেটের ID পাঠানো হচ্ছে
-        // প্রতিটি ডাউনলোডের মধ্যে 100ms ডিলে
+        await handleDownload(cert.id);
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     } catch (error) {

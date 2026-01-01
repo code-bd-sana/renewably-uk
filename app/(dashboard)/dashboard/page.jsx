@@ -1,5 +1,6 @@
 "use client";
 
+import bluedrop from "@/public/shared/bluedrop.jpg";
 import logo2 from "@/public/shared/logo3.jpg";
 import jsPDF from "jspdf";
 import {
@@ -591,11 +592,11 @@ function DashboardPage() {
   }
 
   return (
-    <main className='p-4 lg:p-6'>
+    <main className='p-4 lg:p-6 bg-[#FAFAF9]'>
       {/* Blue Banner */}
       <div className='bg-[#0F47A8] text-white p-6 rounded-lg mb-6 flex items-center justify-between'>
-        <h2 className='text-2xl font-bold'>RENEWABLY UK</h2>
-        <div className='w-16 h-16 bg-white bg-opacity-20 rounded flex items-center justify-center'>
+        <h2 className='text-2xl font-semibold'>RENEWABLY UK</h2>
+        <div className='w-16 h-16   rounded flex items-center justify-center'>
           <div>
             <Image src={logo2} />
           </div>
@@ -606,7 +607,9 @@ function DashboardPage() {
       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6'>
         <div className='bg-white p-4 rounded-lg shadow-sm'>
           <div className='flex items-center justify-between mb-2'>
-            <h3 className='text-2xl font-bold'>{stats.totalCertificates}</h3>
+            <h3 className='text-2xl font-bold font-mono '>
+              {stats.totalCertificates}
+            </h3>
             <div className='w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center'>
               <svg
                 className='w-5 h-5 text-blue-600'
@@ -622,12 +625,14 @@ function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className='text-sm text-gray-600'>Total Certificates</p>
+          <p className='text-sm text-[#6B7280] font-sans '>
+            Total Certificates
+          </p>
         </div>
 
         <div className='bg-white p-4 rounded-lg shadow-sm'>
           <div className='flex items-center justify-between mb-2'>
-            <h3 className='text-2xl font-bold'>
+            <h3 className='text-2xl font-bold font-mono'>
               {stats.thisMonthCertificates}
             </h3>
             <div className='w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center'>
@@ -645,12 +650,14 @@ function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className='text-sm text-gray-600'>This Month</p>
+          <p className='text-sm text-[#6B7280] font-sans'>This Month</p>
         </div>
 
         <div className='bg-white p-4 rounded-lg shadow-sm'>
           <div className='flex items-center justify-between mb-2'>
-            <h3 className='text-2xl font-bold'>{stats.accountBalance}</h3>
+            <h3 className='text-2xl font-semibold font-mono'>
+              {stats.accountBalance}
+            </h3>
             <div className='w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center'>
               <svg
                 className='w-5 h-5 text-blue-600'
@@ -666,12 +673,14 @@ function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className='text-sm text-gray-600'>Account Balance</p>
+          <p className='text-sm text-[#6B7280] font-sans'>Account Balance</p>
         </div>
 
         <div className='bg-white p-4 rounded-lg shadow-sm'>
           <div className='flex items-center justify-between mb-2'>
-            <h3 className='text-2xl font-bold'>{stats.editPending}</h3>
+            <h3 className='text-2xl font-bold font-mono'>
+              {stats.editPending}
+            </h3>
             <div className='w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center'>
               <svg
                 className='w-5 h-5 text-blue-600'
@@ -687,29 +696,23 @@ function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className='text-sm text-gray-600'>Edit Pending</p>
+          <p className='text-sm text-[#6B7280] font-sans'>Edit Pending</p>
         </div>
       </div>
 
       {/* Bluedrop Services Logo */}
-      <div className='mb-6'>
-        <div className='inline-flex items-center gap-2'>
-          <div className='w-10 h-10 bg-blue-500 rounded-full'></div>
-          <span className='font-bold text-xl'>
-            BLUE<span className='text-blue-500'>DROP</span>
-          </span>
-          <span className='text-xs text-gray-500 ml-2'>SERVICES</span>
-        </div>
-      </div>
 
       {/* Certificates Table */}
-      <div className='bg-white rounded-lg shadow-sm overflow-hidden'>
-        <div className='p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
-          <h3 className='font-semibold text-lg'>
+      <div className='bg-[#FFFFFF] pb-12 border border-gray-200 rounded-xl  overflow-hidden'>
+        <div className='mb-6 px-4 mt-4'>
+          <Image src={bluedrop} height={150} width={192} />
+        </div>
+        <div className='px-6 pb-4 text-[#262626]  font-medium flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
+          <h3 className='font-semibold font-sans text-[28px]'>
             Recent Insurance Backed Guarantee Certificates
-            <span className='text-sm font-normal text-gray-600 ml-2'>
+            {/* <span className='text-sm font-normal text-gray-600 ml-2'>
               ({filteredCertificates.length} certificates)
-            </span>
+            </span> */}
           </h3>
           <div className='relative w-full sm:w-64'>
             <Search
@@ -788,73 +791,79 @@ function DashboardPage() {
             </div>
 
             {/* Desktop Table View */}
-            <div className='hidden border-b border-t border-gray-200 md:block overflow-x-auto'>
-              <table className='w-full'>
-                <thead className='bg-gray-50'>
+            <div className='hidden border-b  border-t mt-4  md:block  mx-6 border border-gray-200 overflow-x-auto'>
+              <table className='w-full '>
+                <thead className='bg-[#FAFAF9] border-b border-gray-200'>
                   <tr>
-                    <th className='px-4 py-3 text-left text-xs font-medium text-gray-600'>
+                    <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Policy No
                     </th>
-                    <th className='px-4 py-3 text-left text-xs font-medium text-gray-600'>
+                    <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Policy Holder Name
                     </th>
-                    <th className='px-4 py-3 text-left text-xs font-medium text-gray-600'>
+                    <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Product Type
                     </th>
-                    <th className='px-4 py-3 text-left text-xs font-medium text-gray-600'>
+                    <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Contract Value
                     </th>
-                    <th className='px-4 py-3 text-left text-xs font-medium text-gray-600'>
+                    <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Inception Date
                     </th>
-                    <th className='px-4 py-3 text-left text-xs font-medium text-gray-600'>
+                    <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Expiry Date
                     </th>
-                    <th className='px-4 py-3 text-left text-xs font-medium text-gray-600'>
+                    <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Transaction Type
                     </th>
-                    <th className='px-4 py-3 text-left text-xs font-medium text-gray-600'>
+                    <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Price
                     </th>
-                    <th className='px-4 py-3 text-left text-xs font-medium text-gray-600'>
+                    <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Action
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className='bg-[#FFFFFF] '>
                   {paginatedCertificates.map((cert, index) => (
                     <tr
                       key={index}
                       className='border-b border-gray-200 hover:bg-gray-50'>
-                      <td className='px-4 py-3 text-sm'>{cert.policyNo}</td>
-                      <td className='px-4 py-3 text-sm'>{cert.holderName}</td>
-                      <td className='px-4 py-3 text-sm'>
+                      <td className='px-4 py-3 text-sm font-mono text-[#030712]'>
+                        {cert.policyNo}
+                      </td>
+                      <td className='px-4 py-3 text-sm font-normal font-sans text-[#6B7280]'>
+                        {cert.holderName}
+                      </td>
+                      <td className='px-4 py-3 text-sm font-normal font-sans text-[#6B7280]'>
                         {cert.productType || cert.measureType}
                       </td>
-                      <td className='px-4 py-3 text-sm'>
+                      <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
                         {cert.contractValue}
                       </td>
-                      <td className='px-4 py-3 text-sm'>
+                      <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
                         {cert.inceptionDate}
                       </td>
-                      <td className='px-4 py-3 text-sm'>{cert.expiryDate}</td>
-                      <td className='px-4 py-3 text-sm'>
+                      <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
+                        {cert.expiryDate}
+                      </td>
+                      <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-sans'>
                         {cert.transactionType}
                       </td>
-                      <td className='px-4 py-3 text-sm font-semibold'>
+                      <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
                         {cert.price}
                       </td>
                       <td className='px-4 py-3 text-sm'>
                         <div className='flex gap-2'>
                           <button
                             onClick={() => handleViewCertificate(cert)}
-                            className='p-2 hover:bg-gray-100 rounded'>
+                            className='p-2 hover:bg-gray-100 cursor-pointer rounded'>
                             <Eye size={18} className='text-blue-600' />
                           </button>
                           <button
                             onClick={() => handleDownloadCertificate(cert.id)}
                             disabled={downloading}
-                            className='p-2 hover:bg-gray-100 rounded disabled:opacity-50'>
+                            className='p-2 hover:bg-gray-100 cursor-pointer rounded disabled:opacity-50'>
                             {downloading ? (
                               <Loader2
                                 size={18}
