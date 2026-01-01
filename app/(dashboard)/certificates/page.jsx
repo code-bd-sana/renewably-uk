@@ -2,7 +2,6 @@
 
 import bluedrop from "@/public/shared/bluedrop.jpg";
 import { downloadPdf, generateCertificatePDF } from "@/utils/pdfGenerator";
-import jsPDF from "jspdf";
 import {
   Check,
   ChevronDown,
@@ -745,7 +744,7 @@ Renewably UK - Powering Renewables
                         <div className='flex gap-2'>
                           <button
                             onClick={() => handleViewCertificate(cert)}
-                            className='flex-1 bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-blue-700 transition-colors'>
+                            className='flex-1 bg-[#0F47A8] text-white py-2 rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-blue-700 transition-colors'>
                             <Eye size={16} />
                             View
                           </button>
