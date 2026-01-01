@@ -1,5 +1,6 @@
 "use client";
 
+import bluedrop from "@/public/shared/bluedrop2.png";
 import {
   Check,
   ChevronLeft,
@@ -8,6 +9,7 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
@@ -671,7 +673,7 @@ export default function CreateInsuranceForm() {
   };
 
   return (
-    <main className='p-4 lg:p-6 max-w-7xl mx-auto'>
+    <main className='p-4 sans lg:p-6 max-w-[1820px] mx-auto'>
       <Toaster
         toastOptions={{
           duration: 4000,
@@ -698,12 +700,8 @@ export default function CreateInsuranceForm() {
       />
       {/* Logo */}
       <div className='mb-6'>
-        <div className='inline-flex items-center gap-2'>
-          <div className='w-10 h-10 bg-blue-500 rounded-full'></div>
-          <span className='font-bold text-xl'>
-            BLUE<span className='text-blue-500'>DROP</span>
-          </span>
-          <span className='text-xs text-gray-500 ml-2'>SERVICES</span>
+        <div className='mb-6 px-4 mt-4'>
+          <Image src={bluedrop} height={150} width={192} />
         </div>
       </div>
 
@@ -716,9 +714,9 @@ export default function CreateInsuranceForm() {
 
       <form onSubmit={handleSubmit}>
         {/* Contractor Details */}
-        <div className='bg-white rounded-lg shadow-sm p-6 mb-6'>
+        <div className='bg-white border border-gray-200 rounded-lg  p-6 mb-6'>
           <h2 className='text-lg font-semibold mb-4'>Contractor Details</h2>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+          <div className='grid grid-cols-1  md:grid-cols-2 gap-6'>
             <div>
               <label className='block text-sm font-medium mb-2'>
                 Contractor Name
@@ -738,14 +736,13 @@ export default function CreateInsuranceForm() {
                 type='text'
                 value={formData.contractorAddress || "Not provided"}
                 className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
-                readOnly
               />
             </div>
           </div>
         </div>
 
         {/* Policy Holder Details */}
-        <div className='bg-white rounded-lg shadow-sm p-6 mb-6'>
+        <div className='bg-white rounded-lg border border-gray-200  p-6 mb-6'>
           <h2 className='text-lg font-semibold mb-4'>Policy Holder Details</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div>
@@ -844,13 +841,11 @@ export default function CreateInsuranceForm() {
         </div>
 
         {/* Product Details */}
-        <div className='bg-white rounded-lg shadow-sm p-6 mb-6'>
+        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6'>
           <h2 className='text-lg font-semibold mb-4'>Product Details</h2>
 
           {formData.products.map((product, index) => (
-            <div
-              key={product.id}
-              className='mb-6 p-4 border border-gray-200 rounded-lg'>
+            <div key={product.id} className='mb-6 py-4  rounded-lg'>
               <div className='flex justify-between items-center mb-4'>
                 <h3 className='font-medium'>Product {index + 1}</h3>
                 {formData.products.length > 1 && (
@@ -1006,14 +1001,14 @@ export default function CreateInsuranceForm() {
           <button
             type='button'
             onClick={addProduct}
-            className='text-blue-600 flex items-center gap-2 text-sm font-medium hover:text-blue-700'>
+            className='text-[#0F47A8] ml-auto flex items-center gap-2 text-sm font-medium hover:text-blue-700'>
             <Plus size={18} />
             Add Product
           </button>
         </div>
 
         {/* Compliance and Submission */}
-        <div className='bg-white rounded-lg shadow-sm p-6 mb-6'>
+        <div className='bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6'>
           <h2 className='text-lg font-semibold mb-4'>
             Compliance and Submission
           </h2>
