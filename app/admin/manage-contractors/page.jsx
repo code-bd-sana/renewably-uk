@@ -29,6 +29,7 @@ export default function ManageContractorsPage() {
   const [showContractorModal, setShowContractorModal] = useState(false);
   const [contractor, setContractor] = useState(null);
   const [certificates, setCertificates] = useState(null);
+  const [loader2, setLoader2] = useState(false);
   const itemsPerPage = 10;
 
   console.log(
@@ -230,20 +231,71 @@ export default function ManageContractorsPage() {
   // Handle download contractor data - Generate certificate PDF
   // আপডেটেড handleDownload ফাংশন
 
-  const downloadHandler = async (id) => {
-    await fetchData(id);
+  const downloadHandler = async (contractorId) => {
+    setLoader2(true);
+    try {
+      // Fetch contractor details
+      const contractorRes = await fetch(
+        `/api/admin/contractor/${contractorId}`
+      );
 
-    if (!certificates || certificates.length === 0) return;
-
-    // যদি একটাই certificate থাকে
-    if (certificates.length === 1) {
-      await handleDownload(certificates[0]);
-    }
-    // যদি একাধিক certificate থাকে
-    else {
-      for (const certificate of certificates) {
-        await handleDownload(certificate);
+      if (!contractorRes.ok) {
+        throw new Error(`Failed to fetch contractor: ${contractorRes.status}`);
+        setLoader2(false);
       }
+
+      const contractorData = await contractorRes.json();
+
+      if (!contractorData.success) {
+        throw new Error(
+          contractorData.error || "Failed to fetch contractor data"
+        );
+        setLoader2(false);
+      }
+
+      // Fetch certificates for this contractor
+      const certsRes = await fetch(
+        `/api/admin/certificates?contractorId=${contractorId}`
+      );
+      setLoader2(false);
+
+      if (!certsRes.ok) {
+        throw new Error(`Failed to fetch certificates: ${certsRes.status}`);
+        setLoader2(false);
+      }
+
+      const certsData = await certsRes.json();
+
+      if (
+        certsData.success &&
+        certsData.certificates &&
+        certsData.certificates.length > 0
+      ) {
+        // যদি একটাই certificate থাকে
+        if (certsData.certificates.length === 1) {
+          await handleDownload(certsData.certificates[0]);
+          setLoader2(false);
+        }
+        // যদি একাধিক certificate থাকে
+        else {
+          // প্রতিটি certificate এর জন্য একেকটা PDF generate করুন
+          for (const certificate of certsData.certificates) {
+            await handleDownload(certificate);
+            // প্রতিটি ডাউনলোডের মধ্যে সামান্য ডিলে (optional)
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            setLoader2(false);
+          }
+        }
+      } else {
+        alert("No certificates found for this contractor");
+        setLoader2(false);
+      }
+    } catch (error) {
+      console.error("Download error:", error);
+      alert(`Error: ${error.message}`);
+      setLoader2(false);
+    } finally {
+      setLoader2(false);
     }
   };
 
@@ -331,7 +383,7 @@ export default function ManageContractorsPage() {
 
       doc.setFontSize(12);
       doc.setTextColor(75, 85, 99);
-      const policyNumber = `BDIGWE${certificateId.slice(0, 6).toUpperCase()}`;
+      const policyNumber = `BDIGWE${certificate?.policyNumber}`;
       doc.text(`Policy Number: ${policyNumber}`, margin + 20, yPos + 28);
 
       doc.setFontSize(10);
@@ -758,6 +810,50 @@ export default function ManageContractorsPage() {
     return (
       <div className='flex items-center justify-center min-h-screen'>
         <div className='text-blue-600 text-lg'>Loading contractors...</div>
+      </div>
+    );
+  }
+
+  if (loader2) {
+    return (
+      <div className='fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center'>
+        <div className='bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4'>
+          <div className='text-center'>
+            {/* Simple Spinner */}
+            <div className='relative w-20 h-20 mx-auto mb-6'>
+              <Loader2 className='w-20 h-20 text-blue-600 animate-spin' />
+            </div>
+
+            {/* Simple Text */}
+            <h3 className='text-xl font-bold text-gray-800 mb-3'>
+              Downloading Certificates
+            </h3>
+
+            {/* Simple Progress Steps */}
+            <div className='space-y-4 mb-6'>
+              <div className='flex items-center gap-3'>
+                <div className='w-2 h-2 bg-blue-600 rounded-full'></div>
+                <span className='text-gray-700'>Downloading data...</span>
+              </div>
+              <div className='flex items-center gap-3'>
+                <div className='w-2 h-2 bg-blue-600 rounded-full'></div>
+                <span className='text-gray-700'>Processing files...</span>
+              </div>
+              <div className='flex items-center gap-3'>
+                <div className='w-2 h-2 bg-blue-600 rounded-full animate-pulse'></div>
+                <span className='text-gray-700'>Scanning for errors...</span>
+              </div>
+            </div>
+
+            {/* Simple Progress Bar */}
+
+            {/* Simple Message */}
+            <p className='text-gray-500 text-sm'>
+              Please wait while we prepare your certificates. This will take a
+              few seconds.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
