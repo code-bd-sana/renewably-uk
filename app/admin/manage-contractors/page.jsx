@@ -966,7 +966,7 @@ export default function ManageContractorsPage() {
                             No documents found
                           </p>
                           <p className='text-xs text-gray-400 mt-1'>
-                            This contractor hasn't uploaded any documents yet
+                            This contractor has not uploaded any documents yet
                           </p>
                         </div>
                       )}

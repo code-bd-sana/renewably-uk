@@ -638,8 +638,8 @@ export default function AdminDashboard() {
         <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
           <div className='flex items-center justify-between mb-3'>
             <div className='text-gray-600 text-sm'>Total Policies</div>
-            <div className='bg-blue-50 p-2 rounded'>
-              <FileText className='w-5 h-5 text-blue-600' />
+            <div className='bg-[#EAF1FD] p-2 rounded'>
+              <FileText className='w-5 h-5 text-[#0F47A8]' />
             </div>
           </div>
           <div className='text-3xl font-bold text-gray-900'>
@@ -650,8 +650,8 @@ export default function AdminDashboard() {
         <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
           <div className='flex items-center justify-between mb-3'>
             <div className='text-gray-600 text-sm'>Premium Total</div>
-            <div className='bg-green-50 p-2 rounded'>
-              <DollarSign className='w-5 h-5 text-green-600' />
+            <div className='bg-[#EAF1FD] p-2 rounded'>
+              <DollarSign className='w-5 h-5 text-[#0F47A8]' />
             </div>
           </div>
           <div className='text-3xl font-bold text-gray-900'>
@@ -666,8 +666,8 @@ export default function AdminDashboard() {
         <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
           <div className='flex items-center justify-between mb-3'>
             <div className='text-gray-600 text-sm'>This Month Policies</div>
-            <div className='bg-purple-50 p-2 rounded'>
-              <Calendar className='w-5 h-5 text-purple-600' />
+            <div className='bg-[#EAF1FD] p-2 rounded'>
+              <Calendar className='w-5 h-5 text-[#0F47A8]' />
             </div>
           </div>
           <div className='text-3xl font-bold text-gray-900'>
@@ -678,8 +678,8 @@ export default function AdminDashboard() {
         <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
           <div className='flex items-center justify-between mb-3'>
             <div className='text-gray-600 text-sm'>Total Contractors</div>
-            <div className='bg-orange-50 p-2 rounded'>
-              <Users className='w-5 h-5 text-orange-600' />
+            <div className='bg-[#EAF1FD] p-2 rounded'>
+              <Users className='w-5 h-5 text-[#0F47A8]' />
             </div>
           </div>
           <div className='text-3xl font-bold text-gray-900'>
@@ -690,8 +690,8 @@ export default function AdminDashboard() {
         <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
           <div className='flex items-center justify-between mb-3'>
             <div className='text-gray-600 text-sm'>Months Premium Total</div>
-            <div className='bg-blue-50 p-2 rounded'>
-              <DollarSign className='w-5 h-5 text-blue-600' />
+            <div className='bg-[#EAF1FD] p-2 rounded'>
+              <DollarSign className='w-5 h-5 text-[#0F47A8]' />
             </div>
           </div>
           <div className='text-3xl font-bold text-gray-900'>
@@ -706,8 +706,8 @@ export default function AdminDashboard() {
         <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-100'>
           <div className='flex items-center justify-between mb-3'>
             <div className='text-gray-600 text-sm'>Edit Request Pending</div>
-            <div className='bg-yellow-50 p-2 rounded'>
-              <FileText className='w-5 h-5 text-yellow-600' />
+            <div className='bg-[#EAF1FD] p-2 rounded'>
+              <FileText className='w-5 h-5 text-[#0F47A8]' />
             </div>
           </div>
           <div className='text-3xl font-bold text-gray-900'>
@@ -798,7 +798,7 @@ export default function AdminDashboard() {
         </div>
         {/* Admin View Request Modal */}
         {showRequestModal && selectedRequest && (
-          <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
+          <div className='fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50'>
             <div className='bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden'>
               {/* Header */}
               <div className='p-6 border-b border-gray-200'>
@@ -961,7 +961,7 @@ export default function AdminDashboard() {
                       Review and take action on this request
                     </p>
                   </div>
-                  <div className='flex gap-3'>
+                  {/* <div className='flex gap-3'>
                     <button
                       onClick={() => {
                         if (
@@ -990,7 +990,7 @@ export default function AdminDashboard() {
                       className='px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700'>
                       Approve Request
                     </button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
