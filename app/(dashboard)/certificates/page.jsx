@@ -140,7 +140,7 @@ export default function CertificatesPage() {
   // console.log("Certificate status from API:", certificate.status);
   // console.log("Raw insurance status:", certificate.rawData?.insurance?.status);
   // console.log("Request type:", certificate.rawData?.insurance?.requestData?.type);
-  
+
   //   setSelectedCertificate({
   //     policyNumber: certificate.policyNo,
   //     policyHolderName: certificate.holderName,
@@ -177,52 +177,57 @@ export default function CertificatesPage() {
   //   setRequestType("");
   //   setModalError("");
   // };
-const handleViewCertificate = (certificate) => {
-  console.log("=== VIEW CERTIFICATE DEBUG ===");
-  console.log("Full certificate object:", certificate);
-  console.log("Certificate status from API:", certificate.status);
-  console.log("rawData.insurance.status:", certificate.rawData?.insurance?.status);
-  console.log("rawData.status:", certificate.rawData?.status);
-  
-  // Get the actual status - it's directly on certificate.status
-  const actualStatus = certificate.status || "active";
-  
-  setSelectedCertificate({
-    policyNumber: certificate.policyNo,
-    policyHolderName: certificate.holderName,
-    productType: certificate.productType,
-    contractValue: certificate.contractValue,
-    inceptionDate: certificate.inceptionDate,
-    expiryDate: certificate.expiryDate,
-    price: certificate.price,
-    status: actualStatus, // Use certificate.status directly
-    contractorName: certificate.rawData?.insurance?.contractorName || "Not provided",
-    contractorAddress: certificate.rawData?.insurance?.contractorAddress || "Not provided",
-    email: certificate.rawData?.insurance?.email || "Not provided",
-    phone: certificate.rawData?.insurance?.phone || "Not provided",
-    address: certificate.rawData?.insurance?.address || "Not provided",
-    country: certificate.rawData?.insurance?.country || "Not provided",
-    postcode: certificate.rawData?.insurance?.postcode || "Not provided",
-    insuranceId: certificate.insuranceId || certificate.id,
-    // Store the full rawData for reference
-    rawData: certificate.rawData,
-  });
+  const handleViewCertificate = (certificate) => {
+    console.log("=== VIEW CERTIFICATE DEBUG ===");
+    console.log("Full certificate object:", certificate);
+    console.log("Certificate status from API:", certificate.status);
+    console.log(
+      "rawData.insurance.status:",
+      certificate.rawData?.insurance?.status
+    );
+    console.log("rawData.status:", certificate.rawData?.status);
 
-  setEditableFields({
-    policyHolderName: certificate.holderName,
-    address: certificate.rawData?.insurance?.address || "",
-    country: certificate.rawData?.insurance?.country || "",
-    postcode: certificate.rawData?.insurance?.postcode || "",
-    email: certificate.rawData?.insurance?.email || "",
-    phone: certificate.rawData?.insurance?.phone || "",
-    productType: certificate.productType,
-    contractValue: certificate.contractValue.replace("€ ", ""),
-  });
+    // Get the actual status - it's directly on certificate.status
+    const actualStatus = certificate.status || "active";
 
-  setShowModal(true);
-  setRequestType("");
-  setModalError("");
-};
+    setSelectedCertificate({
+      policyNumber: certificate.policyNo,
+      policyHolderName: certificate.holderName,
+      productType: certificate.productType,
+      contractValue: certificate.contractValue,
+      inceptionDate: certificate.inceptionDate,
+      expiryDate: certificate.expiryDate,
+      price: certificate.price,
+      status: actualStatus, // Use certificate.status directly
+      contractorName:
+        certificate.rawData?.insurance?.contractorName || "Not provided",
+      contractorAddress:
+        certificate.rawData?.insurance?.contractorAddress || "Not provided",
+      email: certificate.rawData?.insurance?.email || "Not provided",
+      phone: certificate.rawData?.insurance?.phone || "Not provided",
+      address: certificate.rawData?.insurance?.address || "Not provided",
+      country: certificate.rawData?.insurance?.country || "Not provided",
+      postcode: certificate.rawData?.insurance?.postcode || "Not provided",
+      insuranceId: certificate.insuranceId || certificate.id,
+      // Store the full rawData for reference
+      rawData: certificate.rawData,
+    });
+
+    setEditableFields({
+      policyHolderName: certificate.holderName,
+      address: certificate.rawData?.insurance?.address || "",
+      country: certificate.rawData?.insurance?.country || "",
+      postcode: certificate.rawData?.insurance?.postcode || "",
+      email: certificate.rawData?.insurance?.email || "",
+      phone: certificate.rawData?.insurance?.phone || "",
+      productType: certificate.productType,
+      contractValue: certificate.contractValue.replace("€ ", ""),
+    });
+
+    setShowModal(true);
+    setRequestType("");
+    setModalError("");
+  };
   const handleDownload = async (cert) => {
     await downloadPdf(cert);
   };
@@ -253,23 +258,21 @@ const handleViewCertificate = (certificate) => {
 
   // Helper function to render editable fields - FIXED VERSION
   const renderField = (label, field, value, editable = true) => (
-    <div className="flex items-start py-2">
-      <div className="w-1/3 text-sm font-medium text-gray-700">{label}</div>
-      <div className="w-2/3 flex items-center gap-2">
+    <div className='flex items-start py-2'>
+      <div className='w-1/3 text-sm font-medium text-gray-700'>{label}</div>
+      <div className='w-2/3 flex items-center gap-2'>
         {requestType === "edit" && editable ? (
-          <div className="flex-1">
+          <div className='flex-1'>
             {field === "productType" ? (
-              <div className="relative product-dropdown">
+              <div className='relative product-dropdown'>
                 <button
-                  type="button"
+                  type='button'
                   onClick={() => setShowProductDropdown(!showProductDropdown)}
-                  className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between hover:border-gray-400"
-                >
+                  className='w-full px-3 py-2 text-sm text-left border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between hover:border-gray-400'>
                   <span
                     className={
                       editableFields[field] ? "text-gray-900" : "text-gray-400"
-                    }
-                  >
+                    }>
                     {editableFields[field] || "Select product type"}
                   </span>
                   <ChevronDown
@@ -281,17 +284,17 @@ const handleViewCertificate = (certificate) => {
                 </button>
 
                 {showProductDropdown && (
-                  <div className="absolute z-50 top-full mt-1 bg-white rounded-lg shadow-lg border w-full max-w-md max-h-64 overflow-hidden">
-                    <div className="p-3 border-b">
-                      <div className="relative">
+                  <div className='absolute z-50 top-full mt-1 bg-white rounded-lg shadow-lg border w-full max-w-md max-h-64 overflow-hidden'>
+                    <div className='p-3 border-b'>
+                      <div className='relative'>
                         <Search
                           size={16}
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
                         />
                         <input
-                          type="text"
-                          placeholder="Search products..."
-                          className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm"
+                          type='text'
+                          placeholder='Search products...'
+                          className='w-full pl-10 pr-3 py-2 border rounded-lg text-sm'
                           value={productSearchQuery}
                           onChange={(e) =>
                             setProductSearchQuery(e.target.value)
@@ -301,12 +304,12 @@ const handleViewCertificate = (certificate) => {
                       </div>
                     </div>
 
-                    <div className="overflow-y-auto max-h-48">
+                    <div className='overflow-y-auto max-h-48'>
                       {productsLoading ? (
-                        <div className="px-4 py-3 text-center text-gray-500">
+                        <div className='px-4 py-3 text-center text-gray-500'>
                           <Loader2
                             size={16}
-                            className="animate-spin mx-auto mb-2"
+                            className='animate-spin mx-auto mb-2'
                           />
                           Loading products...
                         </div>
@@ -324,13 +327,12 @@ const handleViewCertificate = (certificate) => {
                             }}
                             className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${
                               index === 0 ? "" : "border-t"
-                            }`}
-                          >
+                            }`}>
                             <div>
-                              <span className="font-medium text-sm">
+                              <span className='font-medium text-sm'>
                                 {product.Measures}
                               </span>
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className='text-xs text-gray-500 mt-1'>
                                 <span>
                                   Guarantee Period: {product.Year} years
                                 </span>
@@ -345,13 +347,13 @@ const handleViewCertificate = (certificate) => {
                             {editableFields[field] === product.Measures && (
                               <Check
                                 size={16}
-                                className="text-white bg-blue-600 rounded-full p-0.5"
+                                className='text-white bg-blue-600 rounded-full p-0.5'
                               />
                             )}
                           </button>
                         ))
                       ) : (
-                        <div className="px-4 py-3 text-center text-gray-500 text-sm">
+                        <div className='px-4 py-3 text-center text-gray-500 text-sm'>
                           No products found
                         </div>
                       )}
@@ -361,7 +363,7 @@ const handleViewCertificate = (certificate) => {
               </div>
             ) : (
               <input
-                type="text"
+                type='text'
                 value={editableFields[field] || ""}
                 onChange={(e) =>
                   setEditableFields((prev) => ({
@@ -369,28 +371,28 @@ const handleViewCertificate = (certificate) => {
                     [field]: e.target.value,
                   }))
                 }
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className='w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
               />
             )}
           </div>
         ) : (
-          <span className="flex-1 text-sm text-gray-600">
+          <span className='flex-1 text-sm text-gray-600'>
             {value || "Not provided"}
           </span>
         )}
         {/* EDIT ICON - FIXED: Always show when in edit mode and editable */}
         {requestType === "edit" && editable && (
-          <Edit2 className="w-4 h-4 text-gray-400 shrink-0" />
+          <Edit2 className='w-4 h-4 text-gray-400 shrink-0' />
         )}
       </div>
     </div>
   );
 
   const renderStaticField = (label, value) => (
-    <div className="flex items-start py-2">
-      <div className="w-1/3 text-sm font-medium text-gray-700">{label}</div>
-      <div className="w-2/3">
-        <span className="text-sm text-gray-600">{value}</span>
+    <div className='flex items-start py-2'>
+      <div className='w-1/3 text-sm font-medium text-gray-700'>{label}</div>
+      <div className='w-2/3'>
+        <span className='text-sm text-gray-600'>{value}</span>
       </div>
     </div>
   );
@@ -531,11 +533,11 @@ Renewably UK - Powering Renewables
 
   if (loading) {
     return (
-      <main className="p-4 lg:p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-            <p className="text-gray-600">Loading certificates...</p>
+      <main className='p-4 lg:p-6'>
+        <div className='flex items-center justify-center h-64'>
+          <div className='text-center'>
+            <Loader2 className='w-8 h-8 animate-spin text-blue-600 mx-auto mb-3' />
+            <p className='text-gray-600'>Loading certificates...</p>
           </div>
         </div>
       </main>
@@ -543,30 +545,30 @@ Renewably UK - Powering Renewables
   }
 
   return (
-    <div className="bg-[#FAFAF9]">
-      <main className="p-4 bg-white border border-gray-100 rounded-lg m-6 mt-8 lg:p-6">
+    <div className='bg-[#FAFAF9]'>
+      <main className='p-4 bg-white border border-gray-100 rounded-lg m-6 mt-8 lg:p-6'>
         {/* Logo */}
-        <div className="mb-6">
-          <div className="mb-6 px-4 mt-4">
-            <Image src={bluedrop} height={150} width={192} alt="logo" />
+        <div className='mb-6'>
+          <div className='mb-6 px-4 mt-4'>
+            <Image src={bluedrop} height={150} width={192} alt='logo' />
           </div>
         </div>
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-sans text-[28px] ml-4  font-semibold text-gray-800">
+        <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6'>
+          <h1 className='text-2xl font-sans text-[28px] ml-4  font-semibold text-gray-800'>
             My Insurance Backed Guarantee Certificates
           </h1>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-initial">
+          <div className='flex items-center gap-3 w-full sm:w-auto'>
+            <div className='relative flex-1 sm:flex-initial'>
               <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
                 size={18}
               />
               <input
-                type="text"
-                placeholder="Search by policy holder name..."
-                className="w-full sm:w-64 border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type='text'
+                placeholder='Search by policy holder name...'
+                className='w-full sm:w-64 border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -574,10 +576,9 @@ Renewably UK - Powering Renewables
             <button
               onClick={handleDownloadSelected}
               disabled={downloadingAll || selectedRows.length === 0}
-              className="bg-[#0F47A8] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+              className='bg-[#0F47A8] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'>
               {downloadingAll ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className='w-4 h-4 animate-spin' />
               ) : (
                 <Download size={18} />
               )}
@@ -589,59 +590,59 @@ Renewably UK - Powering Renewables
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg  overflow-hidden ">
+        <div className='bg-white rounded-lg  overflow-hidden '>
           {filteredCertificates.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <div className='p-8 text-center text-gray-500'>
+              <FileText className='w-12 h-12 mx-auto mb-3 text-gray-300' />
               <p>No certificates found</p>
               {searchTerm && (
-                <p className="text-sm mt-1">Try a different search term</p>
+                <p className='text-sm mt-1'>Try a different search term</p>
               )}
             </div>
           ) : (
             <>
               {/* Desktop Table */}
-              <div className="hidden  border border-gray-200 lg:block overflow-x-auto">
-                <table className="w-full ">
+              <div className='hidden  border border-gray-200 lg:block overflow-x-auto'>
+                <table className='w-full '>
                   <thead>
-                    <tr className="border-b bg-[#FAFAF9] border-gray-200">
-                      <th className="px-4 py-3 text-left">
+                    <tr className='border-b bg-[#FAFAF9] border-gray-200'>
+                      <th className='px-4 py-3 text-left'>
                         <input
-                          type="checkbox"
+                          type='checkbox'
                           checked={
                             selectedRows.length ===
                               filteredCertificates.length &&
                             filteredCertificates.length > 0
                           }
                           onChange={handleSelectAll}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className='w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
                         />
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Policy No
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Policy Holder Name
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Product Type
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Contract Value
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Inception Date
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Expiry Date
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Transaction Type
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Price
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Action
                       </th>
                     </tr>
@@ -652,62 +653,59 @@ Renewably UK - Powering Renewables
                         key={cert.id}
                         className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
                           isRowSelected(cert.id) ? "bg-blue-50" : ""
-                        }`}
-                      >
-                        <td className="px-4 py-3">
+                        }`}>
+                        <td className='px-4 py-3'>
                           <input
-                            type="checkbox"
+                            type='checkbox'
                             checked={isRowSelected(cert.id)}
                             onChange={() => handleSelectRow(cert.id)}
-                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className='w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
                           />
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#0307120] font-mono font-medium">
+                        <td className='px-4 py-3 text-sm text-[#0307120] font-mono font-medium'>
                           {cert.policyNo}
                         </td>
-                        <td className="px-4 py-3 text-sm font-normal font-sans text-[#6B7280]">
+                        <td className='px-4 py-3 text-sm font-normal font-sans text-[#6B7280]'>
                           {cert.holderName}
                         </td>
-                        <td className="px-4 py-3 text-sm font-normal font-sans text-[#6B7280]">
+                        <td className='px-4 py-3 text-sm font-normal font-sans text-[#6B7280]'>
                           {cert.productType}
                         </td>
-                        <td className="px-4 py-3 text-sm font-normal text-[#6B7280] font-mono">
+                        <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
                           {cert.contractValue}
                         </td>
-                        <td className="px-4 py-3 text-sm font-normal text-[#6B7280] font-mono">
+                        <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
                           {cert.inceptionDate}
                         </td>
-                        <td className="px-4 py-3 text-sm font-normal text-[#6B7280] font-mono">
+                        <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
                           {cert.expiryDate}
                         </td>
-                        <td className="px-4 py-3 text-sm font-normal text-[#6B7280] font-sans">
+                        <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-sans'>
                           {cert.transactionType}
                         </td>
-                        <td className="px-4 py-3 text-sm font-normal text-[#6B7280] font-mono">
+                        <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
                           {cert.price}
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
+                        <td className='px-4 py-3'>
+                          <div className='flex items-center gap-2'>
                             <button
                               onClick={() => handleViewCertificate(cert)}
-                              className="p-2 hover:bg-gray-100 cursor-pointer rounded"
-                              title="View Certificate"
-                            >
-                              <Eye size={18} className="text-[#0284C7]" />
+                              className='p-2 hover:bg-gray-100 cursor-pointer rounded'
+                              title='View Certificate'>
+                              <Eye size={18} className='text-[#0284C7]' />
                             </button>
                             <button
                               onClick={() => handleDownload(cert)}
                               disabled={downloading}
-                              className="p-2 hover:bg-gray-100 cursor-pointer rounded-lg transition-colors disabled:opacity-50"
-                              title="Download Certificate"
-                            >
+                              className='p-2 hover:bg-gray-100 cursor-pointer rounded-lg transition-colors disabled:opacity-50'
+                              title='Download Certificate'>
                               {downloading ? (
                                 <Loader2
                                   size={18}
-                                  className="text-gray-600 animate-spin"
+                                  className='text-gray-600 animate-spin'
                                 />
                               ) : (
-                                <Download size={18} className="text-gray-600" />
+                                <Download size={18} className='text-gray-600' />
                               )}
                             </button>
                           </div>
@@ -719,102 +717,98 @@ Renewably UK - Powering Renewables
               </div>
 
               {/* Mobile Cards */}
-              <div className="lg:hidden">
+              <div className='lg:hidden'>
                 {paginatedCertificates.map((cert) => (
                   <div
                     key={cert.id}
                     className={`p-4 border-b border-gray-100 ${
                       isRowSelected(cert.id) ? "bg-blue-50" : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-3 mb-3">
+                    }`}>
+                    <div className='flex items-start gap-3 mb-3'>
                       <input
-                        type="checkbox"
+                        type='checkbox'
                         checked={isRowSelected(cert.id)}
                         onChange={() => handleSelectRow(cert.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
+                        className='w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1'
                       />
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-2">
-                          
+                      <div className='flex-1'>
+                        <div className='flex justify-between items-start mb-2'>
                           <div>
-                            <div className="text-xs text-gray-500 mb-1">
+                            <div className='text-xs text-gray-500 mb-1'>
                               Policy No
                             </div>
-                            <div className="text-sm font-medium text-gray-700">
+                            <div className='text-sm font-medium text-gray-700'>
                               {cert.policyNo}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-xs text-gray-500 mb-1">
+                          <div className='text-right'>
+                            <div className='text-xs text-gray-500 mb-1'>
                               Price
                             </div>
-                            <div className="text-sm font-semibold text-gray-700">
+                            <div className='text-sm font-semibold text-gray-700'>
                               {cert.price}
                             </div>
                           </div>
                         </div>
 
-                        <div className="space-y-2 mb-3">
+                        <div className='space-y-2 mb-3'>
                           <div>
-                            <div className="text-xs text-gray-500">
+                            <div className='text-xs text-gray-500'>
                               Policy Holder Name
                             </div>
-                            <div className="text-sm text-gray-700">
+                            <div className='text-sm text-gray-700'>
                               {cert.holderName}
                             </div>
                           </div>
                           <div>
-                            <div className="text-xs text-gray-500">
+                            <div className='text-xs text-gray-500'>
                               Product Type
                             </div>
-                            <div className="text-sm text-gray-700">
+                            <div className='text-sm text-gray-700'>
                               {cert.productType}
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className='grid grid-cols-2 gap-2'>
                             <div>
-                              <div className="text-xs text-gray-500">
+                              <div className='text-xs text-gray-500'>
                                 Inception Date
                               </div>
-                              <div className="text-sm text-gray-700">
+                              <div className='text-sm text-gray-700'>
                                 {cert.inceptionDate}
                               </div>
                             </div>
                             <div>
-                              <div className="text-xs text-gray-500">
+                              <div className='text-xs text-gray-500'>
                                 Expiry Date
                               </div>
-                              <div className="text-sm text-gray-700">
+                              <div className='text-sm text-gray-700'>
                                 {cert.expiryDate}
                               </div>
                             </div>
                           </div>
                           <div>
-                            <div className="text-xs text-gray-500">
+                            <div className='text-xs text-gray-500'>
                               Transaction Type
                             </div>
-                            <div className="text-sm text-gray-700">
+                            <div className='text-sm text-gray-700'>
                               {cert.transactionType}
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className='flex gap-2'>
                           <button
                             onClick={() => handleViewCertificate(cert)}
-                            className="flex-1 bg-[#0F47A8] text-white py-2 rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-blue-700 transition-colors"
-                          >
+                            className='flex-1 bg-[#0F47A8] text-white py-2 rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-blue-700 transition-colors'>
                             <Eye size={16} />
                             View
                           </button>
                           <button
                             onClick={() => handleDownload(cert.id)}
                             disabled={downloading}
-                            className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
-                          >
+                            className='flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50'>
                             {downloading ? (
-                              <Loader2 size={16} className="animate-spin" />
+                              <Loader2 size={16} className='animate-spin' />
                             ) : (
                               <Download size={16} />
                             )}
@@ -829,20 +823,19 @@ Renewably UK - Powering Renewables
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="px-4 pt-8 flex items-center justify-center border-t border-gray-200">
-                  <nav className="flex items-center gap-2">
+                <div className='px-4 pt-8 flex items-center justify-center border-t border-gray-200'>
+                  <nav className='flex items-center gap-2'>
                     <button
                       onClick={() =>
                         setCurrentPage((prev) => Math.max(1, prev - 1))
                       }
                       disabled={currentPage === 1}
-                      className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                      className='px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
                       <ChevronLeft size={16} />
                       Previous
                     </button>
 
-                    <div className="flex items-center gap-1">
+                    <div className='flex items-center gap-1'>
                       {[...Array(totalPages)].map((_, index) => {
                         const pageNum = index + 1;
                         if (
@@ -859,8 +852,7 @@ Renewably UK - Powering Renewables
                                 currentPage === pageNum
                                   ? "bg-[#F5F5F4] border border-[#D1D5DB] text-black "
                                   : "text-gray-600 hover:bg-gray-100"
-                              }`}
-                            >
+                              }`}>
                               {pageNum}
                             </button>
                           );
@@ -874,8 +866,7 @@ Renewably UK - Powering Renewables
                         setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                       }
                       disabled={currentPage === totalPages}
-                      className="px-3 py-2 text-sm text-[#030712]  hover:bg-gray-100 rounded-lg flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                      className='px-3 py-2 text-sm text-[#030712]  hover:bg-gray-100 rounded-lg flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
                       Next
                       <ChevronRight size={16} />
                     </button>
@@ -888,17 +879,20 @@ Renewably UK - Powering Renewables
 
         {/* View/Edit Certificate Modal */}
         {showModal && selectedCertificate && (
-          <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className='fixed inset-0 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto'>
+            <div className='bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden'>
               {/* Modal Header */}
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="inline-flex items-center gap-2">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full"></div>
-                    <span className="font-bold text-xl">
-                      BLUE<span className="text-blue-500">DROP</span>
-                    </span>
-                    <span className="text-xs text-gray-500 ml-2">SERVICES</span>
+              <div className='p-6 border-b border-gray-200'>
+                <div className='flex items-center justify-between mb-6'>
+                  <div className='inline-flex items-center gap-2'>
+                    <div className='mb-6 mt-4'>
+                      <Image
+                        src={bluedrop}
+                        height={150}
+                        width={192}
+                        alt='BlueDrop'
+                      />
+                    </div>
                   </div>
                   <button
                     onClick={() => {
@@ -908,27 +902,25 @@ Renewably UK - Powering Renewables
                       setShowProductDropdown(false);
                       setProductSearchQuery("");
                     }}
-                    className="p-2 hover:bg-gray-100 rounded-lg"
-                  >
+                    className='p-2 hover:bg-gray-100 rounded-lg'>
                     <X size={20} />
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <h1 className="text-3xl font-semibold text-gray-900">
+                <div className='flex items-center justify-between'>
+                  <h1 className='text-3xl font-semibold text-gray-900'>
                     {selectedCertificate.policyNo ||
                       selectedCertificate.policyNumber}
                   </h1>
-                  <div className="flex items-center gap-3">
-                    <div className="relative request-dropdown">
+                  <div className='flex items-center gap-3'>
+                    <div className='relative request-dropdown'>
                       <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className='flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500'
                         disabled={
                           selectedCertificate.status &&
                           selectedCertificate.status.includes("pending")
-                        }
-                      >
+                        }>
                         <span>
                           {requestType
                             ? requestType === "edit"
@@ -936,22 +928,21 @@ Renewably UK - Powering Renewables
                               : "Request For Cancellation"
                             : "Request for"}
                         </span>
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDown className='w-4 h-4' />
                       </button>
 
                       {isDropdownOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                          <div className="py-1">
+                        <div className='absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-10'>
+                          <div className='py-1'>
                             <button
                               onClick={() => {
                                 setRequestType("edit");
                                 setIsDropdownOpen(false);
                               }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                              className='block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700'
                               disabled={
                                 selectedCertificate.status === "pending_edit"
-                              }
-                            >
+                              }>
                               Request for Edit
                             </button>
                             <button
@@ -959,11 +950,10 @@ Renewably UK - Powering Renewables
                                 setRequestType("cancel");
                                 setIsDropdownOpen(false);
                               }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                              className='block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700'
                               disabled={
                                 selectedCertificate.status === "pending_cancel"
-                              }
-                            >
+                              }>
                               Request For Cancellation
                             </button>
                           </div>
@@ -972,11 +962,10 @@ Renewably UK - Powering Renewables
                     </div>
                     <button
                       onClick={() => handleDownload(selectedCertificate)}
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded"
-                      disabled={downloading}
-                    >
+                      className='p-2 text-gray-600 hover:bg-gray-100 rounded'
+                      disabled={downloading}>
                       {downloading ? (
-                        <Loader2 size={20} className="animate-spin" />
+                        <Loader2 size={20} className='animate-spin' />
                       ) : (
                         <Download size={20} />
                       )}
@@ -986,7 +975,7 @@ Renewably UK - Powering Renewables
 
                 {/* Show status badge */}
                 {selectedCertificate.status && (
-                  <div className="mt-3">
+                  <div className='mt-3'>
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                         selectedCertificate.status === "active"
@@ -998,8 +987,7 @@ Renewably UK - Powering Renewables
                           : selectedCertificate.status === "cancelled"
                           ? "bg-red-100 text-red-800"
                           : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
+                      }`}>
                       Status:{" "}
                       {selectedCertificate.status
                         .replace("_", " ")
@@ -1007,19 +995,18 @@ Renewably UK - Powering Renewables
                     </span>
                   </div>
                 )}
-
               </div>
 
               {/* Error Message */}
               {modalError && (
-                <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                <div className='mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm'>
                   {modalError}
                 </div>
               )}
               {(requestType === "edit" || requestType === "cancel") && (
-                <div className="p-6 border-t border-gray-200 bg-gray-50">
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className='p-6 border-t border-gray-200 bg-gray-50'>
+                  <div className='mb-4'>
+                    <label className='block text-sm font-medium text-gray-700 mb-2'>
                       {requestType === "edit"
                         ? "Reason for Edit Request"
                         : "Reason for Cancellation"}
@@ -1027,8 +1014,8 @@ Renewably UK - Powering Renewables
                     <textarea
                       value={requestReason}
                       onChange={(e) => setRequestReason(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows="3"
+                      className='w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
+                      rows='3'
                       placeholder={
                         requestType === "edit"
                           ? "Explain what changes you want to make..."
@@ -1038,27 +1025,25 @@ Renewably UK - Powering Renewables
                     />
                   </div>
 
-                  <div className="flex justify-end gap-3">
+                  <div className='flex justify-end gap-3'>
                     <button
                       onClick={() => {
                         setRequestType("");
                         setRequestReason("");
                         setModalError("");
                       }}
-                      className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100"
-                      disabled={submitting}
-                    >
+                      className='px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100'
+                      disabled={submitting}>
                       Cancel
                     </button>
 
                     <button
                       onClick={handleSubmitRequest}
-                      className="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-                      disabled={submitting || !requestReason.trim()}
-                    >
+                      className='px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2'
+                      disabled={submitting || !requestReason.trim()}>
                       {submitting ? (
                         <>
-                          <Loader2 size={16} className="animate-spin" />
+                          <Loader2 size={16} className='animate-spin' />
                           Sending...
                         </>
                       ) : (
@@ -1069,28 +1054,28 @@ Renewably UK - Powering Renewables
                 </div>
               )}
               {/* Policy Details */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              <div className='p-6 overflow-y-auto max-h-[calc(90vh-200px)]'>
                 {/* Contractor Details */}
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                <div className='mb-6'>
+                  <h2 className='text-lg font-semibold text-gray-800 mb-3'>
                     Contractor Details
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">
+                      <div className='text-sm text-gray-500 mb-1'>
                         Contractor Name
                       </div>
-                      <div className="text-base font-medium">
+                      <div className='text-base font-medium'>
                         {selectedCertificate.contractorName || "Not provided"}
                       </div>
                     </div>
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="text-sm text-gray-500">
+                      <div className='flex items-center justify-between mb-1'>
+                        <div className='text-sm text-gray-500'>
                           Contractor Address
                         </div>
                         {requestType === "edit" && (
-                          <Edit2 className="w-3 h-3 text-gray-400" />
+                          <Edit2 className='w-3 h-3 text-gray-400' />
                         )}
                       </div>
                       {requestType === "edit" ? (
@@ -1102,12 +1087,12 @@ Renewably UK - Powering Renewables
                               contractorAddress: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          rows="2"
-                          placeholder="Enter contractor address"
+                          className='w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
+                          rows='2'
+                          placeholder='Enter contractor address'
                         />
                       ) : (
-                        <div className="text-base">
+                        <div className='text-base'>
                           {selectedCertificate.contractorAddress ||
                             "Not provided"}
                         </div>
@@ -1117,11 +1102,11 @@ Renewably UK - Powering Renewables
                 </div>
 
                 {/* Policy Holder Details */}
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                <div className='mb-6'>
+                  <h2 className='text-lg font-semibold text-gray-800 mb-3'>
                     Policy Holder Details
                   </h2>
-                  <div className="space-y-3">
+                  <div className='space-y-3'>
                     {renderField(
                       "Policy Holder Name",
                       "policyHolderName",
@@ -1173,11 +1158,11 @@ Renewably UK - Powering Renewables
                 </div>
 
                 {/* Product Details */}
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                <div className='mb-6'>
+                  <h2 className='text-lg font-semibold text-gray-800 mb-3'>
                     Product Details
                   </h2>
-                  <div className="space-y-3">
+                  <div className='space-y-3'>
                     {renderField(
                       "Product Type",
                       "productType",
