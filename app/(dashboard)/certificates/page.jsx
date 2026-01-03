@@ -135,7 +135,61 @@ export default function CertificatesPage() {
 
   const isRowSelected = (id) => selectedRows.includes(id);
 
+  // const handleViewCertificate = (certificate) => {
+  // console.log("=== VIEW CERTIFICATE DEBUG ===");
+  // console.log("Certificate status from API:", certificate.status);
+  // console.log("Raw insurance status:", certificate.rawData?.insurance?.status);
+  // console.log("Request type:", certificate.rawData?.insurance?.requestData?.type);
+
+  //   setSelectedCertificate({
+  //     policyNumber: certificate.policyNo,
+  //     policyHolderName: certificate.holderName,
+  //     productType: certificate.productType,
+  //     contractValue: certificate.contractValue,
+  //     inceptionDate: certificate.inceptionDate,
+  //     expiryDate: certificate.expiryDate,
+  //     price: certificate.price,
+  //     status: certificate.status || "active",
+  //     contractorName:
+  //       certificate.rawData?.insurance?.contractorName || "Not provided",
+  //     contractorAddress:
+  //       certificate.rawData?.insurance?.contractorAddress || "Not provided",
+  //     email: certificate.rawData?.insurance?.email || "Not provided",
+  //     phone: certificate.rawData?.insurance?.phone || "Not provided",
+  //     address: certificate.rawData?.insurance?.address || "Not provided",
+  //     country: certificate.rawData?.insurance?.country || "Not provided",
+  //     postcode: certificate.rawData?.insurance?.postcode || "Not provided",
+  //     insuranceId: certificate.insuranceId || certificate.id?.split("-")[0],
+  //   });
+
+  //   setEditableFields({
+  //     policyHolderName: certificate.holderName,
+  //     address: certificate.rawData?.insurance?.address || "",
+  //     country: certificate.rawData?.insurance?.country || "",
+  //     postcode: certificate.rawData?.insurance?.postcode || "",
+  //     email: certificate.rawData?.insurance?.email || "",
+  //     phone: certificate.rawData?.insurance?.phone || "",
+  //     productType: certificate.productType,
+  //     contractValue: certificate.contractValue.replace("€ ", ""),
+  //   });
+
+  //   setShowModal(true);
+  //   setRequestType("");
+  //   setModalError("");
+  // };
   const handleViewCertificate = (certificate) => {
+    console.log("=== VIEW CERTIFICATE DEBUG ===");
+    console.log("Full certificate object:", certificate);
+    console.log("Certificate status from API:", certificate.status);
+    console.log(
+      "rawData.insurance.status:",
+      certificate.rawData?.insurance?.status
+    );
+    console.log("rawData.status:", certificate.rawData?.status);
+
+    // Get the actual status - it's directly on certificate.status
+    const actualStatus = certificate.status || "active";
+
     setSelectedCertificate({
       policyNumber: certificate.policyNo,
       policyHolderName: certificate.holderName,
@@ -144,7 +198,7 @@ export default function CertificatesPage() {
       inceptionDate: certificate.inceptionDate,
       expiryDate: certificate.expiryDate,
       price: certificate.price,
-      status: certificate.status || "active",
+      status: actualStatus, // Use certificate.status directly
       contractorName:
         certificate.rawData?.insurance?.contractorName || "Not provided",
       contractorAddress:
@@ -154,7 +208,9 @@ export default function CertificatesPage() {
       address: certificate.rawData?.insurance?.address || "Not provided",
       country: certificate.rawData?.insurance?.country || "Not provided",
       postcode: certificate.rawData?.insurance?.postcode || "Not provided",
-      insuranceId: certificate.insuranceId || certificate.id?.split("-")[0],
+      insuranceId: certificate.insuranceId || certificate.id,
+      // Store the full rawData for reference
+      rawData: certificate.rawData,
     });
 
     setEditableFields({
@@ -172,7 +228,6 @@ export default function CertificatesPage() {
     setRequestType("");
     setModalError("");
   };
-
   const handleDownload = async (cert) => {
     await downloadPdf(cert);
   };
@@ -495,7 +550,7 @@ Renewably UK - Powering Renewables
         {/* Logo */}
         <div className='mb-6'>
           <div className='mb-6 px-4 mt-4'>
-            <Image src={bluedrop} height={150} width={192} />
+            <Image src={bluedrop} height={150} width={192} alt='logo' />
           </div>
         </div>
 
@@ -830,11 +885,14 @@ Renewably UK - Powering Renewables
               <div className='p-6 border-b border-gray-200'>
                 <div className='flex items-center justify-between mb-6'>
                   <div className='inline-flex items-center gap-2'>
-                    <div className='w-10 h-10 bg-blue-500 rounded-full'></div>
-                    <span className='font-bold text-xl'>
-                      BLUE<span className='text-blue-500'>DROP</span>
-                    </span>
-                    <span className='text-xs text-gray-500 ml-2'>SERVICES</span>
+                    <div className='mb-6 mt-4'>
+                      <Image
+                        src={bluedrop}
+                        height={150}
+                        width={192}
+                        alt='BlueDrop'
+                      />
+                    </div>
                   </div>
                   <button
                     onClick={() => {
@@ -903,7 +961,7 @@ Renewably UK - Powering Renewables
                       )}
                     </div>
                     <button
-                      onClick={() => handleDownloadSingle(selectedCertificate)}
+                      onClick={() => handleDownload(selectedCertificate)}
                       className='p-2 text-gray-600 hover:bg-gray-100 rounded'
                       disabled={downloading}>
                       {downloading ? (
@@ -937,37 +995,6 @@ Renewably UK - Powering Renewables
                     </span>
                   </div>
                 )}
-                {/* Show existing request status */}
-                {selectedCertificate.status &&
-                  selectedCertificate.status.includes("pending") && (
-                    <div className='mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg'>
-                      <div className='flex items-center gap-2'>
-                        <div className='w-3 h-3 bg-yellow-500 rounded-full'></div>
-                        <span className='font-medium text-yellow-800'>
-                          {selectedCertificate.status === "pending_edit"
-                            ? "Edit Request Pending"
-                            : "Cancellation Request Pending"}
-                        </span>
-                      </div>
-                      {selectedCertificate.rawData?.insurance?.requestData
-                        ?.reason && (
-                        <p className='text-sm text-yellow-700 mt-1'>
-                          Reason:{" "}
-                          {
-                            selectedCertificate.rawData.insurance.requestData
-                              .reason
-                          }
-                        </p>
-                      )}
-                      <p className='text-xs text-yellow-600 mt-1'>
-                        Submitted:{" "}
-                        {new Date(
-                          selectedCertificate.rawData?.insurance?.requestData
-                            ?.requestedAt || selectedCertificate.createdAt
-                        ).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
               </div>
 
               {/* Error Message */}

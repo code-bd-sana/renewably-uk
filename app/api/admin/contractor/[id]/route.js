@@ -128,6 +128,76 @@ export async function POST(request, { params }) {
 }
 
 // Helper function to handle insurance requests
+// async function handleInsuranceRequest(insuranceId, request) {
+//   console.log(insuranceId, "ami hola insurance id");
+//   const { action, notes } = await request.json();
+
+//   if (!action || !["approve", "reject"].includes(action)) {
+//     return Response.json(
+//       { success: false, error: "Valid action required (approve/reject)" },
+//       { status: 400 }
+//     );
+//   }
+
+//   // Find the insurance request
+//   const insurance = await Insurance.findById(insuranceId);
+
+//   if (!insurance) {
+//     return Response.json(
+//       { success: false, error: "Insurance request not found" },
+//       { status: 404 }
+//     );
+//   }
+
+//   if (insurance.status !== "pending") {
+//     return Response.json(
+//       { success: false, error: "No pending request found" },
+//       { status: 400 }
+//     );
+//   }
+
+//   if (action === "approve") {
+//     // Apply changes if edit request
+//     if (
+//       insurance.requestData?.type === "edit" &&
+//       insurance.requestData?.changes
+//     ) {
+//       // Update insurance fields with requested changes
+//       Object.keys(insurance.requestData.changes).forEach((key) => {
+//         if (insurance[key] !== undefined) {
+//           insurance[key] = insurance.requestData.changes[key];
+//         }
+//       });
+//     }
+
+//     // Update status
+//     insurance.status =
+//       insurance.status === "pending_edit" ? "active" : "cancelled";
+//   } else if (action === "reject") {
+//     // Reject - just change status back to active
+//     insurance.status = "active";
+//   }
+
+//   // Save admin notes
+//   if (!insurance.requestData) insurance.requestData = {};
+//   insurance.requestData.adminNotes = notes || "";
+//   insurance.requestData.processedAt = new Date();
+//   insurance.requestData.processedBy = (await authenticate(request)).userId;
+
+//   await insurance.save();
+
+//   return Response.json({
+//     success: true,
+//     message: `Request ${action === "approve" ? "approved" : "rejected"}`,
+//     status: insurance.status,
+//     insurance: {
+//       id: insurance._id,
+//       policyNumber: insurance.policyNumber,
+//       status: insurance.status,
+//     },
+//   });
+// }
+
 async function handleInsuranceRequest(insuranceId, request) {
   console.log(insuranceId, "ami hola insurance id");
   const { action, notes } = await request.json();
@@ -149,7 +219,13 @@ async function handleInsuranceRequest(insuranceId, request) {
     );
   }
 
-  if (insurance.status !== "pending") {
+  // FIX: Check for any pending status
+  const isPending =
+    insurance.status === "pending" ||
+    insurance.status === "pending_edit" ||
+    insurance.status === "pending_cancel";
+
+  if (!isPending) {
     return Response.json(
       { success: false, error: "No pending request found" },
       { status: 400 }
@@ -170,9 +246,14 @@ async function handleInsuranceRequest(insuranceId, request) {
       });
     }
 
-    // Update status
-    insurance.status =
-      insurance.status === "pending_edit" ? "active" : "cancelled";
+    // Update status based on request type
+    if (insurance.requestData?.type === "edit") {
+      insurance.status = "active"; // Edit approved → active
+    } else if (insurance.requestData?.type === "cancel") {
+      insurance.status = "cancelled"; // Cancel approved → cancelled
+    } else {
+      insurance.status = "active"; // Default
+    }
   } else if (action === "reject") {
     // Reject - just change status back to active
     insurance.status = "active";

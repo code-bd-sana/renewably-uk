@@ -88,6 +88,7 @@ export async function GET(request) {
               name: insurance.userId.name,
               email: insurance.userId.email,
               companyName: insurance.userId.companyName,
+              isSuspended: insurance.userId.isSuspended || false, 
             }
           : null,
         requestType: insurance.requestData?.type || "edit",
@@ -143,6 +144,9 @@ export async function GET(request) {
         position: contractor.position || "",
         role: contractor.role,
         isApproved: contractor.isApproved,
+        isSuspended: contractor.isSuspended || false, 
+        suspensionReason: contractor.suspensionReason || "", 
+        suspendedAt: contractor.suspendedAt || null,
         createdAt: contractor.createdAt,
         updatedAt: contractor.updatedAt,
       })),

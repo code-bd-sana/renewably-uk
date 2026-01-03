@@ -673,7 +673,7 @@ export default function CreateInsuranceForm() {
   };
 
   return (
-    <main className='p-4 sans lg:p-6 max-w-[1820px] mx-auto'>
+    <main className='p-4 sans lg:p-6 max-w-455 mx-auto'>
       <Toaster
         toastOptions={{
           duration: 4000,
@@ -701,13 +701,13 @@ export default function CreateInsuranceForm() {
       {/* Logo */}
       <div className='mb-6'>
         <div className='mb-6 px-4 mt-4'>
-          <Image src={bluedrop} height={150} width={192} />
+          <Image src={bluedrop} height={150} width={192} alt="logo"/>
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className='mb-6 p-4 bg-red-50 border border-gray-200 border border-gray-200-red-200 text-red-700 rounded-lg'>
+        <div className='mb-6 p-4 bg-red-50 border-gray-200 border border-gray-200-red-200 text-red-700 rounded-lg'>
           {error}
         </div>
       )}
@@ -736,6 +736,7 @@ export default function CreateInsuranceForm() {
                 type='text'
                 value={formData.contractorAddress || "Not provided"}
                 className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
+                readOnly
               />
             </div>
           </div>
@@ -1128,7 +1129,7 @@ export default function CreateInsuranceForm() {
           <button
             type='button'
             onClick={handleCancel}
-            className='px-6 py-2 border cursor-pointer border-gray-200 bg-[#FEE2E2] text-[#DC2626] border border-gray-200-red-300 text-red-500 rounded-lg hover:bg-red-50'
+            className='px-6 py-2 cursor-pointer border-gray-200 bg-[#FEE2E2] text-red-500 border border-gray-200-red-300 rounded-lg hover:bg-red-50'
             disabled={loading}>
             Cancel
           </button>

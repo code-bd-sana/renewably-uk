@@ -25,14 +25,30 @@ const userSchema = new mongoose.Schema(
     },
     isApproved: {
       type: Boolean,
-      default: false, // User CANNOT login if it's false
+      default: false, // For initial approval by admin
+    },
+    isSuspended: {
+      type: Boolean,
+      default: false, // New field for suspension
+    },
+    suspensionReason: {
+      type: String,
+      default: "",
+    },
+    suspendedAt: {
+      type: Date,
+      default: null,
+    },
+    suspendedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
     role: {
       type: String,
       enum: ["admin", "contractor"],
       default: "contractor",
     },
-    companyName: String,
     officeAddress: String,
     resetPasswordToken: {
       type: String,
@@ -44,7 +60,7 @@ const userSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // create createdAt & updatedAt
+    timestamps: true,
   }
 );
 
