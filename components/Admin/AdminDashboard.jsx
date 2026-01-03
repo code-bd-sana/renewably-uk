@@ -466,9 +466,9 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    checkAdminAndLoadData();
-  }, [handleRejectUser, handleApproveUser]);
+  // useEffect(() => {
+  //   checkAdminAndLoadData();
+  // }, [handleRejectUser, handleApproveUser]);
   const handleApproveRequest = async (requestId) => {
     try {
       const res = await fetch(`/api/admin/contractor/${requestId}`, {
