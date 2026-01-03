@@ -33,7 +33,7 @@ export async function authenticate(request) {
       token = cookies['auth_token'];
     }
 
-    console.log('Auth token found:', !!token);
+    // console.log('Auth token found:', !!token);
     
     if (!token) {
       return {
@@ -55,7 +55,7 @@ export async function authenticate(request) {
       };
     }
 
-    console.log('Decoded token:', decoded);
+    // console.log('Decoded token:', decoded);
     
     // Return user info
     return {
