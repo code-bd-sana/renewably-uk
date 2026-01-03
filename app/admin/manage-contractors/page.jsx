@@ -1231,8 +1231,18 @@ const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => 
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="font-medium text-gray-900">
-                    {contractor.name}
+                    <button
+                        onClick={() =>
+                          router.push(
+                            `/admin/manage-contractors/${contractor.id}`
+                          )
+                        }
+                        className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                      >
+                        {contractor.name}
+                      </button>
                   </h3>
+                  
                   <p className="text-sm text-gray-600">
                     {contractor.companyName || "N/A"}
                   </p>

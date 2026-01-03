@@ -64,7 +64,7 @@ export default function LoginPage() {
       if (data.error === 'Account suspended') {
         setError("Account suspended");
         // Show detailed message in alert
-        alert(data.message || "Your account has been suspended by admin.");
+        // alert(data.message || "Your account has been suspended by admin.");
       } else {
         setError(data.error || "Login failed");
       }
