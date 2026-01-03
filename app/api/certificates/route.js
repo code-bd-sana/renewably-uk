@@ -40,6 +40,11 @@ export async function GET(request) {
           policyNo: insurance.policyNumber,
           holderName: insurance.policyHolderName,
           productType: product.productType,
+          address: insurance.address,
+          fundingPartner: insurance.fundingPartner,
+          abs: insurance.abs,
+          createdAt: insurance.createdAt,
+
           document: insurance.document,
           contractValue: `€ ${product.contractValue.toFixed(2)}`,
           inceptionDate: new Date(product.inceptionDate).toLocaleDateString(
