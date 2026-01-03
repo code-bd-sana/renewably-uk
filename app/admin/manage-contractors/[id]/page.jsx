@@ -559,7 +559,7 @@ Renewably UK - Powering Renewables
   }
 
   return (
-    <div className='min-h-screen bg-gray-50 p-2 sm:p-4 lg:p-8'>
+    <div className='min-h-screen bg-gray-50 p-2 px-4 py-16 lg:p-8'>
       {/* Main Container */}
       <div className='bg-white rounded-xl shadow-sm p-3 sm:p-4 lg:p-6'>
         {/* Mobile Header */}
@@ -1045,21 +1045,6 @@ Renewably UK - Powering Renewables
                   {selectedCertificate.policyNo ||
                     selectedCertificate.policyNumber}
                 </h1>
-                <div className='flex items-center gap-2'>
-                  <button
-                    onClick={() => handleDownloadSingle(selectedCertificate)}
-                    className='p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 rounded'
-                    disabled={downloading}>
-                    {downloading ? (
-                      <Loader2
-                        size={18}
-                        className='animate-spin sm:w-5 sm:h-5'
-                      />
-                    ) : (
-                      <Download size={18} className='sm:w-5 sm:h-5' />
-                    )}
-                  </button>
-                </div>
               </div>
 
               {/* Show status badge */}
