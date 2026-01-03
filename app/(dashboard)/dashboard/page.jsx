@@ -167,7 +167,7 @@ function DashboardPage() {
         <h2 className='text-2xl font-semibold'>RENEWABLY UK</h2>
         <div className='w-16 h-16   rounded flex items-center justify-center'>
           <div>
-            <Image src={logo2} />
+            <Image src={logo2} alt="BlueDrop"/>
           </div>
         </div>
       </div>
@@ -274,7 +274,7 @@ function DashboardPage() {
       {/* Certificates Table */}
       <div className='bg-[#FFFFFF] pb-12 border border-gray-200 rounded-xl  overflow-hidden'>
         <div className='mb-6 px-4 mt-4'>
-          <Image src={bluedrop} height={150} width={192} />
+          <Image src={bluedrop} height={150} width={192} alt="BlueDrop"/>
         </div>
         <div className='px-6 pb-4 text-[#262626]  font-medium flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
           <h3 className='font-semibold font-sans text-[28px]'>

@@ -132,7 +132,7 @@ function DashboardLayout({ children }) {
             router.push("/");
           }}
           className='p-4 border-b cursor-pointer'>
-          <Image src={logo} />
+          <Image src={logo} alt="Logo" />
         </div>
 
         {/* Menu Items */}
@@ -162,7 +162,6 @@ function DashboardLayout({ children }) {
         </button>
       </aside>
 
-      {/* Main Content Area */}
       {/* Main Content Area */}
       <div className='lg:ml-64 min-h-screen'>
         {/* Header */}
