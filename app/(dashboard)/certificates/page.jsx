@@ -135,48 +135,7 @@ export default function CertificatesPage() {
 
   const isRowSelected = (id) => selectedRows.includes(id);
 
-  // const handleViewCertificate = (certificate) => {
-  // console.log("=== VIEW CERTIFICATE DEBUG ===");
-  // console.log("Certificate status from API:", certificate.status);
-  // console.log("Raw insurance status:", certificate.rawData?.insurance?.status);
-  // console.log("Request type:", certificate.rawData?.insurance?.requestData?.type);
-  
-  //   setSelectedCertificate({
-  //     policyNumber: certificate.policyNo,
-  //     policyHolderName: certificate.holderName,
-  //     productType: certificate.productType,
-  //     contractValue: certificate.contractValue,
-  //     inceptionDate: certificate.inceptionDate,
-  //     expiryDate: certificate.expiryDate,
-  //     price: certificate.price,
-  //     status: certificate.status || "active",
-  //     contractorName:
-  //       certificate.rawData?.insurance?.contractorName || "Not provided",
-  //     contractorAddress:
-  //       certificate.rawData?.insurance?.contractorAddress || "Not provided",
-  //     email: certificate.rawData?.insurance?.email || "Not provided",
-  //     phone: certificate.rawData?.insurance?.phone || "Not provided",
-  //     address: certificate.rawData?.insurance?.address || "Not provided",
-  //     country: certificate.rawData?.insurance?.country || "Not provided",
-  //     postcode: certificate.rawData?.insurance?.postcode || "Not provided",
-  //     insuranceId: certificate.insuranceId || certificate.id?.split("-")[0],
-  //   });
 
-  //   setEditableFields({
-  //     policyHolderName: certificate.holderName,
-  //     address: certificate.rawData?.insurance?.address || "",
-  //     country: certificate.rawData?.insurance?.country || "",
-  //     postcode: certificate.rawData?.insurance?.postcode || "",
-  //     email: certificate.rawData?.insurance?.email || "",
-  //     phone: certificate.rawData?.insurance?.phone || "",
-  //     productType: certificate.productType,
-  //     contractValue: certificate.contractValue.replace("€ ", ""),
-  //   });
-
-  //   setShowModal(true);
-  //   setRequestType("");
-  //   setModalError("");
-  // };
 const handleViewCertificate = (certificate) => {
   console.log("=== VIEW CERTIFICATE DEBUG ===");
   console.log("Full certificate object:", certificate);
@@ -251,7 +210,7 @@ const handleViewCertificate = (certificate) => {
     }
   };
 
-  // Helper function to render editable fields - FIXED VERSION
+  // Helper function to render editable fields 
   const renderField = (label, field, value, editable = true) => (
     <div className="flex items-start py-2">
       <div className="w-1/3 text-sm font-medium text-gray-700">{label}</div>
@@ -528,6 +487,7 @@ Renewably UK - Powering Renewables
     startIndex,
     endIndex
   );
+  // console.log("lweksy", paginatedCertificates)
 
   if (loading) {
     return (

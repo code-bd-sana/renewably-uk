@@ -19,6 +19,13 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    phoneNumber: {
+      type: String,
+      required: true,
+      trim: true,
+      minLength: 8, // minimum number of characters
+      maxLength: 15, // maximum number of characters
+    },
     passwordHash: {
       type: String,
       required: true,

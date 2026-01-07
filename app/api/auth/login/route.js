@@ -78,8 +78,8 @@ export async function POST(request) {
       { expiresIn: "7d" }
     );
 
-    // Create response
-    const response = Response.json({
+    // Create response FIRST
+    const responseData = {
       success: true,
       user: {
         id: user._id.toString(),
@@ -90,17 +90,20 @@ export async function POST(request) {
         isApproved: user.isApproved,
         isSuspended: user.isSuspended,
       },
-    });
+    };
 
-    // Set cookie in headers
-    response.headers.set(
-      "Set-Cookie",
-      `auth_token=${token}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}; ${
-        process.env.NODE_ENV === "production"
-          ? "Secure; SameSite=Strict"
-          : "SameSite=Lax"
-      }`
-    );
+    // Create response with headers
+    const response = new Response(JSON.stringify(responseData), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Set-Cookie": `auth_token=${token}; HttpOnly; Path=/; Max-Age=${
+          7 * 24 * 60 * 60
+        }; SameSite=Lax${
+          process.env.NODE_ENV === "production" ? "; Secure" : ""
+        }`,
+      },
+    });
 
     return response;
   } catch (error) {
