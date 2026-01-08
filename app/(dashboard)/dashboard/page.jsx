@@ -25,18 +25,20 @@ function DashboardPage() {
   const [stats, setStats] = useState({
     totalCertificates: 0,
     thisMonthCertificates: 0,
-    accountBalance: "$0",
+    accountBalance: "£0.00",
     editPending: 0,
   });
+
   const [certificates, setCertificates] = useState([]);
+  const [thisMonthCerts, setThisMonthCerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [downloading, setDownloading] = useState(false);
-  const router = useRouter();
 
+  const router = useRouter();
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -58,27 +60,51 @@ function DashboardPage() {
 
         if (certsResponse.ok) {
           const certsData = await certsResponse.json();
+
+          console.log(certsData, "This is certs Data, yeah");
+
           if (certsData.success) {
             setCertificates(certsData.certificates || []);
 
-            // Update stats
             const now = new Date();
+
+            // Filter this month's certificates
             const thisMonthCertificates = certsData.certificates.filter(
               (cert) => {
+                if (!cert.inceptionDate) return false;
+
                 const certDate = new Date(
                   cert.inceptionDate.split("/").reverse().join("-")
                 );
+
                 return (
                   certDate.getMonth() === now.getMonth() &&
                   certDate.getFullYear() === now.getFullYear()
                 );
               }
-            ).length;
+            );
+
+            setThisMonthCerts(thisMonthCertificates);
+
+            // Sum prices for this month
+            const accountBalanceNumber = thisMonthCertificates.reduce(
+              (total, cert) => {
+                if (!cert.price) return total;
+
+                // "€ 2.25" -> 2.25
+                const priceNumber = parseFloat(
+                  cert.price.replace(/[^\d.]/g, "")
+                );
+
+                return total + (isNaN(priceNumber) ? 0 : priceNumber);
+              },
+              0
+            );
 
             setStats({
               totalCertificates: certsData.certificates.length,
-              thisMonthCertificates: thisMonthCertificates,
-              accountBalance: "$1,850.00",
+              thisMonthCertificates: thisMonthCertificates.length,
+              accountBalance: `£${accountBalanceNumber.toFixed(2)}`,
               editPending: certsData.certificates.filter(
                 (cert) => cert.status === "pending_edit"
               ).length,
@@ -94,7 +120,8 @@ function DashboardPage() {
     fetchDashboardData();
   }, [router]);
 
-  const filteredCertificates = certificates.filter(
+  // 🔍 Search ONLY this month certificates
+  const filteredCertificates = thisMonthCerts.filter(
     (cert) =>
       cert.holderName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cert.policyNo?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -245,10 +272,10 @@ function DashboardPage() {
         </div>
         <div className="px-6 pb-4 text-[#262626]  font-medium flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h3 className="font-semibold font-sans text-[28px]">
-            Recent Insurance Backed Guarantee Certificates
-            {/* <span className='text-sm font-normal text-gray-600 ml-2'>
+            This Month's Insurance Backed Guarantee Certificates
+            <span className="text-sm font-normal text-gray-600 ml-2">
               ({filteredCertificates.length} certificates)
-            </span> */}
+            </span>
           </h3>
           <div className="relative w-full sm:w-64">
             <Search
@@ -268,7 +295,7 @@ function DashboardPage() {
         {filteredCertificates.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p>No certificates found</p>
+            <p>No certificates found for this month</p>
             {searchTerm && (
               <p className="text-sm mt-1">Try a different search term</p>
             )}
@@ -489,11 +516,9 @@ function DashboardPage() {
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between mb-6">
                 <div className="inline-flex items-center gap-2">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full"></div>
-                  <span className="font-bold text-xl">
-                    BLUE<span className="text-blue-500">DROP</span>
-                  </span>
-                  <span className="text-xs text-gray-500 ml-2">SERVICES</span>
+            <div className="mb-6 px-4 mt-4">
+          <Image src={bluedrop} height={150} width={192} alt="BlueDrop" />
+        </div>
                 </div>
                 <button
                   onClick={() => {
@@ -512,7 +537,7 @@ function DashboardPage() {
                 </h1>
                 <button
                   onClick={() => {
-                    const cert = certificates.find(
+                    const cert = thisMonthCerts.find(
                       (c) => c.policyNo === selectedCertificate.policyNumber
                     );
                     if (cert) {

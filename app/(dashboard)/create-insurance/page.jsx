@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function CreateInsuranceForm() {
@@ -30,6 +30,7 @@ export default function CreateInsuranceForm() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [products, setProducts] = useState([]);
+  const [schemeProviders, setSchemeProviders] = useState([]);
   const [activeProductId, setActiveProductId] = useState(null);
   const [selectedTime, setSelectedTime] = useState({
     hour: "01",
@@ -39,6 +40,12 @@ export default function CreateInsuranceForm() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
   const [showProductDropdown, setShowProductDropdown] = useState({});
+  const [showConnectingMessage, setShowConnectingMessage] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [absValue, setAbsValue] = useState("");
+
+  const searchInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     contractorName: "",
@@ -47,12 +54,13 @@ export default function CreateInsuranceForm() {
     email: "",
     phone: "",
     address: "",
-    country: "",
+    country: "United Kingdom",
     postcode: "",
     products: [
       {
-        id: Date.now(), // Use timestamp for unique ID
+        id: Date.now(),
         productType: "",
+        measureType: "",
         inceptionDate: "",
         expiryDate: "",
         contractValue: "",
@@ -72,7 +80,7 @@ export default function CreateInsuranceForm() {
       const response = await fetch("/api/admin/products");
       const data = await response.json();
       if (data.success) {
-        setProducts(data.products.filter((p) => p.Measures)); // Filter out empty rows
+        setProducts(data.products.filter((p) => p.Measures));
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -82,31 +90,78 @@ export default function CreateInsuranceForm() {
     }
   };
 
+  const fetchSchemeProviders = async () => {
+    try {
+      const response = await fetch("/api/admin/scheme-providers");
+      const data = await response.json();
+      if (data.success) {
+        setSchemeProviders(data.providers);
+      }
+    } catch (error) {
+      console.error("Error fetching scheme providers:", error);
+    }
+  };
+
   useEffect(() => {
-    fetchProducts();
-    fetchContractorData();
+    // Show connecting message for 3 seconds on page load
+    setShowConnectingMessage(true);
+    
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          setTimeout(() => {
+            setShowConnectingMessage(false);
+          }, 500);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 150);
+
+    // Fetch data after showing connecting message
+    const timer = setTimeout(() => {
+      fetchProducts();
+      fetchContractorData();
+      fetchSchemeProviders();
+    }, 3000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(progressInterval);
+    };
   }, []);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Filter products based on search query
   const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) {
+    if (!debouncedSearchQuery.trim()) {
       return products;
     }
 
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLowerCase();
     return products.filter((product) =>
       product.Measures.toLowerCase().includes(query)
     );
-  }, [products, searchQuery]);
+  }, [products, debouncedSearchQuery]);
 
-  const countries = [
-    "United Kingdom",
-    "United States",
-    "Canada",
-    "Australia",
-    "Germany",
-    "France",
-  ];
+  // Filter scheme providers by type
+  const getFilteredSchemeProviders = (type) => {
+    return schemeProviders.filter(
+      (provider) => 
+        provider.providerType?.includes(type) && 
+        provider.status === "active"
+    ).map(provider => provider.companyName);
+  };
+
   const dropdownOptions = [
     "Not Required",
     "Assigned",
@@ -123,12 +178,11 @@ export default function CreateInsuranceForm() {
       if (response.ok) {
         const data = await response.json();
         if (data.user) {
-          // Changed from data.contractor to data.user
           setContractorData(data.user);
           setFormData((prev) => ({
             ...prev,
-            contractorName: data.user.companyName || data.user.name, // Use companyName first
-            contractorAddress: data.user.officeAddress || "", // Assuming you add officeAddress field
+            contractorName: data.user.companyName || data.user.name,
+            contractorAddress: data.user.officeAddress || "",
           }));
         }
       }
@@ -138,6 +192,14 @@ export default function CreateInsuranceForm() {
     }
   };
 
+  // Calculate total project cost
+  const calculateTotalProjectCost = () => {
+    return formData.products.reduce((total, product) => {
+      const cost = parseFloat(product.totalProjectCost) || 0;
+      return total + cost;
+    }, 0);
+  };
+
   // for adding product
   const addProduct = () => {
     setFormData((prev) => ({
@@ -145,8 +207,9 @@ export default function CreateInsuranceForm() {
       products: [
         ...prev.products,
         {
-          id: Date.now() + Math.random(), // Ensure unique ID
+          id: Date.now() + Math.random(),
           productType: "",
+          measureType: "",
           inceptionDate: "",
           expiryDate: "",
           contractValue: "",
@@ -180,14 +243,23 @@ export default function CreateInsuranceForm() {
       ...prev,
       [productId]: !prev[productId],
     }));
+    if (!showProductDropdown[productId]) {
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 100);
+    }
   };
 
   const selectProductType = (productId, measure) => {
     updateProduct(productId, "productType", measure);
+    updateProduct(productId, "measureType", measure);
     setShowProductDropdown((prev) => ({
       ...prev,
       [productId]: false,
     }));
+    setSearchQuery("");
   };
 
   // drop down
@@ -204,6 +276,7 @@ export default function CreateInsuranceForm() {
 
         // Close all product dropdowns
         setShowProductDropdown({});
+        setSearchQuery("");
       }
     };
 
@@ -253,12 +326,6 @@ export default function CreateInsuranceForm() {
     "November",
     "December",
   ];
-  const hours = Array.from({ length: 12 }, (_, i) =>
-    String(i + 1).padStart(2, "0")
-  );
-  const minutes = Array.from({ length: 60 }, (_, i) =>
-    String(i).padStart(2, "0")
-  );
 
   const MonthPicker = ({ onSelect }) => (
     <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-6 w-80'>
@@ -288,11 +355,10 @@ export default function CreateInsuranceForm() {
           <button
             key={month}
             onClick={() => {
-              const monthIndex = index + 1; // January = 1
+              const monthIndex = index + 1;
               const year = currentMonth.getFullYear();
 
-              // Create expiry date as last day of selected month
-              const expiryDate = new Date(year, monthIndex, 0); // Last day of month
+              const expiryDate = new Date(year, monthIndex, 0);
               const apiDate = `${year}-${String(monthIndex).padStart(
                 2,
                 "0"
@@ -300,7 +366,7 @@ export default function CreateInsuranceForm() {
               const displayDate = `${month} ${year}`;
 
               setSelectedMonth(displayDate);
-              onSelect(apiDate); // Send API-formatted date
+              onSelect(apiDate);
               setShowMonthPicker(false);
             }}
             className={`p-3 rounded-lg text-sm font-medium transition-colors ${
@@ -362,14 +428,11 @@ export default function CreateInsuranceForm() {
                 );
                 const day = String(dayObj.day).padStart(2, "0");
 
-                // Format for API: "2025-11-25"
                 const apiDate = `${year}-${month}-${day}`;
-
-                // Format for display: "25/11/2025"
                 const displayDate = `${day}/${month}/${year}`;
 
                 setSelectedDate(displayDate);
-                onSelect(apiDate); // Send API-formatted date
+                onSelect(apiDate);
                 setShowDatePicker(false);
               }
             }}
@@ -389,17 +452,6 @@ export default function CreateInsuranceForm() {
       </div>
     </div>
   );
-  const formatDateForAPI = (dateString) => {
-    // Convert from "25/11/2025" to "2025-11-25"
-    if (!dateString) return "";
-
-    if (dateString.includes("/")) {
-      const [day, month, year] = dateString.split("/");
-      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-    }
-
-    return dateString; // Already in correct format
-  };
 
   const DropdownMenu = ({ options, selected, onSelect, show, onClose }) =>
     show && (
@@ -433,22 +485,23 @@ export default function CreateInsuranceForm() {
   // Product Dropdown Component
   const ProductDropdown = ({ productId, show }) => {
     const currentProduct = formData.products.find((p) => p.id === productId);
-    const selectedMeasure = currentProduct?.productType || "";
+    const selectedMeasure = currentProduct?.measureType || "";
 
     return (
       show && (
-        <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md max-h-96 overflow-hidden'>
+        <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg w-full max-w-md max-h-96 overflow-hidden border border-gray-200'>
           {/* Search Input */}
-          <div className='p-3 border border-gray-200-b'>
+          <div className='p-3 border-b border-gray-200 bg-gray-50'>
             <div className='relative'>
               <Search
                 size={18}
                 className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
               />
               <input
+                ref={searchInputRef}
                 type='text'
-                placeholder='Search products...'
-                className='w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm'
+                placeholder='Search measures...'
+                className='w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
@@ -463,11 +516,11 @@ export default function CreateInsuranceForm() {
                 <button
                   key={product._id}
                   onClick={() => selectProductType(productId, product.Measures)}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${
-                    index === 0 ? "" : "border border-gray-200-t"
-                  }`}>
+                  className={`w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center justify-between transition-colors ${
+                    index > 0 ? "border-t border-gray-100" : ""
+                  } ${selectedMeasure === product.Measures ? "bg-blue-50" : ""}`}>
                   <div>
-                    <span className='font-medium'>{product.Measures}</span>
+                    <span className='font-medium text-gray-800'>{product.Measures}</span>
                     <div className='text-xs text-gray-500 mt-1'>
                       <span>Guarantee Period: {product.Year} years</span>
                       {product.Month > 0 && (
@@ -486,7 +539,7 @@ export default function CreateInsuranceForm() {
               ))
             ) : (
               <div className='px-4 py-3 text-center text-gray-500'>
-                No products found
+                {searchQuery ? "No measures found" : "No measures available"}
               </div>
             )}
           </div>
@@ -505,7 +558,6 @@ export default function CreateInsuranceForm() {
       let validationErrors = [];
 
       formData.products.forEach((product, index) => {
-        // Check contract value
         const contractValue = parseFloat(product.contractValue);
         if (isNaN(contractValue) || contractValue <= 0) {
           validationErrors.push(
@@ -515,20 +567,12 @@ export default function CreateInsuranceForm() {
           );
         }
 
-        // Check total project cost if provided
-        if (
-          product.totalProjectCost &&
-          product.totalProjectCost.trim() !== ""
-        ) {
-          const totalCost = parseFloat(product.totalProjectCost);
-          if (isNaN(totalCost) || totalCost < 0) {
-            validationErrors.push(
-              `Product ${index + 1}: Please enter a valid total project cost`
-            );
-          }
+        if (!product.measureType) {
+          validationErrors.push(
+            `Product ${index + 1}: Measure Type is required`
+          );
         }
 
-        // Check dates
         if (!product.inceptionDate) {
           validationErrors.push(
             `Product ${index + 1}: Inception date is required`
@@ -540,6 +584,11 @@ export default function CreateInsuranceForm() {
           );
         }
       });
+
+      // Validate ABS field
+      if (absValue && isNaN(parseFloat(absValue))) {
+        validationErrors.push("ABS must be a valid number");
+      }
 
       if (validationErrors.length > 0) {
         const errorMessage = validationErrors.join("\n");
@@ -560,19 +609,19 @@ export default function CreateInsuranceForm() {
             ? parseFloat(product.totalProjectCost)
             : 0;
 
-        // Calculate price (5% of contract value or use existing price if provided)
         const price = product.price
           ? parseFloat(product.price)
           : contractValue * 0.05;
 
         return {
           productType: product.productType,
+          measureType: product.measureType,
           coverOption: product.coverOption || "Insurance Backed Guarantee",
           inceptionDate: product.inceptionDate,
           expiryDate: product.expiryDate,
-          contractValue: contractValue, // Keep as number
-          totalProjectCost: totalProjectCost, // Keep as number
-          price: price, // ADD THIS - required by your schema
+          contractValue: contractValue,
+          totalProjectCost: totalProjectCost,
+          price: price,
         };
       });
 
@@ -586,30 +635,17 @@ export default function CreateInsuranceForm() {
         address: formData.address,
         country: formData.country,
         postcode: formData.postcode,
-        products: processedProducts, // Use the processed products array
+        products: processedProducts,
         retrofitAssessor: formData.retrofitAssessor || "",
         retrofitCoordinator: formData.retrofitCoordinator || "",
         fundingPartner: formData.fundingPartner || "",
         schemeProvider: formData.schemeProvider || "",
-        abs: formData.abs || "",
+        abs: absValue || "",
       };
 
       console.log("Submitting form data:", submissionData);
 
-      // 4. Debug log each product
-      submissionData.products.forEach((product, index) => {
-        console.log(`Product ${index + 1} Details:`, {
-          productType: product.productType,
-          inceptionDate: product.inceptionDate,
-          expiryDate: product.expiryDate,
-          contractValue: product.contractValue,
-          totalProjectCost: product.totalProjectCost,
-          contractValueType: typeof product.contractValue,
-          contractValueNumber: parseFloat(product.contractValue),
-        });
-      });
-
-      // 5. Submit to API
+      // 4. Submit to API
       const response = await fetch("/api/insurance", {
         method: "POST",
         headers: {
@@ -639,20 +675,18 @@ export default function CreateInsuranceForm() {
         throw new Error(errorMessage);
       }
 
-      // 6. Success handling
-      toast.success("Insurance application created successfully!", {
-        duration: 4000,
+      // 5. Success handling
+      toast.success("Insurance Backed Guarantee Certificates generated successfully! PDFs have been emailed.", {
+        duration: 5000,
         position: "top-right",
       });
 
-      // Optional: Add a small delay before redirecting
       setTimeout(() => {
         router.push("/certificates");
-      }, 1500);
+      }, 2000);
     } catch (error) {
       console.error("Submission error:", error);
 
-      // Show error toast with proper message
       toast.error(error.message || "Failed to submit form. Please try again.", {
         duration: 5000,
         position: "top-right",
@@ -671,6 +705,44 @@ export default function CreateInsuranceForm() {
       router.push("/dashboard");
     }
   };
+
+  // Show connecting message overlay
+  if (showConnectingMessage) {
+    return (
+      <main className='min-h-screen bg-gray-50 flex items-center justify-center p-4'>
+        <div className='bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center'>
+          <div className='mb-6'>
+            <Image src={bluedrop} height={150} width={192} alt="logo" className="mx-auto flex justify-center"/>
+            <h1 className='text-2xl font-bold text-gray-800 mb-2'>
+              Connecting to Bluedrop Services
+            </h1>
+            <p className='text-gray-600'>
+              Please wait while we connect you to our services...
+            </p>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className='mb-4'>
+            <div className='w-full bg-gray-200 rounded-full h-2.5 mb-2'>
+              <div 
+                className='bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out'
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <div className='flex justify-between text-sm text-gray-500'>
+              <span>Connecting...</span>
+              <span>{progress}%</span>
+            </div>
+          </div>
+
+          <div className='flex items-center justify-center gap-2 text-sm text-gray-500'>
+            <Loader2 size={16} className='animate-spin' />
+            <span>Establishing secure connection</span>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className='p-4 sans lg:p-6 max-w-455 mx-auto'>
@@ -750,7 +822,7 @@ export default function CreateInsuranceForm() {
               <label className='block text-sm font-medium mb-2'>Name *</label>
               <input
                 type='text'
-                placeholder='Enter customer name'
+                placeholder='Enter Policy Holder name'
                 className='w-full border border-gray-200 rounded-lg px-3 py-2'
                 value={formData.policyHolderName}
                 onChange={(e) =>
@@ -765,7 +837,7 @@ export default function CreateInsuranceForm() {
               </label>
               <input
                 type='email'
-                placeholder='Enter your email address'
+                placeholder='Enter Policy Holder email address'
                 className='w-full border border-gray-200 rounded-lg px-3 py-2'
                 value={formData.email}
                 onChange={(e) =>
@@ -780,7 +852,7 @@ export default function CreateInsuranceForm() {
               </label>
               <input
                 type='tel'
-                placeholder='Enter your phone number'
+                placeholder='Enter Policy Holder phone number'
                 className='w-full border border-gray-200 rounded-lg px-3 py-2'
                 value={formData.phone}
                 onChange={(e) =>
@@ -795,7 +867,7 @@ export default function CreateInsuranceForm() {
               </label>
               <input
                 type='text'
-                placeholder='Enter your address'
+                placeholder='Enter Policy Holder address'
                 className='w-full border border-gray-200 rounded-lg px-3 py-2'
                 value={formData.address}
                 onChange={(e) =>
@@ -809,18 +881,14 @@ export default function CreateInsuranceForm() {
                 Country *
               </label>
               <select
-                className='w-full border border-gray-200 rounded-lg px-3 py-2'
+                className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
                 value={formData.country}
                 onChange={(e) =>
                   setFormData({ ...formData, country: e.target.value })
                 }
+                disabled
                 required>
-                <option value=''>Select your country</option>
-                {countries.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
+                <option value='United Kingdom'>United Kingdom</option>
               </select>
             </div>
             <div>
@@ -828,13 +896,15 @@ export default function CreateInsuranceForm() {
                 Postcode *
               </label>
               <input
-                type='number'
-                placeholder='Enter your postcode'
+                type='text'
+                placeholder='Enter Policy Holder postcode (e.g., LL31 9FF)'
                 className='w-full border border-gray-200 rounded-lg px-3 py-2'
                 value={formData.postcode}
                 onChange={(e) =>
                   setFormData({ ...formData, postcode: e.target.value })
                 }
+                pattern="[A-Za-z0-9 ]{5,8}"
+                title="Enter a valid UK postcode (e.g., LL31 9FF)"
                 required
               />
             </div>
@@ -846,7 +916,7 @@ export default function CreateInsuranceForm() {
           <h2 className='text-lg font-semibold mb-4'>Product Details</h2>
 
           {formData.products.map((product, index) => (
-            <div key={product.id} className='mb-6 py-4  rounded-lg'>
+            <div key={product.id} className='mb-6 py-4 rounded-lg'>
               <div className='flex justify-between items-center mb-4'>
                 <h3 className='font-medium'>Product {index + 1}</h3>
                 {formData.products.length > 1 && (
@@ -862,17 +932,17 @@ export default function CreateInsuranceForm() {
               <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                 <div className='relative dropdown-container'>
                   <label className='block text-sm font-medium mb-2'>
-                    Product Type *
+                    Measure Type *
                   </label>
                   <button
                     type='button'
                     onClick={() => toggleProductDropdown(product.id)}
-                    className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between hover:border border-gray-200-gray-400'>
+                    className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between hover:border-blue-400 transition-colors'>
                     <span
                       className={
-                        product.productType ? "text-gray-900" : "text-gray-400"
+                        product.measureType ? "text-gray-900" : "text-gray-400"
                       }>
-                      {product.productType || "Select product type"}
+                      {product.measureType || "Select measure type"}
                     </span>
                     <ChevronRight
                       size={18}
@@ -977,13 +1047,13 @@ export default function CreateInsuranceForm() {
                 </div>
                 <div>
                   <label className='block text-sm font-medium mb-2'>
-                    Total Project Cost
+                    Project Cost
                   </label>
                   <input
                     type='number'
                     step='0.01'
                     min='0'
-                    placeholder='Enter total project cost (optional)'
+                    placeholder='Enter project cost (optional)'
                     className='w-full border border-gray-200 rounded-lg px-3 py-2'
                     value={product.totalProjectCost}
                     onChange={(e) =>
@@ -995,6 +1065,21 @@ export default function CreateInsuranceForm() {
                     }
                   />
                 </div>
+
+                {/* Show Total Project Cost only on last product */}
+                {index === formData.products.length - 1 && (
+                  <div className='md:col-span-2 pt-4 border-t border-gray-200'>
+                    <div className='flex justify-between items-center'>
+                      <span className='font-medium text-gray-700'>Total Project Cost:</span>
+                      <span className='text-lg font-bold text-blue-600'>
+                        £{calculateTotalProjectCost().toFixed(2)}
+                      </span>
+                    </div>
+                    <p className='text-sm text-gray-500 mt-1'>
+                      Total of all selected products
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -1002,7 +1087,7 @@ export default function CreateInsuranceForm() {
           <button
             type='button'
             onClick={addProduct}
-            className='text-[#0F47A8] ml-auto flex items-center gap-2 text-sm font-medium hover:text-blue-700'>
+            className='text-[#0F47A8] ml-auto flex items-center gap-2 text-sm font-medium hover:text-blue-700 mt-4'>
             <Plus size={18} />
             Add Product
           </button>
@@ -1016,7 +1101,7 @@ export default function CreateInsuranceForm() {
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='relative dropdown-container'>
               <label className='block text-sm font-medium mb-2'>
-                Retrofit Assessor
+                Retrofit Assessor *
               </label>
               <button
                 type='button'
@@ -1026,7 +1111,7 @@ export default function CreateInsuranceForm() {
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
-                options={dropdownOptions}
+                options={[...getFilteredSchemeProviders("Retrofit Assessor"), ...dropdownOptions]}
                 selected={formData.retrofitAssessor}
                 onSelect={(option) =>
                   setFormData({ ...formData, retrofitAssessor: option })
@@ -1037,7 +1122,7 @@ export default function CreateInsuranceForm() {
             </div>
             <div className='relative dropdown-container'>
               <label className='block text-sm font-medium mb-2'>
-                Retrofit Coordinator
+                Retrofit Coordinator *
               </label>
               <button
                 type='button'
@@ -1051,7 +1136,7 @@ export default function CreateInsuranceForm() {
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
-                options={dropdownOptions}
+                options={[...getFilteredSchemeProviders("Retrofit Coordinator"), ...dropdownOptions]}
                 selected={formData.retrofitCoordinator}
                 onSelect={(option) =>
                   setFormData({ ...formData, retrofitCoordinator: option })
@@ -1062,7 +1147,7 @@ export default function CreateInsuranceForm() {
             </div>
             <div className='relative dropdown-container'>
               <label className='block text-sm font-medium mb-2'>
-                Funding Partner
+                Funding Partner *
               </label>
               <button
                 type='button'
@@ -1072,7 +1157,7 @@ export default function CreateInsuranceForm() {
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
-                options={dropdownOptions}
+                options={[...getFilteredSchemeProviders("Funding Partner"), ...dropdownOptions]}
                 selected={formData.fundingPartner}
                 onSelect={(option) =>
                   setFormData({ ...formData, fundingPartner: option })
@@ -1083,7 +1168,7 @@ export default function CreateInsuranceForm() {
             </div>
             <div className='relative dropdown-container'>
               <label className='block text-sm font-medium mb-2'>
-                Scheme Provider
+                Scheme Provider *
               </label>
               <button
                 type='button'
@@ -1095,7 +1180,7 @@ export default function CreateInsuranceForm() {
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
-                options={dropdownOptions}
+                options={[...getFilteredSchemeProviders("Scheme Provider"), ...dropdownOptions]}
                 selected={formData.schemeProvider}
                 onSelect={(option) =>
                   setFormData({ ...formData, schemeProvider: option })
@@ -1104,21 +1189,14 @@ export default function CreateInsuranceForm() {
                 onClose={() => setShowSchemeProvider(false)}
               />
             </div>
-            <div className='relative md:col-span-1 dropdown-container'>
+            <div className='relative md:col-span-1'>
               <label className='block text-sm font-medium mb-2'>ABS</label>
-              <button
-                type='button'
-                onClick={() => setShowABS(!showABS)}
-                className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between'>
-                <span>{formData.abs || "Select"}</span>
-                <ChevronRight size={18} />
-              </button>
-              <DropdownMenu
-                options={dropdownOptions}
-                selected={formData.abs}
-                onSelect={(option) => setFormData({ ...formData, abs: option })}
-                show={showABS}
-                onClose={() => setShowABS(false)}
+              <input
+                type='text'
+                placeholder='Enter ABS number (e.g., 1000)'
+                className='w-full border border-gray-200 rounded-lg px-3 py-2'
+                value={absValue}
+                onChange={(e) => setAbsValue(e.target.value)}
               />
             </div>
           </div>
@@ -1140,10 +1218,10 @@ export default function CreateInsuranceForm() {
             {loading ? (
               <>
                 <Loader2 size={18} className='animate-spin' />
-                Submitting...
+                Generating...
               </>
             ) : (
-              "Submit"
+              "Generate Insurance Backed Guarantee Certificates"
             )}
           </button>
         </div>
