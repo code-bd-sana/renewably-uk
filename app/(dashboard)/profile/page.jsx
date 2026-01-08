@@ -37,12 +37,12 @@ export default function Page() {
         if (data.user) {
           setUserData(data.user);
           setUserId(data.user._id || data.user.id);
-          console.log("✅ User data fetched:", data.user);
+          console.log("User data fetched:", data.user);
           return;
         }
       }
 
-      // 👉 Dummy fallback data
+      // Dummy fallback data
       setUserData({
         name: "Lois Padilla",
         companyName: "Montgomery and Bryan Traders",
@@ -53,7 +53,7 @@ export default function Page() {
       });
       setUserId("694e27da03fc3222e88dbfb0");
     } catch (error) {
-      console.error("❌ Error fetching user data:", error);
+      console.error("Error fetching user data:", error);
       toast.error("Failed to load user data");
     } finally {
       setLoadingUser(false);
@@ -146,7 +146,7 @@ export default function Page() {
 
       if (response.ok && data.success) {
         // Success!
-        toast.success("✅ Password changed successfully!");
+        toast.success("Password changed successfully!");
 
         // Reset form
         setOldPassword("");
@@ -161,7 +161,7 @@ export default function Page() {
             } max-w-md w-full bg-green-50 border border-green-200 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-green-900 ring-opacity-5`}>
             <div className='flex-1 w-0 p-4'>
               <div className='flex items-start'>
-                <div className='flex-shrink-0 pt-0.5'>
+                <div className='shrink-0 pt-0.5'>
                   <CheckCircle className='h-10 w-10 text-green-400' />
                 </div>
                 <div className='ml-3 flex-1'>
@@ -194,11 +194,11 @@ export default function Page() {
           }));
         }
 
-        toast.error(`❌ ${errorMessage}`);
+        toast.error(`${errorMessage}`);
       }
     } catch (error) {
-      console.error("❌ Error changing password:", error);
-      toast.error("❌ Network error. Please try again.");
+      console.error("Error changing password:", error);
+      toast.error("Network error. Please try again.");
     } finally {
       setChangingPassword(false);
     }
@@ -216,7 +216,7 @@ export default function Page() {
     clearErrors();
     toast.success("Changes discarded");
   };
-
+console.log("User data", userData)
   return (
     <div className='min-h-screen bg-gray-100'>
       <Toaster
@@ -244,23 +244,23 @@ export default function Page() {
         }}
       />
 
-      {/* 🔵 Header */}
+      {/* Header */}
       <div className='bg-[#0F47A8] text-white py-6'>
         <h1 className='text-center text-2xl font-semibold'>
-          Bluedrop Services (NW) Ltd
+          {userData?.companyName}
         </h1>
         <p className='text-center text-sm mt-1 opacity-90'>
-          Phone: 716-242-8888 · Email: info@vistafiling.com
+          Phone: {userData?.phoneNumber} · Email: {userData?.email}
         </p>
       </div>
 
-      {/* 🧾 Main Card */}
+      {/* Main Card */}
       <div className='px-6'>
         <div className='max-w-5xl mx-auto mt-8 bg-white rounded-md shadow '>
           <div className='p-8'>
             {/* Profile Section */}
             <div className='flex items-center gap-6 mb-8'>
-              <div className='w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-xl font-semibold text-white shadow'>
+              <div className='w-20 h-20 rounded-full bg-linear-to-br from-blue-500 to-blue-700 flex items-center justify-center text-xl font-semibold text-white shadow'>
                 {userData?.name
                   ?.split(" ")
                   .map((n) => n[0])
@@ -278,13 +278,13 @@ export default function Page() {
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               <Input label='Contractor Name' value={userData?.name} />
               <Input label='Company Name' value={userData?.companyName} />
-              <Input label='Phone Number' value={userData?.phone} />
+              <Input label='Phone Number' value={userData?.phoneNumber} />
               <Input label='Email Address' value={userData?.email} />
-              <Input
+              {/* <Input
                 label='Billing Email Address'
                 value='info@vistafiling.com'
               />
-              <Input label='Address' value={userData?.address} />
+              <Input label='Address' value={userData?.address} /> */}
             </div>
 
             {/* Document */}
@@ -297,7 +297,7 @@ export default function Page() {
               </div>
             </div>
 
-            {/* 🔐 Change Password Section */}
+            {/* Change Password Section */}
           </div>
         </div>
       </div>
@@ -352,7 +352,7 @@ export default function Page() {
             </div>
             {passwordErrors.oldPassword && (
               <p className='text-sm text-red-600 animate-pulse'>
-                ⚠️ {passwordErrors.oldPassword}
+                {passwordErrors.oldPassword}
               </p>
             )}
           </div>
@@ -391,7 +391,7 @@ export default function Page() {
             </div>
             {passwordErrors.newPassword && (
               <p className='text-sm text-red-600 animate-pulse'>
-                ⚠️ {passwordErrors.newPassword}
+                 {passwordErrors.newPassword}
               </p>
             )}
           </div>
@@ -430,7 +430,7 @@ export default function Page() {
             </div>
             {passwordErrors.confirmPassword && (
               <p className='text-sm text-red-600 animate-pulse'>
-                ⚠️ {passwordErrors.confirmPassword}
+                 {passwordErrors.confirmPassword}
               </p>
             )}
           </div>
@@ -458,7 +458,7 @@ export default function Page() {
               !newPassword ||
               !confirmPassword
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg"
+                : "bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg"
             }`}>
             {changingPassword ? (
               <>
