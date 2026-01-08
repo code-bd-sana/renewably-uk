@@ -8,10 +8,18 @@ export async function POST(request) {
     await connectDB();
 
     const body = await request.json();
-    const { name, companyName, email, password, confirmPassword } = body;
+    const { name, companyName, email, phoneNumber, password, confirmPassword } =
+      body;
 
     // Validate required fields
-    if (!name || !companyName || !email || !password || !confirmPassword) {
+    if (
+      !name ||
+      !companyName ||
+      !email ||
+      !phoneNumber ||
+      !password ||
+      !confirmPassword
+    ) {
       return Response.json(
         {
           success: false,
@@ -39,6 +47,13 @@ export async function POST(request) {
       );
     }
 
+    if (phoneNumber.length < 8 || phoneNumber.length > 15) {
+      return Response.json(
+        { success: false, error: "Phone number must be 8–15 characters" },
+        { status: 400 }
+      );
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -56,18 +71,16 @@ export async function POST(request) {
       name: name.trim(),
       companyName: companyName.trim(),
       email: email.toLowerCase(),
+      phoneNumber: phoneNumber.trim(),
       passwordHash: hashedPassword,
       isApproved: false,
       role: "contractor",
     });
-
     await user.save();
-
-    console.log(`New registration: ${email} (${companyName})`);
 
     // Send notification to admin (don't block if email fails)
     try {
-      await sendRegistrationNotification(email, name, companyName);
+      await sendRegistrationNotification(email, name, companyName, phoneNumber);
     } catch (emailError) {
       console.log(
         "Note: Registration notification email failed, but user was created"

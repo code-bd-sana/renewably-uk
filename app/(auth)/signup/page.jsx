@@ -22,6 +22,7 @@ export default function SignUpPage() {
   const [name, setName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -36,7 +37,14 @@ export default function SignUpPage() {
     setLoading(true);
 
     // Validation
-    if (!name || !companyName || !email || !password || !confirmPassword) {
+    if (
+      !name ||
+      !companyName ||
+      !email ||
+      !phoneNumber ||
+      !password ||
+      !confirmPassword
+    ) {
       setError("All fields are required");
       setLoading(false);
       return;
@@ -58,12 +66,13 @@ export default function SignUpPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          name, 
-          companyName, 
-          email, 
-          password, 
-          confirmPassword 
+        body: JSON.stringify({
+          name,
+          companyName,
+          email,
+          phoneNumber,
+          password,
+          confirmPassword,
         }),
       });
 
@@ -74,9 +83,10 @@ export default function SignUpPage() {
         setName("");
         setCompanyName("");
         setEmail("");
+        setPhoneNumber("");
         setPassword("");
         setConfirmPassword("");
-        
+
         // Optionally redirect to login after 3 seconds
         setTimeout(() => {
           router.push("/login");
@@ -97,7 +107,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 relative">
+    <div className="min-h-screen bg-gray-50 relative ">
       {/* Back Button - Top Left */}
       <div className="absolute top-6 left-6 z-10">
         <Link
@@ -110,17 +120,17 @@ export default function SignUpPage() {
       </div>
 
       {/* Main Content */}
-      <div className="min-h-screen flex items-center justify-center px-4 ">
-        <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16">
+      <div className="min-h-screen flex justify-center px-4 bg-gray-50">
+        <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 md:-mt-28">
           {/* Left Side */}
           <div className="hidden lg:block w-full lg:w-1/2 max-w-xl">
             <div className="space-y-8">
               {/* Logo */}
-              <div className="flex justify-center">
+              <div className="flex justify-center md:mt-8">
                 <Image
                   src="/FullLogo_Transparent.png"
-                  height={250}
-                  width={250}
+                  height="190"
+                  width="190"
                   alt="Renewably UK"
                   className="h-auto w-auto"
                   onError={(e) => {
@@ -149,7 +159,8 @@ export default function SignUpPage() {
                   Supporting Your Renewable Energy Business
                 </h1>
                 <p className="text-gray-600 text-base">
-                  Comprehensive solutions and support for your renewal energy installations
+                  Comprehensive solutions and support for your renewal energy
+                  installations
                 </p>
               </div>
 
@@ -167,7 +178,8 @@ export default function SignUpPage() {
                       Renewable Energy Focus
                     </h3>
                     <p className="text-sm text-gray-600">
-                      Specialised coverage for Renewable Energy Insulations across multiple schemes
+                      Specialised coverage for Renewable Energy Insulations
+                      across multiple schemes
                     </p>
                   </div>
                 </div>
@@ -201,7 +213,8 @@ export default function SignUpPage() {
                       Trusted by Thousands
                     </h3>
                     <p className="text-sm text-gray-600">
-                      Join thousands of Renewable Energy Installation Companies protecting their submissions
+                      Join thousands of Renewable Energy Installation Companies
+                      protecting their submissions
                     </p>
                   </div>
                 </div>
@@ -309,6 +322,33 @@ export default function SignUpPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         className="block w-full text-sm pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 transition-colors"
                         placeholder="Enter your email"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                  {/* Phone Number Field */}
+                  <div>
+                    <label
+                      htmlFor="phoneNumber"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Phone Number
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        type="tel"
+                        minLength={8}
+                        maxLength={15}
+                        required
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="block w-full text-sm pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 transition-colors"
+                        placeholder="Enter your phone number"
                         disabled={loading}
                       />
                     </div>

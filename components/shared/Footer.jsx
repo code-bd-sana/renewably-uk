@@ -1,8 +1,34 @@
+"use client";
+
 import { Mail, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 const Footer = () => {
+  // Function to handle service click
+  const handleServiceClick = (e, id) => {
+    e.preventDefault();
+
+    // Update URL hash
+    window.history.pushState(null, null, `#${id}`);
+
+    // Dispatch a custom event that ServicesWeHost can listen to
+    window.dispatchEvent(
+      new CustomEvent("service-scroll", {
+        detail: { id },
+      })
+    );
+
+    // Scroll to the element
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  };
+
   return (
     <footer className="w-full bg-[#0F47A8] pt-[72px] pb-[32px]">
       <div className="max-w-[1680px] mx-auto px-4">
@@ -71,20 +97,42 @@ const Footer = () => {
 
             <ul className="flex flex-col gap-[10px] text-[13px] text-white/80">
               <li>
-                <Link href="/#insurance-backed-guarantees">
+                <a
+                  href="#insurance-backed-guarantees"
+                  onClick={(e) =>
+                    handleServiceClick(e, "insurance-backed-guarantees")
+                  }
+                  className="hover:text-white transition-colors duration-300"
+                >
                   Insurance Backed Guarantees
-                </Link>
+                </a>
               </li>
               <li>
-                <Link href="/#data-protection">
+                <a
+                  href="#data-protection"
+                  onClick={(e) => handleServiceClick(e, "data-protection")}
+                  className="hover:text-white transition-colors duration-300"
+                >
                   Secure ICO-compliant Document Repository
-                </Link>
+                </a>
               </li>
               <li>
-                <Link href="/#project-funding">Renewable Project Funding</Link>
+                <a
+                  href="#project-funding"
+                  onClick={(e) => handleServiceClick(e, "project-funding")}
+                  className="hover:text-white transition-colors duration-300"
+                >
+                  Renewable Project Funding
+                </a>
               </li>
               <li>
-                <Link href="/#support-guidance">Support and Guidance</Link>
+                <a
+                  href="#support-guidance"
+                  onClick={(e) => handleServiceClick(e, "support-guidance")}
+                  className="hover:text-white transition-colors duration-300"
+                >
+                  Support and Guidance
+                </a>
               </li>
             </ul>
           </div>
@@ -98,12 +146,21 @@ const Footer = () => {
             <ul className="flex flex-col gap-[12px] text-[13px] text-white/80">
               <li className="flex items-start gap-[10px]">
                 <Phone size={14} className="mt-[2px]" />
-                <a href="tel:+441615243512">+44 161 524 3512</a>
+                <a
+                  href="tel:+441615243512"
+                  className="hover:text-white transition-colors duration-300"
+                >
+                  +44 161 524 3512
+                </a>
               </li>
 
+              {/* EMAIL LINK */}
               <li className="flex items-start gap-[10px]">
                 <Mail size={14} className="mt-[2px]" />
-                <a href="mailto:contact@renewably.energy">
+                <a
+                  href="mailto:contact@renewably.energy"
+                  className="hover:text-white transition-colors duration-300"
+                >
                   contact@renewably.energy
                 </a>
               </li>

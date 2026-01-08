@@ -29,8 +29,8 @@ export default function Navbar() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include'
+      const response = await fetch("/api/auth/me", {
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -45,30 +45,44 @@ export default function Navbar() {
         setUserData(null);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error("Auth check failed:", error);
       setIsLoggedIn(false);
       setUserData(null);
     } finally {
       setIsLoading(false);
     }
   };
+  useEffect(() => {
+    // Listen for logout event from ActivityTracker
+    const handleUserLoggedOut = () => {
+      console.log("Received logout event from ActivityTracker");
+      setIsLoggedIn(false);
+      setUserData(null);
+    };
 
+    window.addEventListener("user-logged-out", handleUserLoggedOut);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("user-logged-out", handleUserLoggedOut);
+    };
+  }, []);
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
       });
 
       if (response.ok) {
         setIsLoggedIn(false);
         setUserData(null); // Clear user data
         setOpen(false);
-        router.push('/');
+        router.push("/");
         router.refresh();
       }
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -125,9 +139,10 @@ export default function Navbar() {
                     href={item.href}
                     className={`
                       text-[14px]
-                      ${isActive
-                        ? "font-semibold text-[#0F172A]"
-                        : "font-medium text-[#6B7280] hover:text-[#0F172A]"
+                      ${
+                        isActive
+                          ? "font-semibold text-[#0F172A]"
+                          : "font-medium text-[#6B7280] hover:text-[#0F172A]"
                       }
                     `}
                   >
@@ -142,7 +157,7 @@ export default function Navbar() {
               {isLoggedIn ? (
                 <>
                   <Link
-                    href={userData?.role === 'admin' ? '/admin' : '/dashboard'}
+                    href={userData?.role === "admin" ? "/admin" : "/dashboard"}
                     className={`
         h-10
         px-5
@@ -150,13 +165,16 @@ export default function Navbar() {
         rounded-[10px]
         text-[14px]
         font-medium
-        ${pathname === (userData?.role === 'admin' ? '/admin' : '/dashboard')
-                        ? "bg-[#0F172A] text-white"
-                        : "bg-gray-100 text-[#0F172A] hover:bg-gray-200"
-                      }
+        ${
+          pathname === (userData?.role === "admin" ? "/admin" : "/dashboard")
+            ? "bg-[#0F172A] text-white"
+            : "bg-gray-100 text-[#0F172A] hover:bg-gray-200"
+        }
       `}
                   >
-                    {userData?.role === 'admin' ? 'Admin Dashboard' : 'Dashboard'}
+                    {userData?.role === "admin"
+                      ? "Admin Dashboard"
+                      : "Dashboard"}
                   </Link>
 
                   <button
@@ -181,10 +199,11 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/login"
-                    className={`text-[14px] ${pathname === "/login"
-                      ? "font-semibold text-[#0F172A]"
-                      : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
-                      }`}
+                    className={`text-[14px] ${
+                      pathname === "/login"
+                        ? "font-semibold text-[#0F172A]"
+                        : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
+                    }`}
                   >
                     Login
                   </Link>
@@ -242,10 +261,11 @@ export default function Navbar() {
                       key={item.label}
                       href={item.href}
                       onClick={() => setOpen(false)}
-                      className={`text-[15px] ${isActive
-                        ? "font-semibold text-[#0F172A]"
-                        : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
-                        }`}
+                      className={`text-[15px] ${
+                        isActive
+                          ? "font-semibold text-[#0F172A]"
+                          : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
+                      }`}
                     >
                       {item.label}
                     </Link>
@@ -264,9 +284,10 @@ export default function Navbar() {
                           rounded-[10px]
                           text-[14px]
                           font-medium
-                          ${pathname === "/dashboard"
-                            ? "bg-[#0F172A] text-white"
-                            : "bg-gray-100 text-[#0F172A]"
+                          ${
+                            pathname === "/dashboard"
+                              ? "bg-[#0F172A] text-white"
+                              : "bg-gray-100 text-[#0F172A]"
                           }
                         `}
                       >
@@ -298,10 +319,11 @@ export default function Navbar() {
                       <Link
                         href="/login"
                         onClick={() => setOpen(false)}
-                        className={`text-[14px] text-center ${pathname === "/login"
-                          ? "font-semibold text-[#0F172A]"
-                          : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
-                          }`}
+                        className={`text-[14px] text-center ${
+                          pathname === "/login"
+                            ? "font-semibold text-[#0F172A]"
+                            : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
+                        }`}
                       >
                         Login
                       </Link>
