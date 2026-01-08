@@ -12,6 +12,7 @@ import {
   X,
   Eye,
 } from "lucide-react";
+import Image from "next/image";
 
 const ProductList = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,7 +36,6 @@ const ProductList = () => {
     "Price Contract Value <£30,000": "",
     "Price Contract Value <£50,000": "",
     "Transaction Type": "",
-    "Approved Measures": "",
   });
 
   // Fetch products from database
@@ -86,10 +86,10 @@ const ProductList = () => {
   const handleSaveProduct = async () => {
     try {
       // Validate required fields
-      if (!formData.Measures || !formData["Approved Measures"]) {
-        alert("Please fill in required fields: Measures and Approved Measures");
-        return;
-      }
+      // if (!formData.Measures || !formData["Approved Measures"]) {
+      //   alert("Please fill in required fields: Measures and Approved Measures");
+      //   return;
+      // }
       // Convert numeric fields
       const dataToSend = {
         ...formData,
@@ -208,7 +208,7 @@ const ProductList = () => {
       "Price Contract Value <£30,000": "",
       "Price Contract Value <£50,000": "",
       "Transaction Type": "Insurance Backed Guarantee", // Set default
-      "Approved Measures": "",
+
     });
     setEditingId(null);
     setShowForm(false);
@@ -248,11 +248,18 @@ const ProductList = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className=" mx-auto">
+        <Image
+          src="/bluedrop.png"
+          height={200}
+          width={200}
+          alt="Renewably UK"
+          className="h-auto w-auto my-2"
+        />
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
-              Product List
+              Insurance Product List
             </h1>
             <p className="text-gray-600 mt-1 text-sm md:text-base">
               {filteredProducts.length} products found
@@ -298,6 +305,13 @@ const ProductList = () => {
           <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-8">
+                <Image
+          src="/bluedrop.png"
+          height={200}
+          width={200}
+          alt="Renewably UK"
+          className="h-auto w-auto my-2"
+        />
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">
                   <h2 className="text-2xl font-semibold text-gray-900">
@@ -333,7 +347,7 @@ const ProductList = () => {
                   </div>
 
                   {/* Approved Measures - Full Width */}
-                  <div className="col-span-2">
+                  {/* <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Approved Measures *
                     </label>
@@ -346,7 +360,7 @@ const ProductList = () => {
                       placeholder="e.g., Air Source Heat Pump"
                       required
                     />
-                  </div>
+                  </div> */}
 
                   {/* Cover Option (Insurance Coverage) */}
                   <div>
@@ -363,11 +377,6 @@ const ProductList = () => {
                       <option value="Insurance Backed Guarantee">
                         Insurance Backed Guarantee
                       </option>
-                      <option value="Insurance Guarantee">
-                        Insurance Guarantee
-                      </option>
-                      <option value="Standard Cover">Standard Cover</option>
-                      <option value="Premium Cover">Premium Cover</option>
                     </select>
                   </div>
 
@@ -457,6 +466,7 @@ const ProductList = () => {
           <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white text-base rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
+                
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6 border-b pb-4">
                   <div className="flex items-center gap-4">
@@ -475,7 +485,13 @@ const ProductList = () => {
                     <X className="w-6 h-6" />
                   </button>
                 </div>
-
+<Image
+          src="/bluedrop.png"
+          height={200}
+          width={200}
+          alt="Renewably UK"
+          className="h-auto w-auto my-2"
+        />
                 {/* Content */}
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-8">
@@ -573,14 +589,14 @@ const ProductList = () => {
                   </div>
 
                   {/* Additional Info */}
-                  <div className="mt-8 p-4 bg-blue-50 rounded-lg">
+                  {/* <div className="mt-8 p-4 bg-blue-50 rounded-lg">
                     <h3 className="text-base font-medium text-blue-800 mb-2">
                       Approved Measures
                     </h3>
                     <p className="text-blue-700">
                       {selectedProduct["Approved Measures"]}
                     </p>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
@@ -670,7 +686,9 @@ const ProductList = () => {
                             <Edit2 className="w-5 h-5" />
                           </button>
                           <button
-                            onClick={() => handleDeleteProduct(product._id || product.id)}
+                            onClick={() =>
+                              handleDeleteProduct(product._id || product.id)
+                            }
                             className="text-red-600 hover:text-red-800 transition-colors p-1"
                             title="Delete"
                           >
@@ -721,7 +739,9 @@ const ProductList = () => {
                       <Edit2 className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => handleDeleteProduct(product._id || product.id)}
+                      onClick={() =>
+                        handleDeleteProduct(product._id || product.id)
+                      }
                       className="text-red-600 hover:text-red-800 transition-colors p-2 bg-red-50 rounded-lg"
                     >
                       <Trash2 className="w-5 h-5" />
