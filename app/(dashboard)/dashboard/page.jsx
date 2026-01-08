@@ -167,7 +167,7 @@ function DashboardPage() {
         <h2 className='text-2xl font-semibold'>RENEWABLY UK</h2>
         <div className='w-16 h-16   rounded flex items-center justify-center'>
           <div>
-            <Image src={logo2} alt="BlueDrop"/>
+            <Image src={logo2} alt='BlueDrop' />
           </div>
         </div>
       </div>
@@ -274,7 +274,7 @@ function DashboardPage() {
       {/* Certificates Table */}
       <div className='bg-[#FFFFFF] pb-12 border border-gray-200 rounded-xl  overflow-hidden'>
         <div className='mb-6 px-4 mt-4'>
-          <Image src={bluedrop} height={150} width={192} alt="BlueDrop"/>
+          <Image src={bluedrop} height={150} width={192} alt='BlueDrop' />
         </div>
         <div className='px-6 pb-4 text-[#262626]  font-medium flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
           <h3 className='font-semibold font-sans text-[28px]'>
@@ -514,11 +514,12 @@ function DashboardPage() {
             <div className='p-6 border-b border-gray-200'>
               <div className='flex items-center justify-between mb-6'>
                 <div className='inline-flex items-center gap-2'>
-                  <div className='w-10 h-10 bg-blue-500 rounded-full'></div>
-                  <span className='font-bold text-xl'>
-                    BLUE<span className='text-blue-500'>DROP</span>
-                  </span>
-                  <span className='text-xs text-gray-500 ml-2'>SERVICES</span>
+                  <Image
+                    src={bluedrop}
+                    height={150}
+                    width={192}
+                    alt='BlueDrop'
+                  />
                 </div>
                 <button
                   onClick={() => {
