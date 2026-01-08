@@ -39,6 +39,8 @@ export default function CreateInsuranceForm() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
   const [showProductDropdown, setShowProductDropdown] = useState({});
+  const [showConnectingMessage, setShowConnectingMessage] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const [formData, setFormData] = useState({
     contractorName: "",
@@ -51,7 +53,7 @@ export default function CreateInsuranceForm() {
     postcode: "",
     products: [
       {
-        id: Date.now(), // Use timestamp for unique ID
+        id: Date.now(),
         productType: "",
         inceptionDate: "",
         expiryDate: "",
@@ -72,7 +74,7 @@ export default function CreateInsuranceForm() {
       const response = await fetch("/api/admin/products");
       const data = await response.json();
       if (data.success) {
-        setProducts(data.products.filter((p) => p.Measures)); // Filter out empty rows
+        setProducts(data.products.filter((p) => p.Measures));
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -83,8 +85,32 @@ export default function CreateInsuranceForm() {
   };
 
   useEffect(() => {
-    fetchProducts();
-    fetchContractorData();
+    // Show connecting message for 3 seconds on page load
+    setShowConnectingMessage(true);
+    
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          setTimeout(() => {
+            setShowConnectingMessage(false);
+          }, 500);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 150); // Progress completes in ~1.5 seconds
+
+    // Fetch data after showing connecting message
+    const timer = setTimeout(() => {
+      fetchProducts();
+      fetchContractorData();
+    }, 3000); // Wait 3 seconds before loading data
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(progressInterval);
+    };
   }, []);
 
   // Filter products based on search query
@@ -123,12 +149,11 @@ export default function CreateInsuranceForm() {
       if (response.ok) {
         const data = await response.json();
         if (data.user) {
-          // Changed from data.contractor to data.user
           setContractorData(data.user);
           setFormData((prev) => ({
             ...prev,
-            contractorName: data.user.companyName || data.user.name, // Use companyName first
-            contractorAddress: data.user.officeAddress || "", // Assuming you add officeAddress field
+            contractorName: data.user.companyName || data.user.name,
+            contractorAddress: data.user.officeAddress || "",
           }));
         }
       }
@@ -145,7 +170,7 @@ export default function CreateInsuranceForm() {
       products: [
         ...prev.products,
         {
-          id: Date.now() + Math.random(), // Ensure unique ID
+          id: Date.now() + Math.random(),
           productType: "",
           inceptionDate: "",
           expiryDate: "",
@@ -288,11 +313,10 @@ export default function CreateInsuranceForm() {
           <button
             key={month}
             onClick={() => {
-              const monthIndex = index + 1; // January = 1
+              const monthIndex = index + 1;
               const year = currentMonth.getFullYear();
 
-              // Create expiry date as last day of selected month
-              const expiryDate = new Date(year, monthIndex, 0); // Last day of month
+              const expiryDate = new Date(year, monthIndex, 0);
               const apiDate = `${year}-${String(monthIndex).padStart(
                 2,
                 "0"
@@ -300,7 +324,7 @@ export default function CreateInsuranceForm() {
               const displayDate = `${month} ${year}`;
 
               setSelectedMonth(displayDate);
-              onSelect(apiDate); // Send API-formatted date
+              onSelect(apiDate);
               setShowMonthPicker(false);
             }}
             className={`p-3 rounded-lg text-sm font-medium transition-colors ${
@@ -362,14 +386,11 @@ export default function CreateInsuranceForm() {
                 );
                 const day = String(dayObj.day).padStart(2, "0");
 
-                // Format for API: "2025-11-25"
                 const apiDate = `${year}-${month}-${day}`;
-
-                // Format for display: "25/11/2025"
                 const displayDate = `${day}/${month}/${year}`;
 
                 setSelectedDate(displayDate);
-                onSelect(apiDate); // Send API-formatted date
+                onSelect(apiDate);
                 setShowDatePicker(false);
               }
             }}
@@ -389,17 +410,6 @@ export default function CreateInsuranceForm() {
       </div>
     </div>
   );
-  const formatDateForAPI = (dateString) => {
-    // Convert from "25/11/2025" to "2025-11-25"
-    if (!dateString) return "";
-
-    if (dateString.includes("/")) {
-      const [day, month, year] = dateString.split("/");
-      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-    }
-
-    return dateString; // Already in correct format
-  };
 
   const DropdownMenu = ({ options, selected, onSelect, show, onClose }) =>
     show && (
@@ -438,7 +448,6 @@ export default function CreateInsuranceForm() {
     return (
       show && (
         <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md max-h-96 overflow-hidden'>
-          {/* Search Input */}
           <div className='p-3 border border-gray-200-b'>
             <div className='relative'>
               <Search
@@ -456,7 +465,6 @@ export default function CreateInsuranceForm() {
             </div>
           </div>
 
-          {/* Product List */}
           <div className='overflow-y-auto max-h-72'>
             {filteredProducts.length > 0 ? (
               filteredProducts.map((product, index) => (
@@ -505,7 +513,6 @@ export default function CreateInsuranceForm() {
       let validationErrors = [];
 
       formData.products.forEach((product, index) => {
-        // Check contract value
         const contractValue = parseFloat(product.contractValue);
         if (isNaN(contractValue) || contractValue <= 0) {
           validationErrors.push(
@@ -515,7 +522,6 @@ export default function CreateInsuranceForm() {
           );
         }
 
-        // Check total project cost if provided
         if (
           product.totalProjectCost &&
           product.totalProjectCost.trim() !== ""
@@ -528,7 +534,6 @@ export default function CreateInsuranceForm() {
           }
         }
 
-        // Check dates
         if (!product.inceptionDate) {
           validationErrors.push(
             `Product ${index + 1}: Inception date is required`
@@ -560,7 +565,6 @@ export default function CreateInsuranceForm() {
             ? parseFloat(product.totalProjectCost)
             : 0;
 
-        // Calculate price (5% of contract value or use existing price if provided)
         const price = product.price
           ? parseFloat(product.price)
           : contractValue * 0.05;
@@ -570,9 +574,9 @@ export default function CreateInsuranceForm() {
           coverOption: product.coverOption || "Insurance Backed Guarantee",
           inceptionDate: product.inceptionDate,
           expiryDate: product.expiryDate,
-          contractValue: contractValue, // Keep as number
-          totalProjectCost: totalProjectCost, // Keep as number
-          price: price, // ADD THIS - required by your schema
+          contractValue: contractValue,
+          totalProjectCost: totalProjectCost,
+          price: price,
         };
       });
 
@@ -586,7 +590,7 @@ export default function CreateInsuranceForm() {
         address: formData.address,
         country: formData.country,
         postcode: formData.postcode,
-        products: processedProducts, // Use the processed products array
+        products: processedProducts,
         retrofitAssessor: formData.retrofitAssessor || "",
         retrofitCoordinator: formData.retrofitCoordinator || "",
         fundingPartner: formData.fundingPartner || "",
@@ -596,7 +600,6 @@ export default function CreateInsuranceForm() {
 
       console.log("Submitting form data:", submissionData);
 
-      // 4. Debug log each product
       submissionData.products.forEach((product, index) => {
         console.log(`Product ${index + 1} Details:`, {
           productType: product.productType,
@@ -645,14 +648,12 @@ export default function CreateInsuranceForm() {
         position: "top-right",
       });
 
-      // Optional: Add a small delay before redirecting
       setTimeout(() => {
         router.push("/certificates");
       }, 1500);
     } catch (error) {
       console.error("Submission error:", error);
 
-      // Show error toast with proper message
       toast.error(error.message || "Failed to submit form. Please try again.", {
         duration: 5000,
         position: "top-right",
@@ -671,6 +672,44 @@ export default function CreateInsuranceForm() {
       router.push("/dashboard");
     }
   };
+
+  // Show connecting message overlay
+  if (showConnectingMessage) {
+    return (
+      <main className='min-h-screen bg-gray-50 flex items-center justify-center p-4'>
+        <div className='bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center'>
+          <div className='mb-6'>
+                 <Image src={bluedrop} height={150} width={192} alt="logo" className="mx-auto flex justify-center"/>
+            <h1 className='text-2xl font-bold text-gray-800 mb-2'>
+              Connecting to Bluedrop Services
+            </h1>
+            <p className='text-gray-600'>
+              Please wait while we connect you to our services...
+            </p>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className='mb-4'>
+            <div className='w-full bg-gray-200 rounded-full h-2.5 mb-2'>
+              <div 
+                className='bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out'
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <div className='flex justify-between text-sm text-gray-500'>
+              <span>Connecting...</span>
+              <span>{progress}%</span>
+            </div>
+          </div>
+
+          <div className='flex items-center justify-center gap-2 text-sm text-gray-500'>
+            <Loader2 size={16} className='animate-spin' />
+            <span>Establishing secure connection</span>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className='p-4 sans lg:p-6 max-w-455 mx-auto'>
