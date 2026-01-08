@@ -186,7 +186,9 @@ export async function GET(request) {
         email: user.email,
         role: user.role,
         companyName: user.companyName,
+        phoneNumber: user.phoneNumber,
         isApproved: user.isApproved,
+        isSuspended: user.isSuspended,
         createdAt: user.createdAt,
       },
     });

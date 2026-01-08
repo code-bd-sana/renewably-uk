@@ -29,7 +29,7 @@ export default function AdminLayout({ children }) {
       href: "/admin/manage-contractors",
       icon: Users,
     },
-    { name: "Product List", href: "/admin/products", icon: Package },
+    { name: "Insurance Product List", href: "/admin/products", icon: Package },
     {
       name: "Certificate Templates",
       href: "/admin/certificate-templates",
@@ -132,7 +132,7 @@ const performLogout = async () => {
     md:sticky md:top-0 md:h-screen
         `}>
           <div
-            className='p-4 border-b cursor-pointer'
+            className='p-4 border-b-2 border-[#E2E8F0] cursor-pointer'
             onClick={() => {
               router.push("/");
             }}>
