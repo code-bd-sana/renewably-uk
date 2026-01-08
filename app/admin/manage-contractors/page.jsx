@@ -12,9 +12,9 @@ import {
   Search,
   Trash2,
   X,
-  MoreVertical, // Add this
-  PauseCircle, // Add this
-  PlayCircle, // Add this
+  MoreVertical, 
+  PauseCircle, 
+  PlayCircle, 
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,7 +41,7 @@ export default function ManageContractorsPage() {
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [selectedContractorForAction, setSelectedContractorForAction] =
     useState(null);
-  const [actionType, setActionType] = useState(""); 
+  const [actionType, setActionType] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
   const itemsPerPage = 10;
@@ -275,6 +275,7 @@ export default function ManageContractorsPage() {
   };
 
   // Filter contractors by search
+  console.log("contractor", contractors)
   const filteredContractors = contractors.filter((contractor) => {
     return (
       searchTerm === "" ||
@@ -291,7 +292,7 @@ export default function ManageContractorsPage() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentContractors = filteredContractors.slice(startIndex, endIndex);
-
+console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
   // Handle download contractor data - Generate certificate PDF
 
   const downloadHandler = async (contractorId) => {
@@ -479,135 +480,81 @@ export default function ManageContractorsPage() {
   };
 
   // Handle suspend/unsuspend action
-  // const handleSuspendAction = async (
-  //   contractorId,
-  //   shouldSuspend,
-  //   reason = ""
-  // ) => {
-  //   try {
-  //     setActionLoading(true);
+  const handleSuspendAction = async (
+    contractorId,
+    shouldSuspend,
+    reason = ""
+  ) => {
+    try {
+      setActionLoading(true);
 
-  //     const res = await fetch(`/api/admin/contractor/${contractorId}/suspend`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         isSuspended: shouldSuspend,
-  //         reason: reason,
-  //       }),
-  //     });
-
-  //     const data = await res.json();
-
-  //     if (data.success) {
-  //       // Update local state
-  //       setContractors((prev) =>
-  //         prev.map((c) =>
-  //           c.id === contractorId
-  //             ? {
-  //                 ...c,
-  //                 isSuspended: shouldSuspend,
-  //                 suspensionReason: reason,
-  //                 suspendedAt: shouldSuspend ? new Date().toISOString() : null,
-  //               }
-  //             : c
-  //         )
-  //       );
-
-  //       // Update selected contractor if modal is open
-  //       if (selectedContractor?.id === contractorId) {
-  //         setSelectedContractor((prev) => ({
-  //           ...prev,
-  //           isSuspended: shouldSuspend,
-  //           suspensionReason: reason,
-  //           suspendedAt: shouldSuspend ? new Date().toISOString() : null,
-  //         }));
-  //       }
-
-  //       alert(data.message);
-  //     } else {
-  //       alert(`Failed: ${data.error}`);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error updating suspension status:", error);
-  //     alert("Failed to update user status");
-  //   } finally {
-  //     setActionLoading(false);
-  //     setShowSuspendModal(false);
-  //     setSuspendReason("");
-  //     setShowActionMenu(null);
-  //     setSelectedContractorForAction(null);
-  //   }
-  // };
-
-  // Handle suspend/unsuspend action - FIXED VERSION
-const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => {
-  try {
-    setActionLoading(true);
-    
-    console.log("Calling suspend API for:", contractorId, "shouldSuspend:", shouldSuspend);
-    
-    const res = await fetch(`/api/admin/contractor/${contractorId}/suspend`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        isSuspended: shouldSuspend,
-        reason: reason,
-      }),
-    });
-
-    console.log("API Response status:", res.status);
-    
-    const data = await res.json();
-    console.log("API Response data:", data);
-
-    if (!res.ok) {
-      throw new Error(data.error || `HTTP error! status: ${res.status}`);
-    }
-
-    if (data.success) {
-      // Update local state - FIXED: Use the returned data from API
-      setContractors(prev =>
-        prev.map(c =>
-          c.id === contractorId
-            ? { 
-                ...c, 
-                isSuspended: data.user.isSuspended,
-                suspensionReason: data.user.suspensionReason,
-                suspendedAt: data.user.suspendedAt
-              }
-            : c
-        )
+      console.log(
+        "Calling suspend API for:",
+        contractorId,
+        "shouldSuspend:",
+        shouldSuspend
       );
-      
-      // Update selected contractor if modal is open
-      if (selectedContractor?.id === contractorId) {
-        setSelectedContractor(prev => ({
-          ...prev,
-          isSuspended: data.user.isSuspended,
-          suspensionReason: data.user.suspensionReason,
-          suspendedAt: data.user.suspendedAt
-        }));
+
+      const res = await fetch(`/api/admin/contractor/${contractorId}/suspend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          isSuspended: shouldSuspend,
+          reason: reason,
+        }),
+      });
+
+      console.log("API Response status:", res.status);
+
+      const data = await res.json();
+      console.log("API Response data:", data);
+
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP error! status: ${res.status}`);
       }
-      
-      alert(data.message);
-    } else {
-      alert(`Failed: ${data.error}`);
+
+      if (data.success) {
+        // Update local state - FIXED: Use the returned data from API
+        setContractors((prev) =>
+          prev.map((c) =>
+            c.id === contractorId
+              ? {
+                  ...c,
+                  isSuspended: data.user.isSuspended,
+                  suspensionReason: data.user.suspensionReason,
+                  suspendedAt: data.user.suspendedAt,
+                }
+              : c
+          )
+        );
+
+        // Update selected contractor if modal is open
+        if (selectedContractor?.id === contractorId) {
+          setSelectedContractor((prev) => ({
+            ...prev,
+            isSuspended: data.user.isSuspended,
+            suspensionReason: data.user.suspensionReason,
+            suspendedAt: data.user.suspendedAt,
+          }));
+        }
+
+        alert(data.message);
+      } else {
+        alert(`Failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Error updating suspension status:", error);
+      alert(`Failed to update user status: ${error.message}`);
+    } finally {
+      setActionLoading(false);
+      setShowSuspendModal(false);
+      setSuspendReason("");
+      setShowActionMenu(null);
+      setSelectedContractorForAction(null);
     }
-  } catch (error) {
-    console.error("Error updating suspension status:", error);
-    alert(`Failed to update user status: ${error.message}`);
-  } finally {
-    setActionLoading(false);
-    setShowSuspendModal(false);
-    setSuspendReason("");
-    setShowActionMenu(null);
-    setSelectedContractorForAction(null);
-  }
-};
+  };
   // Open suspend modal
   const openSuspendModal = (contractor, type) => {
     setSelectedContractorForAction(contractor);
@@ -629,18 +576,6 @@ const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => 
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  // ========== SUSPEND FUNCTIONS END ==========
-  // Calculate additional contractor stats (mock data - replace with real data)
-  // const getContractorStats = (contractor) => {
-  //   // Mock stats - replace with actual data from your API
-  //   return {
-  //     totalCertificates: Math.floor(Math.random() * 20) + 1,
-  //     pendingEditRequests: Math.floor(Math.random() * 5),
-  //     lastCertificateDate: new Date(
-  //       Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-  //     ).toISOString(),
-  //   };
-  // };
 
   if (loading) {
     return (
@@ -1143,23 +1078,11 @@ const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => 
       </div>
 
       {/* Mobile Stats Grid */}
-      {/* <div className="md:hidden grid grid-cols-2 gap-3 mb-6">
+      <div className="md:hidden grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white border border-gray-200 rounded-lg p-3">
           <p className="text-xs text-gray-600">Total</p>
           <p className="text-xl font-bold text-gray-900">
             {contractors.length}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-3">
-          <p className="text-xs text-gray-600">Active</p>
-          <p className="text-xl font-bold text-green-600">
-            {contractors.filter((c) => c.isApproved).length}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-3">
-          <p className="text-xs text-gray-600">Inactive</p>
-          <p className="text-xl font-bold text-red-600">
-            {contractors.filter((c) => !c.isApproved).length}
           </p>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-3">
@@ -1177,26 +1100,26 @@ const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => 
             }
           </p>
         </div>
-      </div> */}
+        <div className="bg-white border border-gray-200 rounded-lg p-3">
+          <p className="text-xs text-gray-600">Active</p>
+          <p className="text-xl font-bold text-green-600">
+            {contractors.filter((c) => c.isApproved).length}
+          </p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-3">
+          <p className="text-xs text-gray-600">Inactive</p>
+          <p className="text-xl font-bold text-red-600">
+            {contractors.filter((c) => !c.isApproved).length}
+          </p>
+        </div>
+      </div>
 
       {/* Desktop Stats Grid */}
-      {/* <div className="hidden md:grid grid-cols-4 gap-4 mb-6">
+      <div className="hidden md:grid grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <p className="text-sm text-gray-600">Total Contractors</p>
           <p className="text-2xl font-bold text-gray-900">
             {contractors.length}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600">Active</p>
-          <p className="text-2xl font-bold text-green-600">
-            {contractors.filter((c) => c.isApproved).length}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600">Inactive</p>
-          <p className="text-2xl font-bold text-red-600">
-            {contractors.filter((c) => !c.isApproved).length}
           </p>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -1214,7 +1137,19 @@ const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => 
             }
           </p>
         </div>
-      </div> */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-sm text-gray-600">Active</p>
+          <p className="text-2xl font-bold text-green-600">
+            {contractors.filter((c) => c.isApproved).length}
+          </p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-sm text-gray-600">Inactive</p>
+          <p className="text-2xl font-bold text-red-600">
+            {contractors.filter((c) => !c.isApproved).length}
+          </p>
+        </div>
+      </div>
 
       {/* Mobile Contractor Cards */}
       <div className="md:hidden space-y-4 mb-6">
@@ -1232,17 +1167,17 @@ const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => 
                 <div>
                   <h3 className="font-medium text-gray-900">
                     <button
-                        onClick={() =>
-                          router.push(
-                            `/admin/manage-contractors/${contractor.id}`
-                          )
-                        }
-                        className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                      >
-                        {contractor.name}
-                      </button>
+                      onClick={() =>
+                        router.push(
+                          `/admin/manage-contractors/${contractor.id}`
+                        )
+                      }
+                      className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                    >
+                      {contractor.name}
+                    </button>
                   </h3>
-                  
+
                   <p className="text-sm text-gray-600">
                     {contractor.companyName || "N/A"}
                   </p>
@@ -1370,13 +1305,16 @@ const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => 
                   Email Address
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                  Address
+                  Phone Number
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Registered Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Total Certificates
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Actions
@@ -1418,7 +1356,7 @@ const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => 
                       {contractor.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {contractor.phone || "N/A"}
+                      {contractor.phoneNumber || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
@@ -1441,6 +1379,9 @@ const handleSuspendAction = async (contractorId, shouldSuspend, reason = "") => 
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(contractor.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {contractor.certificateCount}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2 action-dropdown-container">

@@ -2,6 +2,7 @@ import connectDB from "@/lib/db";
 import User from "@/models/User";
 import { authenticate } from "@/middleware/auth";
 import Insurance from "@/models/Insurance";
+import { sendInsuranceRequestApprovalEmail, sendInsuranceRequestRejectedEmail } from "@/lib/email";
 
 export async function GET(request, { params }) {
   try {
@@ -128,6 +129,7 @@ export async function POST(request, { params }) {
 }
 
 // Helper function to handle insurance requests
+
 // async function handleInsuranceRequest(insuranceId, request) {
 //   console.log(insuranceId, "ami hola insurance id");
 //   const { action, notes } = await request.json();
@@ -149,7 +151,13 @@ export async function POST(request, { params }) {
 //     );
 //   }
 
-//   if (insurance.status !== "pending") {
+//   // FIX: Check for any pending status
+//   const isPending =
+//     insurance.status === "pending" ||
+//     insurance.status === "pending_edit" ||
+//     insurance.status === "pending_cancel";
+
+//   if (!isPending) {
 //     return Response.json(
 //       { success: false, error: "No pending request found" },
 //       { status: 400 }
@@ -170,9 +178,14 @@ export async function POST(request, { params }) {
 //       });
 //     }
 
-//     // Update status
-//     insurance.status =
-//       insurance.status === "pending_edit" ? "active" : "cancelled";
+//     // Update status based on request type
+//     if (insurance.requestData?.type === "edit") {
+//       insurance.status = "active"; // Edit approved → active
+//     } else if (insurance.requestData?.type === "cancel") {
+//       insurance.status = "cancelled"; // Cancel approved → cancelled
+//     } else {
+//       insurance.status = "active"; // Default
+//     }
 //   } else if (action === "reject") {
 //     // Reject - just change status back to active
 //     insurance.status = "active";
@@ -197,7 +210,6 @@ export async function POST(request, { params }) {
 //     },
 //   });
 // }
-
 async function handleInsuranceRequest(insuranceId, request) {
   console.log(insuranceId, "ami hola insurance id");
   const { action, notes } = await request.json();
@@ -209,8 +221,9 @@ async function handleInsuranceRequest(insuranceId, request) {
     );
   }
 
-  // Find the insurance request
-  const insurance = await Insurance.findById(insuranceId);
+  // Find the insurance request with populated contractor info
+  const insurance = await Insurance.findById(insuranceId)
+    .populate('userId', 'name email companyName');
 
   if (!insurance) {
     return Response.json(
@@ -232,6 +245,8 @@ async function handleInsuranceRequest(insuranceId, request) {
     );
   }
 
+  let statusAfterUpdate = 'active';
+  
   if (action === "approve") {
     // Apply changes if edit request
     if (
@@ -249,28 +264,65 @@ async function handleInsuranceRequest(insuranceId, request) {
     // Update status based on request type
     if (insurance.requestData?.type === "edit") {
       insurance.status = "active"; // Edit approved → active
+      statusAfterUpdate = 'active';
     } else if (insurance.requestData?.type === "cancel") {
       insurance.status = "cancelled"; // Cancel approved → cancelled
+      statusAfterUpdate = 'cancelled';
     } else {
       insurance.status = "active"; // Default
+      statusAfterUpdate = 'active';
     }
   } else if (action === "reject") {
     // Reject - just change status back to active
     insurance.status = "active";
+    statusAfterUpdate = 'active';
   }
 
   // Save admin notes
   if (!insurance.requestData) insurance.requestData = {};
   insurance.requestData.adminNotes = notes || "";
   insurance.requestData.processedAt = new Date();
-  insurance.requestData.processedBy = (await authenticate(request)).userId;
+  const auth = await authenticate(request);
+  insurance.requestData.processedBy = auth.userId;
 
   await insurance.save();
+
+  // ✅ SEND EMAIL TO CONTRACTOR
+  try {
+    const contractorEmail = insurance.userId?.email;
+    const contractorName = insurance.userId?.name;
+    const policyNumber = insurance.policyNumber;
+    
+    if (contractorEmail && contractorName) {
+      if (action === "approve") {
+        await sendInsuranceRequestApprovalEmail(
+          contractorEmail, 
+          contractorName, 
+          policyNumber, 
+          notes || ''
+        );
+        console.log(`Approval email sent to contractor: ${contractorEmail}`);
+      } else if (action === "reject") {
+        await sendInsuranceRequestRejectedEmail(
+          contractorEmail, 
+          contractorName, 
+          policyNumber, 
+          notes || ''
+        );
+        console.log(`Rejection email sent to contractor: ${contractorEmail}`);
+      }
+    } else {
+      console.warn('Contractor email or name not found, skipping email');
+    }
+  } catch (emailError) {
+    console.error("Failed to send email to contractor:", emailError);
+    // Don't fail the whole request if email fails
+  }
 
   return Response.json({
     success: true,
     message: `Request ${action === "approve" ? "approved" : "rejected"}`,
-    status: insurance.status,
+    status: statusAfterUpdate,
     insurance: {
       id: insurance._id,
       policyNumber: insurance.policyNumber,
@@ -278,6 +330,7 @@ async function handleInsuranceRequest(insuranceId, request) {
     },
   });
 }
+
 
 // PUT
 

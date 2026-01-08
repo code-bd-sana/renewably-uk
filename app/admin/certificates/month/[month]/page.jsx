@@ -20,6 +20,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
+import Image from "next/image";
 
 export default function MonthCertificatesPage() {
   const params = useParams();
@@ -390,7 +391,7 @@ Renewably UK - Powering Renewables
     startIndex,
     endIndex
   );
-
+console.log(paginatedCertificates)
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
@@ -409,7 +410,7 @@ Renewably UK - Powering Renewables
       {/* Header */}
       <div className="mb-6">
         <button
-          onClick={() => router.push("/admin/dashboard")}
+          onClick={() => router.push("/admin")}
           className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -480,14 +481,15 @@ Renewably UK - Powering Renewables
                     Policy Holder
                   </th>
                   <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                    Policy Holder Address
+                  </th>
+                  <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
                     Product Type
                   </th>
                   <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
                     Contract Value
                   </th>
-                  <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                    Creation Date
-                  </th>
+                  
                   <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
                     Inception Date
                   </th>
@@ -496,6 +498,9 @@ Renewably UK - Powering Renewables
                   </th>
                   <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
                     Price
+                  </th>
+                  <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                    Creation Date
                   </th>
                   <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
                     Action
@@ -549,17 +554,17 @@ Renewably UK - Powering Renewables
                         </div>
                       </td>
                       <td className="px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm">
+                        <div className="truncate max-w-37.5">
+                          {cert.address}
+                        </div>
+                      </td>
+                      <td className="px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm">
                         <div className="truncate max-w-30">
                           {cert.productType}
                         </div>
                       </td>
                       <td className="px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm">
                         {cert.contractValue}
-                      </td>
-                      <td className="px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm">
-                        <div className="whitespace-nowrap">
-                          {formatTimestamp(cert.createdAt)}
-                        </div>
                       </td>
                       <td className="px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm">
                         {cert.inceptionDate}
@@ -569,6 +574,11 @@ Renewably UK - Powering Renewables
                       </td>
                       <td className="px-4 lg:px-6 py-3 font-medium text-gray-900 text-xs sm:text-sm">
                         {cert.price}
+                      </td>
+                      <td className="px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm">
+                        <div className="whitespace-nowrap">
+                          {formatTimestamp(cert.createdAt)}
+                        </div>
                       </td>
                       <td className="px-4 lg:px-6 py-3">
                         <div className="flex items-center gap-2">
@@ -830,15 +840,17 @@ Renewably UK - Powering Renewables
             <div className="p-4 sm:p-6 border-b border-gray-200">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="inline-flex items-center gap-2">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-full"></div>
-                  <div>
-                    <span className="font-bold text-lg sm:text-xl">
-                      BLUE<span className="text-blue-500">DROP</span>
-                    </span>
-                    <span className="text-xs text-gray-500 ml-1 sm:ml-2">
-                      SERVICES
-                    </span>
-                  </div>
+                  <Image
+                    src="/bluedrop.png"
+                    height="150"
+                    width="150"
+                    alt="Renewably UK"
+                    className="h-auto w-auto"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      e.target.nextSibling.style.display = "flex";
+                    }}
+                  />
                 </div>
                 <button
                   onClick={() => {

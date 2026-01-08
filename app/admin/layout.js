@@ -14,6 +14,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -36,21 +37,70 @@ export default function AdminLayout({ children }) {
     },
   ];
 
+  // const handleLogout = async () => {
+  //   if (!confirm("Are you sure you want to logout?")) return;
+
+  //   try {
+  //     const res = await fetch("/api/auth/logout", { method: "POST" });
+  //     const data = await res.json();
+
+  //     if (data.success) {
+  //       window.location.href = "/";
+  //     }
+  //   } catch (error) {
+  //     console.error("Logout error:", error);
+  //     window.location.href = "/";
+  //   }
+  // };
+
   const handleLogout = async () => {
-    if (!confirm("Are you sure you want to logout?")) return;
+  // Replace confirm() with toast
+  toast.custom((t) => (
+    <div className="bg-white p-10 rounded-lg shadow-lg border max-w-sm">
+      <p className="font-medium mb-3">Are you sure you want to logout?</p>
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            toast.dismiss(t.id);
+            performLogout();
+          }}
+          className="px-4 py-2 bg-[#0F47A8] text-white rounded hover:bg-[#0b3172] text-sm"
+        >
+          Yes, Logout
+        </button>
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  ));
+};
 
-    try {
-      const res = await fetch("/api/auth/logout", { method: "POST" });
-      const data = await res.json();
+const performLogout = async () => {
+  const loadingToast = toast.loading("Logging out...");
+  
+  try {
+    const res = await fetch("/api/auth/logout", { method: "POST" });
+    const data = await res.json();
 
-      if (data.success) {
+    if (data.success) {
+      toast.success("Logged out successfully!", { id: loadingToast });
+      setTimeout(() => {
         window.location.href = "/";
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
+      }, 1000);
+    } else {
+      toast.error("Logout failed", { id: loadingToast });
       window.location.href = "/";
     }
-  };
+  } catch (error) {
+    console.error("Logout error:", error);
+    toast.error("Logout failed", { id: loadingToast });
+    window.location.href = "/";
+  }
+};
 
   return (
     <div className='min-h-screen bg-gray-50'>
