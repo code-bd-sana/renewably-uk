@@ -46,13 +46,13 @@ export async function GET(request) {
           createdAt: insurance.createdAt,
 
           document: insurance.document,
-          contractValue: `€ ${product.contractValue.toFixed(2)}`,
+          contractValue: `£ ${product.contractValue.toFixed(2)}`,
           inceptionDate: new Date(product.inceptionDate).toLocaleDateString(
             "en-GB"
           ),
           expiryDate: new Date(product.expiryDate).toLocaleDateString("en-GB"),
           transactionType: "Certificate Generated",
-          price: `€ ${product.price.toFixed(2)}`,
+          price: `£ ${product.price.toFixed(2)}`,
           status: insurance.status,
           rawData: {
             insurance: {
