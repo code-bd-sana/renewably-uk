@@ -135,53 +135,58 @@ export default function CertificatesPage() {
 
   const isRowSelected = (id) => selectedRows.includes(id);
 
+  const handleViewCertificate = (certificate) => {
+    console.log("=== VIEW CERTIFICATE DEBUG ===");
+    console.log("Full certificate object:", certificate);
+    console.log("Certificate status from API:", certificate.status);
+    console.log(
+      "rawData.insurance.status:",
+      certificate.rawData?.insurance?.status
+    );
+    console.log("rawData.status:", certificate.rawData?.status);
 
-const handleViewCertificate = (certificate) => {
-  console.log("=== VIEW CERTIFICATE DEBUG ===");
-  console.log("Full certificate object:", certificate);
-  console.log("Certificate status from API:", certificate.status);
-  console.log("rawData.insurance.status:", certificate.rawData?.insurance?.status);
-  console.log("rawData.status:", certificate.rawData?.status);
-  
-  // Get the actual status - it's directly on certificate.status
-  const actualStatus = certificate.status || "active";
-  
-  setSelectedCertificate({
-    policyNumber: certificate.policyNo,
-    policyHolderName: certificate.holderName,
-    productType: certificate.productType,
-    contractValue: certificate.contractValue,
-    inceptionDate: certificate.inceptionDate,
-    expiryDate: certificate.expiryDate,
-    price: certificate.price,
-    status: actualStatus, // Use certificate.status directly
-    contractorName: certificate.rawData?.insurance?.contractorName || "Not provided",
-    contractorAddress: certificate.rawData?.insurance?.contractorAddress || "Not provided",
-    email: certificate.rawData?.insurance?.email || "Not provided",
-    phone: certificate.rawData?.insurance?.phone || "Not provided",
-    address: certificate.rawData?.insurance?.address || "Not provided",
-    country: certificate.rawData?.insurance?.country || "Not provided",
-    postcode: certificate.rawData?.insurance?.postcode || "Not provided",
-    insuranceId: certificate.insuranceId || certificate.id,
-    // Store the full rawData for reference
-    rawData: certificate.rawData,
-  });
+    // Get the actual status - it's directly on certificate.status
+    const actualStatus = certificate.status || "active";
 
-  setEditableFields({
-    policyHolderName: certificate.holderName,
-    address: certificate.rawData?.insurance?.address || "",
-    country: certificate.rawData?.insurance?.country || "",
-    postcode: certificate.rawData?.insurance?.postcode || "",
-    email: certificate.rawData?.insurance?.email || "",
-    phone: certificate.rawData?.insurance?.phone || "",
-    productType: certificate.productType,
-    contractValue: certificate.contractValue.replace("€ ", ""),
-  });
+    setSelectedCertificate({
+      policyNumber: certificate.policyNo,
+      policyHolderName: certificate.holderName,
+      productType: certificate.productType,
+      contractValue: certificate.contractValue,
+      inceptionDate: certificate.inceptionDate,
+      expiryDate: certificate.expiryDate,
+      createdAt: certificate.createdAt,
+      price: certificate.price,
+      status: actualStatus, // Use certificate.status directly
+      contractorName:
+        certificate.rawData?.insurance?.contractorName || "Not provided",
+      contractorAddress:
+        certificate.rawData?.insurance?.contractorAddress || "Not provided",
+      email: certificate.rawData?.insurance?.email || "Not provided",
+      phone: certificate.rawData?.insurance?.phone || "Not provided",
+      address: certificate.rawData?.insurance?.address || "Not provided",
+      country: certificate.rawData?.insurance?.country || "Not provided",
+      postcode: certificate.rawData?.insurance?.postcode || "Not provided",
+      insuranceId: certificate.insuranceId || certificate.id,
+      // Store the full rawData for reference
+      rawData: certificate.rawData,
+    });
 
-  setShowModal(true);
-  setRequestType("");
-  setModalError("");
-};
+    setEditableFields({
+      policyHolderName: certificate.holderName,
+      address: certificate.rawData?.insurance?.address || "",
+      country: certificate.rawData?.insurance?.country || "",
+      postcode: certificate.rawData?.insurance?.postcode || "",
+      email: certificate.rawData?.insurance?.email || "",
+      phone: certificate.rawData?.insurance?.phone || "",
+      productType: certificate.productType,
+      contractValue: certificate.contractValue.replace("€ ", ""),
+    });
+
+    setShowModal(true);
+    setRequestType("");
+    setModalError("");
+  };
   const handleDownload = async (cert) => {
     await downloadPdf(cert);
   };
@@ -210,140 +215,334 @@ const handleViewCertificate = (certificate) => {
     }
   };
 
-  // Helper function to render editable fields 
-  const renderField = (label, field, value, editable = true) => (
-    <div className="flex items-start py-2">
-      <div className="w-1/3 text-sm font-medium text-gray-700">{label}</div>
-      <div className="w-2/3 flex items-center gap-2">
-        {requestType === "edit" && editable ? (
-          <div className="flex-1">
-            {field === "productType" ? (
-              <div className="relative product-dropdown">
-                <button
-                  type="button"
-                  onClick={() => setShowProductDropdown(!showProductDropdown)}
-                  className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between hover:border-gray-400"
-                >
-                  <span
-                    className={
-                      editableFields[field] ? "text-gray-900" : "text-gray-400"
-                    }
-                  >
-                    {editableFields[field] || "Select product type"}
-                  </span>
-                  <ChevronDown
-                    size={16}
-                    className={`transition-transform ${
-                      showProductDropdown ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+  // Helper function to render editable fields
+  // const renderField = (
+  //   label,
+  //   field,
+  //   value,
+  //   editable = true,
+  //   nonEditable = false
+  // ) => (
+  //   <div className="flex items-start py-2">
+  //     <div className="w-1/3 text-sm font-medium text-gray-700">{label}</div>
+  //     <div className="w-2/3 flex items-center gap-2">
+  //       {requestType === "edit" && editable && !nonEditable ? (
+  //         <div className="flex-1">
+  //           {field === "productType" ? (
+  //             <div className="relative product-dropdown">
+  //               <button
+  //                 type="button"
+  //                 onClick={() => setShowProductDropdown(!showProductDropdown)}
+  //                 className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between hover:border-gray-400"
+  //               >
+  //                 <span
+  //                   className={
+  //                     editableFields[field] ? "text-gray-900" : "text-gray-400"
+  //                   }
+  //                 >
+  //                   {editableFields[field] || "Select product type"}
+  //                 </span>
+  //                 <ChevronDown
+  //                   size={16}
+  //                   className={`transition-transform ${
+  //                     showProductDropdown ? "rotate-180" : ""
+  //                   }`}
+  //                 />
+  //               </button>
 
-                {showProductDropdown && (
-                  <div className="absolute z-50 top-full mt-1 bg-white rounded-lg shadow-lg border w-full max-w-md max-h-64 overflow-hidden">
-                    <div className="p-3 border-b">
-                      <div className="relative">
-                        <Search
-                          size={16}
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Search products..."
-                          className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm"
-                          value={productSearchQuery}
-                          onChange={(e) =>
-                            setProductSearchQuery(e.target.value)
-                          }
-                          onClick={(e) => e.stopPropagation()}
-                        />
+  //               {showProductDropdown && (
+  //                 <div className="absolute z-50 top-full mt-1 bg-white rounded-lg shadow-lg border w-full max-w-md max-h-64 overflow-hidden">
+  //                   <div className="p-3 border-b">
+  //                     <div className="relative">
+  //                       <Search
+  //                         size={16}
+  //                         className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+  //                       />
+  //                       <input
+  //                         type="text"
+  //                         placeholder="Search products..."
+  //                         className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm"
+  //                         value={productSearchQuery}
+  //                         onChange={(e) =>
+  //                           setProductSearchQuery(e.target.value)
+  //                         }
+  //                         onClick={(e) => e.stopPropagation()}
+  //                       />
+  //                     </div>
+  //                   </div>
+
+  //                   <div className="overflow-y-auto max-h-48">
+  //                     {productsLoading ? (
+  //                       <div className="px-4 py-3 text-center text-gray-500">
+  //                         <Loader2
+  //                           size={16}
+  //                           className="animate-spin mx-auto mb-2"
+  //                         />
+  //                         Loading products...
+  //                       </div>
+  //                     ) : filteredProducts.length > 0 ? (
+  //                       filteredProducts.map((product, index) => (
+  //                         <button
+  //                           key={product._id}
+  //                           onClick={() => {
+  //                             setEditableFields((prev) => ({
+  //                               ...prev,
+  //                               [field]: product.Measures,
+  //                             }));
+  //                             setShowProductDropdown(false);
+  //                             setProductSearchQuery("");
+  //                           }}
+  //                           className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${
+  //                             index === 0 ? "" : "border-t"
+  //                           }`}
+  //                         >
+  //                           <div>
+  //                             <span className="font-medium text-sm">
+  //                               {product.Measures}
+  //                             </span>
+  //                             <div className="text-xs text-gray-500 mt-1">
+  //                               <span>
+  //                                 Guarantee Period: {product.Year} years
+  //                               </span>
+  //                               {product.Month > 0 && (
+  //                                 <span>, {product.Month} months</span>
+  //                               )}
+  //                               {product.Days > 0 && (
+  //                                 <span>, {product.Days} days</span>
+  //                               )}
+  //                             </div>
+  //                           </div>
+  //                           {editableFields[field] === product.Measures && (
+  //                             <Check
+  //                               size={16}
+  //                               className="text-white bg-blue-600 rounded-full p-0.5"
+  //                             />
+  //                           )}
+  //                         </button>
+  //                       ))
+  //                     ) : (
+  //                       <div className="px-4 py-3 text-center text-gray-500 text-sm">
+  //                         No products found
+  //                       </div>
+  //                     )}
+  //                   </div>
+  //                 </div>
+  //               )}
+  //             </div>
+  //           ) : (
+  //             <input
+  //               type="text"
+  //               value={editableFields[field] || ""}
+  //               onChange={(e) =>
+  //                 setEditableFields((prev) => ({
+  //                   ...prev,
+  //                   [field]: e.target.value,
+  //                 }))
+  //               }
+  //               className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+  //             />
+  //           )}
+  //         </div>
+  //       ) : (
+  //         <span className="flex-1 text-sm text-gray-600">
+  //           {value || "Not provided"}
+  //         </span>
+  //       )}
+  //       {/* EDIT ICON - FIXED: Always show when in edit mode and editable */}
+  //       {requestType === "edit" && editable && !nonEditable && (
+  //         <Edit2 className="w-4 h-4 text-gray-400 shrink-0" />
+  //       )}
+  //     </div>
+  //   </div>
+  // );
+
+  const renderField = (label, field, value, editable = true, options = {}) => {
+    const {
+      type = "text",
+      nonEditable = false,
+      calculateExpiry = false,
+    } = options;
+
+    return (
+      <div className="flex items-start py-2">
+        <div className="w-1/3 text-sm font-medium text-gray-700">{label}</div>
+        <div className="w-2/3 flex items-center gap-2">
+          {requestType === "edit" && editable && !nonEditable ? (
+            <div className="flex-1">
+              {type === "date" ? (
+                <input
+                  type="date"
+                  value={editableFields[field] || ""}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    setEditableFields((prev) => {
+                      let updated = { ...prev, [field]: newDate };
+
+                      // Auto-calculate Expiry Date when Inception Date changes
+                      if (calculateExpiry && editableFields.productType) {
+                        const selectedProduct = products.find(
+                          (p) => p.Measures === editableFields.productType
+                        );
+                        if (selectedProduct && newDate) {
+                          const inception = new Date(newDate);
+                          const expiry = new Date(inception);
+
+                          if (selectedProduct.Year)
+                            expiry.setFullYear(
+                              expiry.getFullYear() + selectedProduct.Year
+                            );
+                          if (selectedProduct.Month)
+                            expiry.setMonth(
+                              expiry.getMonth() + selectedProduct.Month
+                            );
+                          if (selectedProduct.Days)
+                            expiry.setDate(
+                              expiry.getDate() + selectedProduct.Days
+                            );
+
+                          updated.expiryDateCalculated = expiry
+                            .toISOString()
+                            .split("T")[0];
+                        }
+                      }
+
+                      return updated;
+                    });
+                  }}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              ) : field === "productType" ? (
+                // ← Keep your existing product dropdown code exactly as it is
+                <div className="relative product-dropdown">
+                  <button
+                    type="button"
+                    onClick={() => setShowProductDropdown(!showProductDropdown)}
+                    className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between hover:border-gray-400"
+                  >
+                    <span
+                      className={
+                        editableFields[field]
+                          ? "text-gray-900"
+                          : "text-gray-400"
+                      }
+                    >
+                      {editableFields[field] || "Select product type"}
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform ${
+                        showProductDropdown ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {showProductDropdown && (
+                    <div className="absolute z-50 top-full mt-1 bg-white rounded-lg shadow-lg border w-full max-w-md max-h-64 overflow-hidden">
+                      <div className="p-3 border-b">
+                        <div className="relative">
+                          <Search
+                            size={16}
+                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Search products..."
+                            className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm"
+                            value={productSearchQuery}
+                            onChange={(e) =>
+                              setProductSearchQuery(e.target.value)
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="overflow-y-auto max-h-48">
+                        {productsLoading ? (
+                          <div className="px-4 py-3 text-center text-gray-500">
+                            <Loader2
+                              size={16}
+                              className="animate-spin mx-auto mb-2"
+                            />
+                            Loading products...
+                          </div>
+                        ) : filteredProducts.length > 0 ? (
+                          filteredProducts.map((product, index) => (
+                            <button
+                              key={product._id}
+                              onClick={() => {
+                                setEditableFields((prev) => ({
+                                  ...prev,
+                                  [field]: product.Measures,
+                                }));
+                                setShowProductDropdown(false);
+                                setProductSearchQuery("");
+                              }}
+                              className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${
+                                index === 0 ? "" : "border-t"
+                              }`}
+                            >
+                              <div>
+                                <span className="font-medium text-sm">
+                                  {product.Measures}
+                                </span>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  <span>
+                                    Guarantee Period: {product.Year} years
+                                  </span>
+                                  {product.Month > 0 && (
+                                    <span>, {product.Month} months</span>
+                                  )}
+                                  {product.Days > 0 && (
+                                    <span>, {product.Days} days</span>
+                                  )}
+                                </div>
+                              </div>
+                              {editableFields[field] === product.Measures && (
+                                <Check
+                                  size={16}
+                                  className="text-white bg-blue-600 rounded-full p-0.5"
+                                />
+                              )}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-center text-gray-500 text-sm">
+                            No products found
+                          </div>
+                        )}
                       </div>
                     </div>
-
-                    <div className="overflow-y-auto max-h-48">
-                      {productsLoading ? (
-                        <div className="px-4 py-3 text-center text-gray-500">
-                          <Loader2
-                            size={16}
-                            className="animate-spin mx-auto mb-2"
-                          />
-                          Loading products...
-                        </div>
-                      ) : filteredProducts.length > 0 ? (
-                        filteredProducts.map((product, index) => (
-                          <button
-                            key={product._id}
-                            onClick={() => {
-                              setEditableFields((prev) => ({
-                                ...prev,
-                                [field]: product.Measures,
-                              }));
-                              setShowProductDropdown(false);
-                              setProductSearchQuery("");
-                            }}
-                            className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${
-                              index === 0 ? "" : "border-t"
-                            }`}
-                          >
-                            <div>
-                              <span className="font-medium text-sm">
-                                {product.Measures}
-                              </span>
-                              <div className="text-xs text-gray-500 mt-1">
-                                <span>
-                                  Guarantee Period: {product.Year} years
-                                </span>
-                                {product.Month > 0 && (
-                                  <span>, {product.Month} months</span>
-                                )}
-                                {product.Days > 0 && (
-                                  <span>, {product.Days} days</span>
-                                )}
-                              </div>
-                            </div>
-                            {editableFields[field] === product.Measures && (
-                              <Check
-                                size={16}
-                                className="text-white bg-blue-600 rounded-full p-0.5"
-                              />
-                            )}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="px-4 py-3 text-center text-gray-500 text-sm">
-                          No products found
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={editableFields[field] || ""}
-                onChange={(e) =>
-                  setEditableFields((prev) => ({
-                    ...prev,
-                    [field]: e.target.value,
-                  }))
-                }
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            )}
-          </div>
-        ) : (
-          <span className="flex-1 text-sm text-gray-600">
-            {value || "Not provided"}
-          </span>
-        )}
-        {/* EDIT ICON - FIXED: Always show when in edit mode and editable */}
-        {requestType === "edit" && editable && (
-          <Edit2 className="w-4 h-4 text-gray-400 shrink-0" />
-        )}
+                  )}
+                  {/* ... rest of your dropdown code stays exactly the same ... */}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={editableFields[field] || ""}
+                  onChange={(e) =>
+                    setEditableFields((prev) => ({
+                      ...prev,
+                      [field]: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+            </div>
+          ) : (
+            <span className="flex-1 text-sm text-gray-600">
+              {field === "inceptionDate" && editableFields.expiryDateCalculated
+                ? `${value} → New Expiry: ${editableFields.expiryDateCalculated}`
+                : value || "Not provided"}
+            </span>
+          )}
+          {requestType === "edit" && editable && !nonEditable && (
+            <Edit2 className="w-4 h-4 text-gray-400 shrink-0" />
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderStaticField = (label, value) => (
     <div className="flex items-start py-2">
@@ -487,7 +686,7 @@ Renewably UK - Powering Renewables
     startIndex,
     endIndex
   );
-  // console.log("lweksy", paginatedCertificates)
+  console.log("lweksy", paginatedCertificates);
 
   if (loading) {
     return (
@@ -584,6 +783,9 @@ Renewably UK - Powering Renewables
                         Policy Holder Name
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                        Policy Holder Address
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
                         Product Type
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
@@ -600,6 +802,12 @@ Renewably UK - Powering Renewables
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
                         Price
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                        Creation Date
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
+                        Status
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#030712]">
                         Action
@@ -629,6 +837,9 @@ Renewably UK - Powering Renewables
                           {cert.holderName}
                         </td>
                         <td className="px-4 py-3 text-sm font-normal font-sans text-[#6B7280]">
+                          {cert.address}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-normal font-sans text-[#6B7280]">
                           {cert.productType}
                         </td>
                         <td className="px-4 py-3 text-sm font-normal text-[#6B7280] font-mono">
@@ -645,6 +856,31 @@ Renewably UK - Powering Renewables
                         </td>
                         <td className="px-4 py-3 text-sm font-normal text-[#6B7280] font-mono">
                           {cert.price}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-normal text-[#6B7280] font-mono">
+                          {cert.createdAt}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              cert.status === "active"
+                                ? "bg-green-100 text-green-800"
+                                : cert.status === "pending_edit"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : cert.status === "pending_cancel"
+                                ? "bg-orange-100 text-orange-800"
+                                : cert.status === "cancelled"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {cert.status === "pending_edit"
+                              ? "Pending Edit"
+                              : cert.status === "pending_cancel"
+                              ? "Pending Cancellation"
+                              : cert.status?.charAt(0).toUpperCase() +
+                                  cert.status?.slice(1) || "Active"}
+                          </span>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -696,7 +932,6 @@ Renewably UK - Powering Renewables
                       />
                       <div className="flex-1">
                         <div className="flex justify-between items-start mb-2">
-                          
                           <div>
                             <div className="text-xs text-gray-500 mb-1">
                               Policy No
@@ -704,6 +939,28 @@ Renewably UK - Powering Renewables
                             <div className="text-sm font-medium text-gray-700">
                               {cert.policyNo}
                             </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                cert.status === "active"
+                                  ? "bg-green-100 text-green-800"
+                                  : cert.status === "pending_edit"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : cert.status === "pending_cancel"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : cert.status === "cancelled"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {cert.status === "pending_edit"
+                                ? "Pending Edit"
+                                : cert.status === "pending_cancel"
+                                ? "Pending Cancellation"
+                                : cert.status?.charAt(0).toUpperCase() +
+                                    cert.status?.slice(1) || "Active"}
+                            </span>
                           </div>
                           <div className="text-right">
                             <div className="text-xs text-gray-500 mb-1">
@@ -848,17 +1105,19 @@ Renewably UK - Powering Renewables
 
         {/* View/Edit Certificate Modal */}
         {showModal && selectedCertificate && (
-          <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
               {/* Modal Header */}
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-6">
                   <div className="inline-flex items-center gap-2">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full"></div>
-                    <span className="font-bold text-xl">
-                      BLUE<span className="text-blue-500">DROP</span>
-                    </span>
-                    <span className="text-xs text-gray-500 ml-2">SERVICES</span>
+                    <Image
+                      src="/bluedrop.png"
+                      height={200}
+                      width={200}
+                      alt="Renewably UK"
+                      className="h-auto w-auto my-2"
+                    />
                   </div>
                   <button
                     onClick={() => {
@@ -960,14 +1219,21 @@ Renewably UK - Powering Renewables
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      Status:{" "}
+                      {/* Status:{" "}
                       {selectedCertificate.status
                         .replace("_", " ")
-                        .toUpperCase()}
+                        .toUpperCase()} */}
+                      Status:{" "}
+                      {selectedCertificate.status === "pending_edit"
+                        ? "PENDING EDIT"
+                        : selectedCertificate.status === "pending_cancel"
+                        ? "PENDING CANCELLATION"
+                        : selectedCertificate.status
+                            ?.replace("_", " ")
+                            .toUpperCase() || "ACTIVE"}
                     </span>
                   </div>
                 )}
-
               </div>
 
               {/* Error Message */}
@@ -1044,7 +1310,7 @@ Renewably UK - Powering Renewables
                         {selectedCertificate.contractorName || "Not provided"}
                       </div>
                     </div>
-                    <div>
+                    {/* <div>
                       <div className="flex items-center justify-between mb-1">
                         <div className="text-sm text-gray-500">
                           Contractor Address
@@ -1072,7 +1338,15 @@ Renewably UK - Powering Renewables
                             "Not provided"}
                         </div>
                       )}
-                    </div>
+                    </div> */}
+
+                    {renderField(
+                      "Contractor Address",
+                      "contractorAddress",
+                      selectedCertificate.contractorAddress || "Not provided",
+                      false, // editable = false (not used anyway for contractor)
+                      true // nonEditable = true → no input + no edit icon
+                    )}
                   </div>
                 </div>
 
@@ -1141,25 +1415,53 @@ Renewably UK - Powering Renewables
                     {renderField(
                       "Product Type",
                       "productType",
-                      editableFields.productType
-                    )}
-                    {renderStaticField(
-                      "Insurance Coverage",
-                      "Insurance Backed Guarantee"
-                    )}
-                    {renderStaticField(
-                      "Inception Date",
-                      selectedCertificate.inceptionDate || "Not available"
-                    )}
-                    {renderStaticField(
-                      "Expiry Date",
-                      selectedCertificate.expiryDate || "Not available"
+                      editableFields.productType ||
+                        selectedCertificate.productType ||
+                        "Not provided",
+                      true, // editable = true (so it shows dropdown if allowed)
+                      true // nonEditable = true → shows as text only, no dropdown/input, no edit icon
                     )}
                     {renderField(
                       "Contract Value",
                       "contractValue",
                       editableFields.contractValue
                     )}
+                    {renderStaticField(
+                      "Insurance Coverage",
+                      "Insurance Backed Guarantee"
+                    )}
+                    {/* {renderStaticField(
+                      "Inception Date",
+                      selectedCertificate.inceptionDate || "Not available"
+                    )}
+                    {renderStaticField(
+                      "Expiry Date",
+                      selectedCertificate.expiryDate || "Not available"
+                    )} */}
+
+                    {renderField(
+                      "Inception Date",
+                      "inceptionDate",
+                      selectedCertificate.inceptionDate || "Not available",
+                      true, // editable
+                      { type: "date", calculateExpiry: true } // makes it a date input + triggers calculation
+                    )}
+
+                    {renderField(
+                      "Expiry Date",
+                      "expiryDate",
+                      editableFields.expiryDateCalculated ||
+                        selectedCertificate.expiryDate ||
+                        "Not available",
+                      false, // not editable
+                      { nonEditable: true } // shows as text only
+                    )}
+
+                    {renderStaticField(
+                      "IBG Creation Date Stamp",
+                      selectedCertificate.createdAt || "Not available"
+                    )}
+
                     {renderStaticField(
                       "Transaction Type",
                       "Certificate Generated"
