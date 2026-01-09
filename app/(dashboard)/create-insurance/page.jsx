@@ -32,11 +32,6 @@ export default function CreateInsuranceForm() {
   const [products, setProducts] = useState([]);
   const [schemeProviders, setSchemeProviders] = useState([]);
   const [activeProductId, setActiveProductId] = useState(null);
-  const [selectedTime, setSelectedTime] = useState({
-    hour: "01",
-    minute: "34",
-    period: "AM",
-  });
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
   const [showProductDropdown, setShowProductDropdown] = useState({});
@@ -155,11 +150,18 @@ export default function CreateInsuranceForm() {
 
   // Filter scheme providers by type
   const getFilteredSchemeProviders = (type) => {
-    return schemeProviders.filter(
-      (provider) => 
-        provider.providerType?.includes(type) && 
-        provider.status === "active"
-    ).map(provider => provider.companyName);
+    return schemeProviders
+      .filter(
+        (provider) => 
+          provider.providerType?.includes(type) && 
+          provider.status === "active"
+      )
+      .map(provider => ({
+        name: provider.companyName,
+        address: provider.address,
+        phone: provider.phone,
+        email: provider.contactEmail
+      }));
   };
 
   const dropdownOptions = [
@@ -453,10 +455,44 @@ export default function CreateInsuranceForm() {
     </div>
   );
 
-  const DropdownMenu = ({ options, selected, onSelect, show, onClose }) =>
+  const DropdownMenu = ({ options, selected, onSelect, show, onClose, type }) =>
     show && (
-      <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md'>
-        {options.map((option, index) => (
+      <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md max-h-96 overflow-y-auto'>
+        {/* First show scheme providers from API */}
+        {options.filter(opt => typeof opt === 'object').map((provider, index) => (
+          <button
+            key={index}
+            onClick={() => {
+              onSelect(provider.name);
+              onClose();
+            }}
+            className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex flex-col ${
+              index === 0 ? "rounded-t-lg" : ""
+            } ${selected === provider.name ? "bg-blue-50" : ""}`}>
+            <span className="font-medium text-gray-800">{provider.name}</span>
+            {provider.address && (
+              <span className="text-xs text-gray-500 mt-1">{provider.address}</span>
+            )}
+            <div className="flex gap-4 mt-1 text-xs text-gray-600">
+              {provider.phone && <span>📞 {provider.phone}</span>}
+              {provider.email && <span>✉️ {provider.email}</span>}
+            </div>
+            {selected === provider.name && (
+              <Check
+                size={18}
+                className='absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-blue-600 rounded-full p-0.5'
+              />
+            )}
+          </button>
+        ))}
+
+        {/* Separator */}
+        {options.filter(opt => typeof opt === 'object').length > 0 && (
+          <div className="border-t border-gray-200 my-1"></div>
+        )}
+
+        {/* Then show static options */}
+        {options.filter(opt => typeof opt === 'string').map((option, index) => (
           <button
             key={index}
             onClick={() => {
@@ -464,13 +500,16 @@ export default function CreateInsuranceForm() {
               onClose();
             }}
             className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${
-              index === 0 ? "rounded-t-lg" : ""
+              index === 0 && options.filter(opt => typeof opt === 'object').length === 0 
+                ? "rounded-t-lg" : ""
             } ${
-              index === options.length - 1
+              index === options.filter(opt => typeof opt === 'string').length - 1
                 ? "rounded-b-lg"
-                : "border border-gray-200-b"
-            }`}>
-            <span className={index === 0 ? "font-medium" : ""}>{option}</span>
+                : ""
+            } ${selected === option ? "bg-blue-50" : ""}`}>
+            <span className={option === "Not Required" ? "font-medium" : ""}>
+              {option}
+            </span>
             {selected === option && (
               <Check
                 size={18}
@@ -1118,6 +1157,7 @@ export default function CreateInsuranceForm() {
                 }
                 show={showRetrofitAssessor}
                 onClose={() => setShowRetrofitAssessor(false)}
+                type="Retrofit Assessor"
               />
             </div>
             <div className='relative dropdown-container'>
@@ -1143,6 +1183,7 @@ export default function CreateInsuranceForm() {
                 }
                 show={showRetrofitCoordinator}
                 onClose={() => setShowRetrofitCoordinator(false)}
+                type="Retrofit Coordinator"
               />
             </div>
             <div className='relative dropdown-container'>
@@ -1164,6 +1205,7 @@ export default function CreateInsuranceForm() {
                 }
                 show={showFundingPartner}
                 onClose={() => setShowFundingPartner(false)}
+                type="Funding Partner"
               />
             </div>
             <div className='relative dropdown-container'>
@@ -1187,6 +1229,7 @@ export default function CreateInsuranceForm() {
                 }
                 show={showSchemeProvider}
                 onClose={() => setShowSchemeProvider(false)}
+                type="Scheme Provider"
               />
             </div>
             <div className='relative md:col-span-1'>
