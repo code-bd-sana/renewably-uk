@@ -1206,7 +1206,11 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
                 </div>
                 <div className="flex items-center">
                   <span className="w-24 font-medium">Phone:</span>
-                  <span>{contractor.phone || "N/A"}</span>
+                  <span>{contractor.phoneNumber || "N/A"}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="w-24 font-medium">Total Certificates:</span>
+                  <span>{contractor.certificateCount || 0}</span>
                 </div>
                 <div className="flex items-center">
                   <span className="w-24 font-medium">Registered:</span>
