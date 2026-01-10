@@ -136,10 +136,10 @@ export default function ManageContractorsPage() {
       }
 
       const certsText = await certsRes.text();
-      console.log(
-        "Certificates response text (first 500 chars):",
-        certsText.substring(0, 500)
-      );
+      // console.log(
+      //   "Certificates response text (first 500 chars):",
+      //   certsText.substring(0, 500)
+      // );
 
       if (!certsText) {
         console.warn("Empty response from certificates API, using empty array");

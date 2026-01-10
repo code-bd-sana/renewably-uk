@@ -35,241 +35,190 @@ export async function GET(request) {
     const type = searchParams.get("type");
 
     // ========== Handle requests type ==========
-    // if (type === "requests") {
-    //   console.log("=== ADMIN API DEBUG ===");
-    //   console.log("Query parameters:", { type, status, page, limit });
+    if (type === "requests") {
+      console.log("=== ADMIN API - Fetching pending requests ===");
+      console.log("Query parameters:", { type, status, page, limit });
 
-    //   let requestQuery = {
-    //     status: "pending",
-    //   };
+      let requestQuery = {
+        status: "pending",
+      };
 
-    //   if (status === "edit") {
-    //     requestQuery["requestData.type"] = "edit";
-    //   } else if (status === "cancel") {
-    //     requestQuery["requestData.type"] = "cancel";
-    //   }
+      // Optional: filter only edit requests if needed
+      if (status === "edit") {
+        requestQuery["requestData.type"] = "edit";
+      } else if (status === "cancel") {
+        requestQuery["requestData.type"] = "cancel";
+      }
 
+      // Get total count
+      const total = await Insurance.countDocuments(requestQuery);
+      console.log("Total pending requests found:", total);
 
-    //   // Get total count
-    //   const total = await Insurance.countDocuments(requestQuery);
-    //   console.log("Total documents matching query:", total);
+      // Fetch the documents with populated user/contractor
+      const rawRequests = await Insurance.find(requestQuery)
+        .populate("userId", "name email companyName phoneNumber isSuspended")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
 
-    //   // Get the actual documents
-    //   const rawRequests = await Insurance.find(requestQuery)
-    //     .populate("userId", "name email companyName")
-    //     .sort({ createdAt: -1 })
-    //     .skip((page - 1) * limit)
-    //     .limit(limit);
+      console.log("Raw requests count:", rawRequests.length);
 
-    //   console.log("Raw requests found:", rawRequests);
+      const requests = rawRequests.map((insurance) => {
+        // ── 1. Get the first (and usually only) product ────────────────────────
+        const product = insurance.products?.[0] || {};
 
-    //   if (rawRequests.length > 0) {
-    //     console.log("First request details:");
-    //     console.log("ID:", rawRequests[0]._id);
-    //     console.log("Status:", rawRequests[0].status);
-    //     console.log("Policy Number:", rawRequests[0].policyNumber);
-    //     console.log("Request Data:", rawRequests[0].requestData);
-    //     console.log("User ID populated?", !!rawRequests[0].userId);
-    //   }
+        // ── 2. Helper function to get value with proper priority ───────────────
+        const get = (key, fallback = "N/A") => {
+          // Priority 1: from products[0]
+          if (
+            product[key] !== undefined &&
+            product[key] !== null &&
+            product[key] !== ""
+          ) {
+            return product[key];
+          }
+          // Priority 2: from top-level insurance document
+          if (
+            insurance[key] !== undefined &&
+            insurance[key] !== null &&
+            insurance[key] !== ""
+          ) {
+            return insurance[key];
+          }
+          return fallback;
+        };
 
-    //   console.log("=== END DEBUG ===");
+        // ── 3. Date formatting helper ──────────────────────────────────────────
+        const formatDate = (dateValue) => {
+          if (!dateValue) return "N/A";
+          try {
+            return new Date(dateValue).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+          } catch {
+            return "N/A";
+          }
+        };
 
-    //   const requests = rawRequests.map((insurance) => ({
-    //     id: insurance._id,
-    //     policyNumber: insurance.policyNumber,
-    //     policyHolderName: insurance.policyHolderName,
-    //     policyHolderAddress: insurance.address,
-    //     contractor: insurance.userId
-    //       ? {
-    //           id: insurance.userId._id,
-    //           name: insurance.userId.name,
-    //           email: insurance.userId.email,
-    //           companyName: insurance.userId.companyName,
-    //           phoneNumber: insurance.userId.phoneNumber,
-    //           isSuspended: insurance.userId.isSuspended || false, 
-    //         }
-    //       : null,
-    //     requestType: insurance.requestData?.type || "edit",
-    //     status: insurance.status,
-    //     requestedAt: insurance.requestData?.requestedAt || insurance.createdAt,
-    //     changes: insurance.requestData?.changes || {},
-    //     reason: insurance.requestData?.reason || "",
-    //     createdAt: insurance.createdAt,
-    //   }));
+        // ── 4. Build clean response object ─────────────────────────────────────
+        return {
+          id: insurance._id.toString(),
 
-    //   console.log("Formatted requests being returned:", requests.length);
+          // Core policy info
+          policyNumber: insurance.policyNumber || "N/A",
+          status: insurance.status,
 
-    //   return Response.json({
-    //     success: true,
-    //     requests,
-    //     pagination: {
-    //       page,
-    //       limit,
-    //       total,
-    //       pages: Math.ceil(total / limit),
-    //     },
-    //   });
-    // }
-    // ========== END SECTION ==========
+          // Policyholder information
+          policyHolderName: get(
+            "policyHolderName",
+            insurance.policyHolderName || "N/A"
+          ),
+          policyHolderAddress: get("address", insurance.address || "N/A"),
+          address: get("address", insurance.address || "N/A"),
+          country: get("country", insurance.country || "United Kingdom"),
+          postcode: get("postcode", insurance.postcode || "N/A"),
+          email: get("email", insurance.email || "N/A"),
+          phone: get("phone", insurance.phone || "N/A"),
 
-// ========== Handle requests type ==========
-if (type === "requests") {
-  console.log("=== ADMIN API DEBUG ===");
-  console.log("Query parameters:", { type, status, page, limit });
+          // Product / Measure (THIS is where most real data lives!)
+          productType: get("productType", "N/A"),
+          insuranceCoverage: get("coverOption", "Insurance Backed Guarantee"),
+          contractValue:
+            get("contractValue") === "N/A"
+              ? "N/A"
+              : `£ ${Number(get("contractValue")).toLocaleString("en-GB", {
+                  minimumFractionDigits: 2,
+                })}`,
+          totalAmount:
+            get("totalProjectCost") === "N/A"
+              ? "N/A"
+              : `£ ${Number(get("totalProjectCost")).toLocaleString("en-GB", {
+                  minimumFractionDigits: 2,
+                })}`,
+          price:
+            get("price") === "N/A"
+              ? "N/A"
+              : `£ ${Number(get("price")).toLocaleString("en-GB", {
+                  minimumFractionDigits: 2,
+                })}`,
 
-  let requestQuery = {
-    status: "pending",
-  };
+          // Important dates
+          inceptionDate: formatDate(get("inceptionDate")),
+          expiryDate: formatDate(
+            get("expiryDate") || product.expiryDateCalculated
+          ),
 
-  if (status === "edit") {
-    requestQuery["requestData.type"] = "edit";
-  } else if (status === "cancel") {
-    requestQuery["requestData.type"] = "cancel";
-  }
+          // Contractor information
+          contractor: insurance.userId
+            ? {
+                id: insurance.userId._id?.toString(),
+                name: insurance.userId.name || "N/A",
+                email: insurance.userId.email || "N/A",
+                companyName:
+                  insurance.userId.companyName ||
+                  insurance.contractorName ||
+                  "N/A",
+                phoneNumber: insurance.userId.phoneNumber || "N/A",
+                isSuspended: insurance.userId.isSuspended || false,
+              }
+            : {
+                name: insurance.contractorName || "N/A",
+                companyName: insurance.contractorName || "N/A",
+              },
 
-  // Get total count
-  const total = await Insurance.countDocuments(requestQuery);
-  console.log("Total documents matching query:", total);
+          // Request specific fields
+          requestType: insurance.requestData?.type || "edit",
+          changes: insurance.requestData?.changes || {},
+          reason: insurance.requestData?.reason || "",
+          requestedAt:
+            insurance.requestData?.requestedAt || insurance.createdAt,
+          formattedRequestedAt: new Date(
+            insurance.requestData?.requestedAt || insurance.createdAt
+          ).toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
 
-  // Get the actual documents with all insurance data
-  const rawRequests = await Insurance.find(requestQuery)
-    .populate("userId", "name email companyName phoneNumber isSuspended")
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit);
+          // Additional fallback/display fields
+          abs: insurance.abs || product.retrofitAssessor || "External Provider",
+          fundingPartner: insurance.fundingPartner || "External Provider",
+          transactionType: "Certificate Generated",
+          submissionFiles: insurance.submissionFiles || [],
 
-  console.log("Raw requests found:", rawRequests.length);
+          createdAt: insurance.createdAt,
+          updatedAt: insurance.updatedAt,
+        };
+      });
 
-  const requests = rawRequests.map((insurance) => {
-    // Extract data from nested structure
-    const rawInsurance = insurance.rawData?.insurance || {};
-    const rawProduct = insurance.rawData?.product || {};
-    
-    // Get policy number from multiple possible sources
-    const policyNumber = insurance.policyNumber || 
-                        rawInsurance.policyNumber || 
-                        rawInsurance.policyNo || 
-                        "N/A";
-    
-    // Get product type (Measure)
-    const productType = rawProduct.productType || 
-                       rawInsurance.productType || 
-                       insurance.productType || 
-                       "N/A";
-    
-    // Get contract value with proper formatting
-    const contractValue = rawProduct.contractValue || 
-                         rawInsurance.contractValue || 
-                         insurance.contractValue || 
-                         "N/A";
-    
-    // Get price
-    const price = rawProduct.price || 
-                 rawInsurance.price || 
-                 insurance.price || 
-                 "N/A";
-    
-    // Get phone number
-    const phone = rawInsurance.phone || 
-                 insurance.phone || 
-                 insurance.phoneNumber || 
-                 "N/A";
-    
-    // Get email
-    const email = rawInsurance.email || 
-                 insurance.email || 
-                 "N/A";
-    
-    // Get country
-    const country = rawInsurance.country || 
-                   insurance.country || 
-                   "United Kingdom";
-    
-    // Get postcode
-    const postcode = rawInsurance.postcode || 
-                    insurance.postcode || 
-                    "N/A";
-    
-    // Get dates
-    const inceptionDate = rawProduct.inceptionDate ? 
-                         new Date(rawProduct.inceptionDate).toLocaleDateString('en-GB') : 
-                         (rawInsurance.inceptionDate || "N/A");
-    
-    const expiryDate = rawProduct.expiryDate ? 
-                      new Date(rawProduct.expiryDate).toLocaleDateString('en-GB') : 
-                      (rawInsurance.expiryDate || "N/A");
-    
-    // Format requestedAt date
-    const requestedAt = insurance.requestData?.requestedAt || insurance.createdAt;
-    const formattedRequestedAt = new Date(requestedAt).toLocaleString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+      console.log("Returning formatted requests count:", requests.length);
+      // Optional: log first request for debugging
+      if (requests.length > 0) {
+        console.log("Sample first request:", {
+          policyNumber: requests[0].policyNumber,
+          productType: requests[0].productType,
+          contractValue: requests[0].contractValue,
+          inceptionDate: requests[0].inceptionDate,
+          changes: requests[0].changes,
+        });
+      }
 
-    return {
-      id: insurance._id.toString(),
-      policyNumber: policyNumber,
-      policyHolderName: rawInsurance.policyHolderName || insurance.policyHolderName || "N/A",
-      policyHolderAddress: rawInsurance.address || insurance.address || insurance.policyHolderAddress || "N/A",
-      address: rawInsurance.address || insurance.address || "N/A",
-      
-      // All the fields you need
-      country: country,
-      postcode: postcode,
-      email: email,
-      phone: phone,
-      productType: productType, // This is "Measure"
-      contractValue: contractValue,
-      price: price,
-      totalAmount: rawProduct.totalProjectCost || insurance.totalAmount || "N/A",
-      insuranceCoverage: rawProduct.coverOption || "Insurance Backed Guarantee",
-      inceptionDate: inceptionDate,
-      expiryDate: expiryDate,
-      transactionType: insurance.transactionType || "Certificate Generated",
-      submissionFiles: insurance.submissionFiles || [],
-      abs: rawInsurance.abs || "External Provider",
-      fundingPartner: rawInsurance.fundingPartner || "External Provider",
-      holderName: rawInsurance.holderName || "N/A",
-      contractorAddress: rawInsurance.contractorAddress || "N/A",
-      contractorName: rawInsurance.contractorName || "N/A",
-      
-      contractor: insurance.userId ? {
-        id: insurance.userId._id.toString(),
-        name: insurance.userId.name,
-        email: insurance.userId.email,
-        companyName: insurance.userId.companyName,
-        phoneNumber: insurance.userId.phoneNumber,
-        isSuspended: insurance.userId.isSuspended || false,
-      } : null,
-      
-      requestType: insurance.requestData?.type || "edit",
-      status: insurance.status,
-      requestedAt: requestedAt,
-      formattedRequestedAt: formattedRequestedAt, // DD/MM/YYYY - HH:MM
-      changes: insurance.requestData?.changes || {},
-      reason: insurance.requestData?.reason || "",
-      createdAt: insurance.createdAt,
-      updatedAt: insurance.updatedAt,
-    };
-  });
-
-  console.log("Formatted requests sample:", requests[0]);
-
-  return Response.json({
-    success: true,
-    requests,
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit),
-    },
-  });
-}
-// ========== END SECTION ==========
+      return Response.json({
+        success: true,
+        requests,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    }
+    // ========== END requests handling ==========
     // Build query - only get contractors
     let query = { role: "contractor" };
 
@@ -302,8 +251,8 @@ if (type === "requests") {
         position: contractor.position || "",
         role: contractor.role,
         isApproved: contractor.isApproved,
-        isSuspended: contractor.isSuspended || false, 
-        suspensionReason: contractor.suspensionReason || "", 
+        isSuspended: contractor.isSuspended || false,
+        suspensionReason: contractor.suspensionReason || "",
         suspendedAt: contractor.suspendedAt || null,
         createdAt: contractor.createdAt,
         updatedAt: contractor.updatedAt,
