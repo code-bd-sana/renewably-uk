@@ -118,7 +118,7 @@ export default function CreateInsuranceForm() {
     const timer = setTimeout(() => {
       fetchProducts();
       fetchContractorData();
-      fetchSchemeProviders();
+      // fetchSchemeProviders();
     }, 3000);
 
     return () => {
@@ -932,7 +932,7 @@ export default function CreateInsuranceForm() {
             </div>
             <div>
               <label className='block text-sm font-medium mb-2'>
-                Postcode *
+                Postcode
               </label>
               <input
                 type='text'
@@ -944,7 +944,7 @@ export default function CreateInsuranceForm() {
                 }
                 pattern="[A-Za-z0-9 ]{5,8}"
                 title="Enter a valid UK postcode (e.g., LL31 9FF)"
-                required
+                
               />
             </div>
           </div>
