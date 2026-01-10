@@ -102,7 +102,7 @@ export async function GET(request) {
           }
         };
 
-        // ── 4. Build clean response object ─────────────────────────────────────
+        // ── 4. Build clean response object
         return {
           id: insurance._id.toString(),
 
@@ -237,10 +237,20 @@ export async function GET(request) {
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
-
+    const contractorsWithCounts = await Promise.all(
+      contractors.map(async (contractor) => {
+        const count = await Insurance.countDocuments({
+          userId: contractor._id,
+        });
+        return {
+          ...contractor,
+          certificateCount: count,
+        };
+      })
+    );
     return Response.json({
       success: true,
-      users: contractors.map((contractor) => ({
+      users: contractorsWithCounts.map((contractor) => ({
         id: contractor._id,
         name: contractor.name,
         email: contractor.email,
@@ -265,6 +275,33 @@ export async function GET(request) {
         pages: Math.ceil(total / limit),
       },
     });
+    // return Response.json({
+    //   success: true,
+    //   users: contractors.map((contractor) => ({
+    //     id: contractor._id,
+    //     name: contractor.name,
+    //     email: contractor.email,
+    //     phone: contractor.phone || "",
+    //     companyName: contractor.companyName || "",
+    //     phoneNumber: contractor.phoneNumber || "",
+    //     companyAddress: contractor.companyAddress || "",
+    //     position: contractor.position || "",
+    //     role: contractor.role,
+    //     isApproved: contractor.isApproved,
+    //     isSuspended: contractor.isSuspended || false,
+    //     suspensionReason: contractor.suspensionReason || "",
+    //     suspendedAt: contractor.suspendedAt || null,
+    //     createdAt: contractor.createdAt,
+    //     updatedAt: contractor.updatedAt,
+    //     certificateCount: contractor.certificateCount,
+    //   })),
+    //   pagination: {
+    //     page,
+    //     limit,
+    //     total,
+    //     pages: Math.ceil(total / limit),
+    //   },
+    // });
   } catch (error) {
     console.error("Get contractors error:", error);
     return Response.json(
