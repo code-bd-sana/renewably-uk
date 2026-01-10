@@ -98,10 +98,10 @@ export default function ContractorCertificatesPage() {
         }
 
         const certsText = await certsRes.text();
-        console.log(
-          "Certificates response text (first 500 chars):",
-          certsText.substring(0, 500)
-        );
+        // console.log(
+        //   "Certificates response text (first 500 chars):",
+        //   certsText.substring(0, 500)
+        // );
 
         if (!certsText) {
           console.warn(

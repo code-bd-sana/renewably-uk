@@ -449,7 +449,7 @@
 //       // If found, use it directly
 //       if (existingRequest) {
 //         setSelectedRequest(existingRequest);
-        
+
 //         setAdminNotes("");
 //         setShowRequestModal(true);
 //         return;
@@ -464,7 +464,7 @@
 //       setShowRequestModal(true);
 //       return;
 //     }
-    
+
 //     // If it's a user request
 //     if (existingUser) {
 //       setSelectedRequest({
@@ -540,7 +540,7 @@
 //   //     // If found, use it directly
 //   //     if (existingRequest) {
 //   //       setSelectedRequest(existingRequest);
-        
+
 //   //       setAdminNotes("");
 //   //       setShowRequestModal(true);
 //   //       return;
@@ -555,7 +555,7 @@
 //   //         reason: "New contractor registration",
 //   //         requestedAt: existingUser.createdAt,
 //   //       });
-        
+
 //   //       setAdminNotes("");
 //   //       setShowRequestModal(true);
 //   //       return;
@@ -1086,30 +1086,30 @@
 //           {request.contractor?.email}
 //         </div>
 //       </td>
-      
+
 //       {/* Policy Number */}
 //       <td className="px-6 py-4 whitespace-nowrap">
 //         <div className="text-sm font-medium text-gray-900">
 //           {request.policyNumber}
 //         </div>
 //       </td>
-      
+
 //       {/* Policy Holder Name */}
 //       <td className="px-6 py-4 whitespace-nowrap">
 //         <div className="text-sm text-gray-900">
 //           {request.policyHolderName}
 //         </div>
 //       </td>
-      
+
 //       {/* Policy Holder Address */}
 //       <td className="px-6 py-4 whitespace-nowrap">
 //         <div className="text-sm text-gray-900">
 //           {request.policyHolderAddress}
 //         </div>
 //       </td>
-      
+
 //       {/* Measure (Product Type) */}
-      
+
 //       {/* Request Type */}
 //       <td className="px-6 py-4 whitespace-nowrap">
 //         <span
@@ -1127,10 +1127,10 @@
 //           </div>
 //         )}
 //       </td>
-      
+
 //       {/* Requested At (DD/MM/YYYY - HH:MM) */}
 //       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//         {request.formattedRequestedAt || 
+//         {request.formattedRequestedAt ||
 //           new Date(request.requestedAt).toLocaleString('en-GB', {
 //             day: '2-digit',
 //             month: '2-digit',
@@ -1140,7 +1140,7 @@
 //           })
 //         }
 //       </td>
-      
+
 //       {/* Actions */}
 //       <td className="px-6 py-4 whitespace-nowrap text-sm">
 //         <div className="flex gap-2 items-center justify-center">
@@ -1503,8 +1503,8 @@
 //   <div>
 //     <p className="text-sm text-gray-600 mb-1">Contract Value</p>
 //     <p className="text-gray-900">
-//       {selectedRequest.contractValue?.toString().includes('€') 
-//         ? selectedRequest.contractValue 
+//       {selectedRequest.contractValue?.toString().includes('€')
+//         ? selectedRequest.contractValue
 //         : `€ ${selectedRequest.contractValue}`}
 //     </p>
 //   </div>
@@ -1527,7 +1527,7 @@
 //   <div>
 //     <p className="text-sm text-gray-600 mb-1">Requested At</p>
 //     <p className="text-gray-900">
-//       {selectedRequest.formattedRequestedAt || 
+//       {selectedRequest.formattedRequestedAt ||
 //         new Date(selectedRequest.requestedAt).toLocaleString('en-GB', {
 //           day: '2-digit',
 //           month: '2-digit',
@@ -2031,13 +2031,6 @@
 // //               </div>
 // // </div>
 
-
-
-
-
-
-
-
 "use client";
 
 import {
@@ -2487,37 +2480,37 @@ export default function AdminDashboard() {
       // If found, use it directly
       if (existingRequest) {
         setSelectedRequest(existingRequest);
-        
+
         setAdminNotes("");
         setShowRequestModal(true);
         return;
       }
-       // If it's a policy request
-    if (existingRequest) {
-      setSelectedRequest({
-        ...existingRequest,
-        type: 'policy_request' // Add type identifier
-      });
-      setAdminNotes("");
-      setShowRequestModal(true);
-      return;
-    }
-    
-    // If it's a user request
-    if (existingUser) {
-      setSelectedRequest({
-        ...existingUser,
-        type: 'user_request', // Add type identifier
-        requestType: "user_approval",
-        policyNumber: `USER-${existingUser.name}`,
-        policyHolderName: existingUser.name,
-        reason: "New contractor registration",
-        requestedAt: existingUser.createdAt,
-      });
-      setAdminNotes("");
-      setShowRequestModal(true);
-      return;
-    }
+      // If it's a policy request
+      if (existingRequest) {
+        setSelectedRequest({
+          ...existingRequest,
+          type: "policy_request", // Add type identifier
+        });
+        setAdminNotes("");
+        setShowRequestModal(true);
+        return;
+      }
+
+      // If it's a user request
+      if (existingUser) {
+        setSelectedRequest({
+          ...existingUser,
+          type: "user_request", // Add type identifier
+          requestType: "user_approval",
+          policyNumber: `USER-${existingUser.name}`,
+          policyHolderName: existingUser.name,
+          reason: "New contractor registration",
+          requestedAt: existingUser.createdAt,
+        });
+        setAdminNotes("");
+        setShowRequestModal(true);
+        return;
+      }
       // If not found locally, try to fetch from API
       const response = await fetch(
         `/api/admin/contractor/${requestId}/details`
@@ -2633,7 +2626,14 @@ export default function AdminDashboard() {
     monthlyStats.length > 0
       ? Math.max(...monthlyStats.map((item) => item.value))
       : 200;
-
+  // Improved scaling & nice Y-axis labels
+  const niceMax = Math.ceil(maxValue / 1000) * 1000 || 1000; // round up to next 1000, min 1000
+  const step = niceMax <= 5000 ? 1000 : niceMax <= 20000 ? 5000 : 10000;
+  const yAxisLabels = [];
+  for (let i = niceMax; i >= 0; i -= step) {
+    yAxisLabels.push(i);
+  }
+  if (yAxisLabels[yAxisLabels.length - 1] !== 0) yAxisLabels.push(0);
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
@@ -3144,46 +3144,47 @@ export default function AdminDashboard() {
               {new Date().getFullYear()}
             </span>
           </div>
-          <div className="relative">
-            <div className="absolute left-0 top-0 flex flex-col justify-between h-48 md:h-64 text-xs text-gray-500 pr-2">
-              <span className="text-[10px] md:text-xs">{maxValue}</span>
-              <span className="text-[10px] md:text-xs">
-                {Math.round(maxValue * 0.75)}
-              </span>
-              <span className="text-[10px] md:text-xs">
-                {Math.round(maxValue * 0.5)}
-              </span>
-              <span className="text-[10px] md:text-xs">
-                {Math.round(maxValue * 0.25)}
-              </span>
-              <span className="text-[10px] md:text-xs">0</span>
+
+          <div className="relative h-64 md:h-80">
+            {/* Y-axis labels - nicer stepped scale */}
+            <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between text-xs text-gray-500 pr-2">
+              {yAxisLabels.map((label, i) => (
+                <div key={i} className="text-right">
+                  {label.toLocaleString()}
+                </div>
+              ))}
             </div>
 
-            <div className="ml-6 md:ml-8 h-48 md:h-64 border-l border-b border-gray-200 pl-3 md:pl-4 pb-6 md:pb-8">
-              <div className="grid grid-cols-6 md:flex md:flex-row items-end justify-between gap-1 md:gap-3 h-full">
-                {monthlyStats.map((data, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col items-center flex-1"
-                  >
-                    <button
-                      onClick={() => handleMonthClick(data.monthNumber)}
-                      className="w-full bg-[#0F47A8] rounded-t transition-all hover:bg-blue-700 group relative"
-                      style={{
-                        height: `${(data.value / maxValue) * 100}%`,
-                        minHeight: "10px",
-                      }}
-                      title={`${data.month}: ${data.value}`}
+            {/* Chart area */}
+            <div className="ml-16 h-full border-l border-b border-gray-200 pl-4 pb-8">
+              <div className="grid grid-cols-12 md:flex md:flex-row items-end justify-between gap-1 md:gap-3 h-full">
+                {monthlyStats.map((data, index) => {
+                  const barHeight =
+                    maxValue > 0 ? (data.value / maxValue) * 100 : 0;
+                  return (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center flex-1"
                     >
-                      <div className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-50">
-                        {data.value} certificates
-                      </div>
-                    </button>
-                    <span className="text-[10px] md:text-xs text-gray-600 mt-2 md:mt-3 truncate w-full text-center">
-                      {data.month.slice(0, 3)}
-                    </span>
-                  </div>
-                ))}
+                      <button
+                        onClick={() => handleMonthClick(data.monthNumber)}
+                        className="w-full bg-[#0F47A8] rounded-t transition-all hover:bg-blue-700 group relative"
+                        style={{
+                          height: `${barHeight}%`,
+                          minHeight: data.value > 0 ? "10px" : "0px",
+                        }}
+                        title={`${data.month}: ${data.value} policies`}
+                      >
+                        <div className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-50">
+                          {data.value} policies
+                        </div>
+                      </button>
+                      <span className="text-[10px] md:text-xs text-gray-600 mt-2 truncate w-full text-center">
+                        {data.month.slice(0, 3)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -3476,89 +3477,144 @@ export default function AdminDashboard() {
                         <div className="space-y-3">
                           {/* Contractor Information */}
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Contractor</p>
-                            <p className="text-gray-900 font-medium">{selectedRequest.contractor?.name}</p>
-                            <p className="text-sm text-gray-600">{selectedRequest.contractor?.companyName}</p>
-                            <p className="text-sm text-gray-600">{selectedRequest.contractor?.email}</p>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Contractor
+                            </p>
+                            <p className="text-gray-900 font-medium">
+                              {selectedRequest.contractor?.name}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {selectedRequest.contractor?.companyName}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {selectedRequest.contractor?.email}
+                            </p>
                           </div>
 
                           {/* Policy Information */}
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Policy Number</p>
-                            <p className="text-gray-900">{selectedRequest.policyNumber}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Policy Holder Name</p>
-                            <p className="text-gray-900">{selectedRequest.policyHolderName}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Policy Holder Address</p>
-                            <p className="text-gray-900">{selectedRequest.policyHolderAddress}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Measure (Product Type)</p>
-                            <p className="text-gray-900">{selectedRequest.productType}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Country</p>
-                            <p className="text-gray-900">{selectedRequest.country}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Postcode</p>
-                            <p className="text-gray-900">{selectedRequest.postcode}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Email</p>
-                            <p className="text-gray-900">{selectedRequest.email}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Phone</p>
-                            <p className="text-gray-900">{selectedRequest.phone}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Contract Value</p>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Policy Number
+                            </p>
                             <p className="text-gray-900">
-                              {selectedRequest.contractValue?.toString().includes('€') 
-                                ? selectedRequest.contractValue 
-                                : `€ ${selectedRequest.contractValue}`}
+                              {selectedRequest.policyNumber}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Insurance Coverage</p>
-                            <p className="text-gray-900">{selectedRequest.insuranceCoverage}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Inception Date</p>
-                            <p className="text-gray-900">{selectedRequest.inceptionDate}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Expiry Date</p>
-                            <p className="text-gray-900">{selectedRequest.expiryDate}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Requested At</p>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Policy Holder Name
+                            </p>
                             <p className="text-gray-900">
-                              {selectedRequest.formattedRequestedAt || 
-                                new Date(selectedRequest.requestedAt).toLocaleString('en-GB', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                              }
+                              {selectedRequest.policyHolderName}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Policy Holder Address
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.policyHolderAddress}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Measure (Product Type)
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.productType}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Country
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.country}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Postcode
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.postcode}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Email</p>
+                            <p className="text-gray-900">
+                              {selectedRequest.email}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Phone</p>
+                            <p className="text-gray-900">
+                              {selectedRequest.phone}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Contract Value
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.contractValue
+                                ?.toString()
+                                .includes("€")
+                                ? selectedRequest.contractValue
+                                : `${selectedRequest.contractValue}`}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Insurance Coverage
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.insuranceCoverage}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Inception Date
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.inceptionDate}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Expiry Date
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.expiryDate}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Requested At
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.formattedRequestedAt ||
+                                new Date(
+                                  selectedRequest.requestedAt
+                                ).toLocaleString("en-GB", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
                             </p>
                           </div>
                         </div>
@@ -3574,146 +3630,111 @@ export default function AdminDashboard() {
                       </div>
                       <div className="p-4">
                         <div className="space-y-3">
-                          {/* For each field, check if it's in changes */}
-                          <div className={selectedRequest.changes?.policyHolderName ? 'bg-yellow-50 p-3 rounded border border-yellow-200' : ''}>
-                            <p className="text-sm text-gray-600 mb-1">Policy Holder Name</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-gray-900">
-                                {selectedRequest.changes?.policyHolderName || selectedRequest.policyHolderName}
-                              </p>
-                              {selectedRequest.changes?.policyHolderName && (
-                                <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                                  CHANGED
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                          {[
+                            {
+                              changeKey: "policyHolderName",
+                              originalKey: "policyHolderName",
+                              label: "Policy Holder Name",
+                            },
+                            {
+                              changeKey: "address",
+                              originalKey: "policyHolderAddress",
+                              label: "Address",
+                            },
+                            {
+                              changeKey: "country",
+                              originalKey: "country",
+                              label: "Country",
+                            },
+                            {
+                              changeKey: "postcode",
+                              originalKey: "postcode",
+                              label: "Postcode",
+                            },
+                            {
+                              changeKey: "email",
+                              originalKey: "email",
+                              label: "Policyholder Email",
+                            },
+                            {
+                              changeKey: "phone",
+                              originalKey: "phone",
+                              label: "Policyholder Phone",
+                            },
+                            {
+                              changeKey: "productType",
+                              originalKey: "productType",
+                              label: "Product Type",
+                            },
+                            {
+                              changeKey: "contractValue",
+                              originalKey: "contractValue",
+                              label: "Contract Value",
+                              format: (val) =>
+                                val?.toString().includes("£")
+                                  ? val
+                                  : `£ ${val}`,
+                            },
+                            {
+                              changeKey: "inceptionDate",
+                              originalKey: "inceptionDate",
+                              label: "Inception Date",
+                            },
+                            {
+                              changeKey: "expiryDateCalculated",
+                              originalKey: "expiryDate",
+                              label: "Expiry Date",
+                            },
+                          ].map(
+                            ({
+                              changeKey,
+                              originalKey,
+                              label,
+                              format = (v) => v,
+                            }) => {
+                              const hasChange =
+                                selectedRequest.changes?.[changeKey] !==
+                                undefined;
+                              const displayValue = hasChange
+                                ? format(selectedRequest.changes[changeKey])
+                                : format(selectedRequest[originalKey] || "N/A");
 
-                          {/* Repeat for all fields that can be changed */}
-                          <div className={selectedRequest.changes?.address ? 'bg-yellow-50 p-3 rounded border border-yellow-200' : ''}>
-                            <p className="text-sm text-gray-600 mb-1">Address</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-gray-900">
-                                {selectedRequest.changes?.address || selectedRequest.policyHolderAddress}
-                              </p>
-                              {selectedRequest.changes?.address && (
-                                <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                                  CHANGED
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                              return (
+                                <div
+                                  key={changeKey}
+                                  className={
+                                    hasChange
+                                      ? "bg-yellow-50 p-3 rounded border border-yellow-200"
+                                      : ""
+                                  }
+                                >
+                                  <p className="text-sm text-gray-600 mb-1">
+                                    {label}
+                                  </p>
+                                  <div className="flex justify-between items-center">
+                                    <p className="text-gray-900">
+                                      {displayValue || "N/A"}
+                                    </p>
+                                    {hasChange && (
+                                      <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+                                        CHANGED
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            }
+                          )}
 
-                          {/* Country */}
-                          <div className={selectedRequest.changes?.country ? 'bg-yellow-50 p-3 rounded border border-yellow-200' : ''}>
-                            <p className="text-sm text-gray-600 mb-1">Country</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-gray-900">
-                                {selectedRequest.changes?.country || selectedRequest.country}
-                              </p>
-                              {selectedRequest.changes?.country && (
-                                <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                                  CHANGED
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Postcode */}
-                          <div className={selectedRequest.changes?.postcode ? 'bg-yellow-50 p-3 rounded border border-yellow-200' : ''}>
-                            <p className="text-sm text-gray-600 mb-1">Postcode</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-gray-900">
-                                {selectedRequest.changes?.postcode || selectedRequest.postcode}
-                              </p>
-                              {selectedRequest.changes?.postcode && (
-                                <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                                  CHANGED
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Email */}
-                          <div className={selectedRequest.changes?.email ? 'bg-yellow-50 p-3 rounded border border-yellow-200' : ''}>
-                            <p className="text-sm text-gray-600 mb-1">Policyholder Email</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-gray-900">
-                                {selectedRequest.changes?.email || selectedRequest.email}
-                              </p>
-                              {selectedRequest.changes?.email && (
-                                <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                                  CHANGED
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Phone */}
-                          <div className={selectedRequest.changes?.phone ? 'bg-yellow-50 p-3 rounded border border-yellow-200' : ''}>
-                            <p className="text-sm text-gray-600 mb-1">Policyholder Phone</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-gray-900">
-                                {selectedRequest.changes?.phone || selectedRequest.phone}
-                              </p>
-                              {selectedRequest.changes?.phone && (
-                                <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                                  CHANGED
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Product Type */}
-                          <div className={selectedRequest.changes?.productType ? 'bg-yellow-50 p-3 rounded border border-yellow-200' : ''}>
-                            <p className="text-sm text-gray-600 mb-1">Product Type</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-gray-900">
-                                {selectedRequest.changes?.productType || selectedRequest.productType}
-                              </p>
-                              {selectedRequest.changes?.productType && (
-                                <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                                  CHANGED
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Contract Value */}
-                          <div className={selectedRequest.changes?.contractValue ? 'bg-yellow-50 p-3 rounded border border-yellow-200' : ''}>
-                            <p className="text-sm text-gray-600 mb-1">Contract Value</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-gray-900">
-                                {selectedRequest.changes?.contractValue
-                                  ? `€ ${selectedRequest.changes.contractValue}`
-                                  : selectedRequest.contractValue?.toString().includes('€') 
-                                    ? selectedRequest.contractValue 
-                                    : `€ ${selectedRequest.contractValue}`}
-                              </p>
-                              {selectedRequest.changes?.contractValue && (
-                                <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                                  CHANGED
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Insurance Coverage */}
+                          {/* Static fields that don't change often */}
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Insurance Coverage</p>
-                            <p className="text-gray-900">{selectedRequest.insuranceCoverage || "Insurance Backed Guarantee"}</p>
-                          </div>
-
-                          {/* Inception Date */}
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Inception Date</p>
-                            <p className="text-gray-900">{selectedRequest.inceptionDate || "25/11/2025"}</p>
-                          </div>
-
-                          {/* Expiry Date */}
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Expiry Date</p>
-                            <p className="text-gray-900">{selectedRequest.expiryDate || "25/11/2027"}</p>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Insurance Coverage
+                            </p>
+                            <p className="text-gray-900">
+                              {selectedRequest.insuranceCoverage ||
+                                "Insurance Backed Guarantee"}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -3735,7 +3756,9 @@ export default function AdminDashboard() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">Company Name</p>
+                        <p className="text-sm text-gray-600 mb-1">
+                          Company Name
+                        </p>
                         <p className="font-medium">
                           {selectedRequest.contractor?.companyName || "N/A"}
                         </p>
@@ -3836,13 +3859,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
