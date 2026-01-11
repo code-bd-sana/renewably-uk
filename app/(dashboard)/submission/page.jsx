@@ -419,7 +419,7 @@ export default function SubmissionPage() {
               {/* Modal Content */}
               <div className='p-6'>
                 <div className='flex items-center justify-between pb-8'>
-                  <Image src={logo} />
+                  <Image src={logo} alt="logo"/>
 
                   <button
                     onClick={() =>
@@ -451,7 +451,7 @@ export default function SubmissionPage() {
 
                     <div className='flex justify-between items-start py-3 '>
                       <div className='font-medium  text-[#030712]'>Address</div>
-                      <div className='text-sm text-[#6B7280] text-right max-w-xs text-right'>
+                      <div className='text-sm text-[#6B7280] max-w-xs text-right'>
                         {selectedCertificate.address || "N/A"}
                       </div>
                     </div>

@@ -115,13 +115,13 @@ export async function GET(request) {
       
       // Format contract value
       const contractValue = product.contractValue 
-        ? `€ ${product.contractValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : "€ 0.00";
+        ? `£ ${product.contractValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : "£ 0.00";
       
       // Format price
       const price = product.price 
-        ? `€ ${product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : "€ 0.00";
+        ? `£ ${product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : "£ 0.00";
       
       return {
         id: cert._id.toString(),

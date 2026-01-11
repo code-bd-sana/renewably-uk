@@ -276,7 +276,7 @@ export default function DocumentUploadForm() {
 
         // Show success message
         alert(
-          `✅ Successfully uploaded ${files.length} file(s)!\n\n📁 Files saved to: public/uploads/\n📋 Document saved to database`
+          `Successfully uploaded ${files.length} file(s)!\n\n Files saved to: public/uploads/\n Document saved to database`
         );
 
         // Reset form
@@ -423,9 +423,6 @@ export default function DocumentUploadForm() {
               onChange={(e) => setCategory(e.target.value)}
               required>
               <option value=''>Select your document category</option>
-              <option value='option1'>Option 1</option>
-              <option value='option2'>Option 2</option>
-              <option value='option3'>Option 3</option>
               <option value='contracts'>Contracts</option>
               <option value='invoices'>Invoices</option>
               <option value='reports'>Reports</option>
