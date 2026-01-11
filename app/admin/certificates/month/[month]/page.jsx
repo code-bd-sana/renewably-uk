@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import Image from "next/image";
+import { downloadPdf } from "@/utils/pdfGenerator";
 
 export default function MonthCertificatesPage() {
   const params = useParams();
@@ -139,47 +140,167 @@ export default function MonthCertificatesPage() {
   };
 
   const handleDownloadSingle = async (certificate) => {
-    try {
-      setDownloading(true);
-      await generatePDF(certificate, `${certificate.policyNo}_certificate.pdf`);
-    } catch (error) {
-      console.error("Download error:", error);
-      alert("Failed to download certificate");
-    } finally {
-      setDownloading(false);
-    }
-  };
+  try {
+    setDownloading(true);
+    
+    // Create a contractor object for the downloadPdf function
+    const contractor = {
+      name: certificate.contractorName || "Unknown Contractor",
+      companyName: certificate.contractorName || "Unknown Company",
+      address: certificate.rawData?.contractorAddress || "Not provided",
+      email: certificate.rawData?.contractorEmail || "Not provided"
+    };
+    
+    // Use your existing downloadPdf function
+    await downloadPdf(certificate, contractor);
+    
+  } catch (error) {
+    console.error("Download error:", error);
+    alert("Failed to download certificate");
+  } finally {
+    setDownloading(false);
+  }
+};
 
-  const handleDownloadSelected = async () => {
-    if (selectedRows.length === 0) {
-      alert("Please select certificates to download");
+  const handleDownloadCSV = () => {
+    if (certificates.length === 0) {
+      alert("No data to export");
       return;
     }
 
     try {
-      setDownloadingAll(true);
-      const selectedCerts = certificates.filter((cert) =>
-        selectedRows.includes(cert.id)
-      );
+      // Define CSV headers
+      const headers = [
+        "Policy No",
+        "Policy Holder",
+        "Policy Holder Address",
+        "Product Type",
+        "Contract Value",
+        "Inception Date",
+        "Expiry Date",
+        "Price",
+        "Contractor Name",
+        "Email",
+        "Phone",
+        "Country",
+        "Postcode",
+        "Creation Date",
+      ];
 
-      if (selectedCerts.length === 1) {
-        await generatePDF(
-          selectedCerts[0],
-          `${selectedCerts[0].policyNo}_certificate.pdf`
-        );
-      } else {
-        for (const cert of selectedCerts) {
-          await generatePDF(cert, `${cert.policyNo}_certificate.pdf`);
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-      }
+      // Convert data to CSV rows
+      const csvRows = certificates.map((cert) => [
+        cert.policyNo || "",
+        cert.holderName || "",
+        cert.address || "",
+        cert.productType || "",
+        cert.contractValue || "",
+        cert.inceptionDate || "",
+        cert.expiryDate || "",
+        cert.price || "",
+        cert.contractorName || "",
+        cert.email || "",
+        cert.phone || "",
+        cert.country || "",
+        cert.postcode || "",
+        formatTimestamp(cert.createdAt),
+      ]);
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(","),
+        ...csvRows.map((row) => row.map((field) => `"${field}"`).join(",")),
+      ].join("\n");
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${monthData?.name || "month"}_${
+        monthData?.year || new Date().getFullYear()
+      }_certificates.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      alert(
+        `CSV exported successfully! ${certificates.length} records downloaded.`
+      );
     } catch (error) {
-      console.error("Download error:", error);
-      alert("Failed to download certificates");
-    } finally {
-      setDownloadingAll(false);
+      console.error("CSV export error:", error);
+      alert("Failed to export CSV file");
     }
   };
+
+  // const handleDownloadSelected = async () => {
+  //   if (selectedRows.length === 0) {
+  //     alert("Please select certificates to download");
+  //     return;
+  //   }
+
+  //   try {
+  //     setDownloadingAll(true);
+  //     const selectedCerts = certificates.filter((cert) =>
+  //       selectedRows.includes(cert.id)
+  //     );
+
+  //     if (selectedCerts.length === 1) {
+  //       await generatePDF(
+  //         selectedCerts[0],
+  //         `${selectedCerts[0].policyNo}_certificate.pdf`
+  //       );
+  //     } else {
+  //       for (const cert of selectedCerts) {
+  //         await generatePDF(cert, `${cert.policyNo}_certificate.pdf`);
+  //         await new Promise((resolve) => setTimeout(resolve, 100));
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Download error:", error);
+  //     alert("Failed to download certificates");
+  //   } finally {
+  //     setDownloadingAll(false);
+  //   }
+  // };
+
+  const handleDownloadSelected = async () => {
+  if (selectedRows.length === 0) {
+    alert("Please select certificates to download");
+    return;
+  }
+
+  try {
+    setDownloadingAll(true);
+    const selectedCerts = certificates.filter((cert) =>
+      selectedRows.includes(cert.id)
+    );
+
+    // Download each certificate
+    for (const cert of selectedCerts) {
+      // Create contractor object for each certificate
+      const contractor = {
+        name: cert.contractorName || "Unknown Contractor",
+        companyName: cert.contractorName || "Unknown Company",
+        address: cert.rawData?.contractorAddress || "Not provided",
+        email: cert.rawData?.contractorEmail || "Not provided"
+      };
+      
+      // Use your existing downloadPdf function
+      await downloadPdf(cert, contractor);
+      
+      // Add a small delay between downloads
+      if (selectedCerts.length > 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+  } catch (error) {
+    console.error("Download error:", error);
+    alert("Failed to download certificates");
+  } finally {
+    setDownloadingAll(false);
+  }
+};
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -273,53 +394,7 @@ export default function MonthCertificatesPage() {
     }
   };
 
-  const generatePDF = async (certificate, filename) => {
-    try {
-      const doc = new jsPDF();
 
-      // Add header
-      doc.setFontSize(20);
-      doc.text("INSURANCE BACKED GUARANTEE", 20, 20);
-      doc.setFontSize(16);
-      doc.text("POLICY CERTIFICATE", 20, 30);
-
-      // Add policy details
-      doc.setFontSize(12);
-      let yPosition = 50;
-
-      const details = [
-        `Policy No: ${certificate.policyNo || "N/A"}`,
-        `Policy Holder: ${certificate.holderName || "N/A"}`,
-        `Product Type: ${certificate.productType || "N/A"}`,
-        `Contract Value: ${certificate.contractValue || "N/A"}`,
-        `Inception Date: ${certificate.inceptionDate || "N/A"}`,
-        `Expiry Date: ${certificate.expiryDate || "N/A"}`,
-        `Transaction Type: ${certificate.transactionType || "N/A"}`,
-        `Price: ${certificate.price || "N/A"}`,
-        `Contractor: ${certificate.contractorName || "N/A"}`,
-        `Month: ${monthData?.name || "N/A"} ${monthData?.year || "N/A"}`,
-        `Generated: ${new Date(
-          certificate.createdAt || Date.now()
-        ).toLocaleDateString()}`,
-      ];
-
-      details.forEach((detail) => {
-        doc.text(detail, 20, yPosition);
-        yPosition += 10;
-      });
-
-      // Add footer
-      doc.setFontSize(10);
-      doc.text("Renewably UK - Insurance Backed Guarantee System", 20, 200);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 210);
-
-      // Save PDF
-      doc.save(`${certificate.policyNo || "policy"}_certificate.pdf`);
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      generateTextCertificate(certificate, filename);
-    }
-  };
 
   const generateTextCertificate = (certificate, filename) => {
     const content = `
@@ -391,7 +466,7 @@ Renewably UK - Powering Renewables
     startIndex,
     endIndex
   );
-console.log(paginatedCertificates)
+  console.log(paginatedCertificates);
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
@@ -442,13 +517,24 @@ console.log(paginatedCertificates)
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             </div>
 
+            {/* CSV Download Button */}
+            <button
+              onClick={handleDownloadCSV}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+              title="Download CSV for entire month"
+            >
+              <DownloadIcon size={16} />
+              Export CSV
+            </button>
+
+            {/* Selected PDFs Download Button */}
             <button
               onClick={handleDownloadSelected}
               disabled={downloadingAll || selectedRows.length === 0}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               <DownloadIcon size={16} />
-              Download ({selectedRows.length})
+              Download PDFs ({selectedRows.length})
             </button>
           </div>
         </div>
@@ -489,7 +575,7 @@ console.log(paginatedCertificates)
                   <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
                     Contract Value
                   </th>
-                  
+
                   <th className="px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
                     Inception Date
                   </th>
@@ -779,369 +865,200 @@ console.log(paginatedCertificates)
       </div>
 
       {/* View/Edit Certificate Modal */}
-      {showModal && selectedCertificate && (
-        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-start sm:items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden m-2 sm:m-4">
-            {/* Request Action Buttons */}
-            {(requestType === "edit" || requestType === "cancel") && (
-              <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {requestType === "edit"
-                      ? "Reason for Edit Request"
-                      : "Reason for Cancellation"}
-                  </label>
-                  <textarea
-                    value={requestReason}
-                    onChange={(e) => setRequestReason(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows="3"
-                    placeholder={
-                      requestType === "edit"
-                        ? "Explain what changes you want to make..."
-                        : "Why do you want to cancel this policy?"
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="flex flex-col sm:flex-row justify-end gap-3">
-                  <button
-                    onClick={() => {
-                      setRequestType("");
-                      setRequestReason("");
-                      setModalError("");
-                    }}
-                    className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100 order-2 sm:order-1"
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    onClick={handleSubmitRequest}
-                    className="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 order-1 sm:order-2 mb-2 sm:mb-0"
-                    disabled={submitting || !requestReason.trim()}
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      "Submit Request"
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Modal Header */}
-            <div className="p-4 sm:p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <div className="inline-flex items-center gap-2">
-                  <Image
-                    src="/bluedrop.png"
-                    height="150"
-                    width="150"
-                    alt="Renewably UK"
-                    className="h-auto w-auto"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                      e.target.nextSibling.style.display = "flex";
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setRequestType("");
-                    setModalError("");
-                  }}
-                  className="p-1 sm:p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <X size={18} className="sm:w-5 sm:h-5" />
-                </button>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 wrap-break-words">
-                  {selectedCertificate.policyNo ||
-                    selectedCertificate.policyNumber}
-                </h1>
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={
-                        selectedCertificate.status &&
-                        selectedCertificate.status.includes("pending")
-                      }
-                    >
-                      <span className="truncate max-w-25 sm:max-w-none">
-                        {requestType
-                          ? requestType === "edit"
-                            ? "Request for Edit"
-                            : "Request For Cancellation"
-                          : "Request for"}
-                      </span>
-                      <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-                    </button>
-
-                    {isDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                        <div className="py-1">
-                          <button
-                            onClick={() => {
-                              setRequestType("edit");
-                              setIsDropdownOpen(false);
-                            }}
-                            className="block w-full text-left px-3 py-2 text-xs sm:text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                            disabled={
-                              selectedCertificate.status === "pending_edit"
-                            }
-                          >
-                            Request for Edit
-                          </button>
-                          <button
-                            onClick={() => {
-                              setRequestType("cancel");
-                              setIsDropdownOpen(false);
-                            }}
-                            className="block w-full text-left px-3 py-2 text-xs sm:text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                            disabled={
-                              selectedCertificate.status === "pending_cancel"
-                            }
-                          >
-                            Request For Cancellation
-                          </button>
-                        </div>
-                      </div>
-                    )}
+      {showModal && selectedCertificate && !requestType && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header with Bluedrop */}
+            <div className="p-6 border-b border-gray-200 bg-linear-to-r from-blue-50 to-white">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Image
+                      src="/bluedrop.png"
+                      height={200}
+                      width={200}
+                      alt="Bluedrop"
+                      className="h-auto"
+                    />
                   </div>
+                  <div className="text-2xl font-bold text-blue-800">
+                    {selectedCertificate.policyNo ||
+                      selectedCertificate.policyNumber}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => handleDownloadSingle(selectedCertificate)}
-                    className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 rounded"
                     disabled={downloading}
+                    className="flex items-center gap-2 px-4 py-2 "
                   >
                     {downloading ? (
-                      <Loader2
-                        size={18}
-                        className="animate-spin sm:w-5 sm:h-5"
-                      />
+                      <Loader2 className="w-6 h-6 animate-spin" />
                     ) : (
-                      <Download size={18} className="sm:w-5 sm:h-5" />
+                      <Download className="w-6 h-6" />
                     )}
                   </button>
-                </div>
-              </div>
-
-              {/* Show status badge */}
-              {selectedCertificate.status && (
-                <div className="mt-3">
-                  <span
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedCertificate.status === "active"
-                        ? "bg-green-100 text-green-800"
-                        : selectedCertificate.status === "pending_edit"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : selectedCertificate.status === "pending_cancel"
-                        ? "bg-orange-100 text-orange-800"
-                        : selectedCertificate.status === "cancelled"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg"
                   >
-                    Status:{" "}
-                    {selectedCertificate.status.replace("_", " ").toUpperCase()}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {modalError && (
-              <div className="mx-4 sm:mx-6 mt-4 p-2 sm:p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs sm:text-sm">
-                {modalError}
-              </div>
-            )}
-
-            {/* Policy Details */}
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-300px)] sm:max-h-[calc(90vh-200px)]">
-              {/* Contractor Details */}
-              <div className="mb-6">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
-                  Contractor Details
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <div className="text-xs sm:text-sm text-gray-500 mb-1">
-                      Contractor Name
-                    </div>
-                    <div className="text-sm sm:text-base font-medium wrap-break-words">
-                      {selectedCertificate.contractorName || "Not provided"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="text-xs sm:text-sm text-gray-500">
-                        Contractor Address
-                      </div>
-                      {requestType === "edit" && (
-                        <Edit2 className="w-3 h-3 text-gray-400" />
-                      )}
-                    </div>
-                    {requestType === "edit" ? (
-                      <textarea
-                        value={editableFields.contractorAddress || ""}
-                        onChange={(e) =>
-                          setEditableFields((prev) => ({
-                            ...prev,
-                            contractorAddress: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows="2"
-                        placeholder="Enter contractor address"
-                      />
-                    ) : (
-                      <div className="text-sm sm:text-base wrap-break-words">
-                        {selectedCertificate.contractorAddress ||
-                          "Not provided"}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Policy Holder Details */}
-              <div className="mb-6">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
-                  Policy Holder Details
-                </h2>
-                <div className="space-y-2 sm:space-y-3">
-                  {renderField(
-                    "Policy Holder Name",
-                    "policyHolderName",
-                    editableFields.policyHolderName ||
-                      selectedCertificate.holderName ||
-                      "Not provided"
-                  )}
-
-                  {renderField(
-                    "Address",
-                    "address",
-                    editableFields.address ||
-                      selectedCertificate.rawData?.insurance?.address ||
-                      "Not provided"
-                  )}
-
-                  {renderField(
-                    "Country",
-                    "country",
-                    editableFields.country ||
-                      selectedCertificate.rawData?.insurance?.country ||
-                      "Not provided"
-                  )}
-
-                  {renderField(
-                    "Postcode",
-                    "postcode",
-                    editableFields.postcode ||
-                      selectedCertificate.rawData?.insurance?.postcode ||
-                      "Not provided"
-                  )}
-
-                  {renderField(
-                    "Policyholder email",
-                    "email",
-                    editableFields.email ||
-                      selectedCertificate.rawData?.insurance?.email ||
-                      "Not provided"
-                  )}
-
-                  {renderField(
-                    "Policyholder Phone",
-                    "phone",
-                    editableFields.phone ||
-                      selectedCertificate.rawData?.insurance?.phone ||
-                      "Not provided"
-                  )}
-                </div>
-              </div>
-
-              {/* Product Details */}
-              <div className="mb-6">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
-                  Product Details
-                </h2>
-                <div className="space-y-2 sm:space-y-3">
-                  {renderField(
-                    "Product Type",
-                    "productType",
-                    editableFields.productType
-                  )}
-                  {renderStaticField(
-                    "Insurance Coverage",
-                    "Insurance Backed Guarantee"
-                  )}
-                  {renderStaticField(
-                    "Inception Date",
-                    selectedCertificate.inceptionDate || "Not available"
-                  )}
-                  {renderStaticField(
-                    "Expiry Date",
-                    selectedCertificate.expiryDate || "Not available"
-                  )}
-                  {renderField(
-                    "Contract Value",
-                    "contractValue",
-                    editableFields.contractValue
-                  )}
-                  {renderStaticField(
-                    "Transaction Type",
-                    "Certificate Generated"
-                  )}
-                  {renderStaticField(
-                    "Price",
-                    selectedCertificate.price || "€ 0.00"
-                  )}
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            {(requestType === "edit" || requestType === "cancel") && (
-              <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
-                <div className="flex flex-col sm:flex-row justify-end gap-3">
-                  <button
-                    onClick={() => {
-                      setRequestType("");
-                      setModalError("");
-                    }}
-                    className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100 order-2 sm:order-1"
-                    disabled={submitting}
-                  >
-                    Cancel Request
-                  </button>
-                  <button
-                    onClick={handleSubmitRequest}
-                    className="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 order-1 sm:order-2 mb-2 sm:mb-0"
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      "Submit Request"
-                    )}
-                  </button>
+            {/* Certificate Content - Matching Figma Design */}
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
+              {/* Policy Holder Name - Big and Bold */}
+              <div className="mb-8">
+                <div className="text-sm text-gray-500 mb-1">
+                  Policy Holder Name
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {selectedCertificate.holderName ||
+                    selectedCertificate.policyHolderName}
                 </div>
               </div>
-            )}
+
+              {/* Divider */}
+              <div className="border-t border-gray-300 my-6"></div>
+
+              {/* Details Grid - 2 columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column */}
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">Address</div>
+                    <div className="text-base font-medium">
+                      {selectedCertificate.address ||
+                        selectedCertificate.policyHolderAddress ||
+                        "Not specified"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">Country</div>
+                    <div className="text-base font-medium">
+                      {selectedCertificate.country ||
+                        selectedCertificate.rawData?.insurance?.country ||
+                        "Not specified"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">Postcode</div>
+                    <div className="text-base font-medium">
+                      {selectedCertificate.postcode ||
+                        selectedCertificate.rawData?.insurance?.postcode ||
+                        "Not specified"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">
+                      Policyholder email
+                    </div>
+                    <div className="text-base font-medium">
+                      {selectedCertificate.email ||
+                        selectedCertificate.rawData?.insurance?.email ||
+                        "Not specified"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">
+                      Policyholder Phone
+                    </div>
+                    <div className="text-base font-medium">
+                      {selectedCertificate.phone ||
+                        selectedCertificate.rawData?.insurance?.phone ||
+                        "Not specified"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">
+                      Product Type
+                    </div>
+                    <div className="text-base font-medium">
+                      {selectedCertificate.productType}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">
+                      Contract Value
+                    </div>
+                    <div className="text-base font-medium">
+                      {selectedCertificate.contractValue}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">
+                      Insurance Coverage
+                    </div>
+                    <div className="text-base font-medium">
+                      Insurance Backed Guarantee
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">
+                      Inception Date
+                    </div>
+                    <div className="text-base font-medium">
+                      {selectedCertificate.inceptionDate}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">
+                      Expiry Date
+                    </div>
+                    <div className="text-base font-medium">
+                      {selectedCertificate.expiryDate}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Section */}
+              <div className="mt-8 space-y-4">
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">
+                    IBG Creation Date Stamp
+                  </div>
+                  <div className="text-base font-medium">
+                    {formatTimestamp(selectedCertificate.createdAt)}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">
+                    Transaction Type
+                  </div>
+                  <div className="text-base font-medium">
+                    Certificate Generated
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Price</div>
+                  <div className="text-base font-medium text-green-600">
+                    {selectedCertificate.price}
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-gray-300 my-6"></div>
+            </div>
           </div>
         </div>
       )}
