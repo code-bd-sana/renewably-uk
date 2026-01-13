@@ -1,6 +1,7 @@
 // app/api/insurance/route.js
 import connectDB from "@/lib/db";
 import Insurance from "@/models/Insurance";
+import User from "@/models/User";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -29,7 +30,7 @@ export async function GET(request) {
 
     return NextResponse.json({
       success: true,
-      insurancess,
+      insurances,
       insurances: insurances.map((insurance) => ({
         id: insurance._id,
         policyNumber: insurance.policyNumber,
@@ -52,51 +53,113 @@ export async function GET(request) {
   }
 }
 
-// Handle POST (create new insurance)
+// Handle POST
 export async function POST(request) {
   try {
-    // Check authentication
     const cookieStore = await cookies();
     const token = cookieStore.get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const data = await request.json();
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (jwtErr) {
+      console.error("JWT verification failed:", jwtErr.message);
+      return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
+    }
 
-    console.log("Creating insurance with data:", data);
+    const userId = decoded.userId;
+
+    const data = await request.json();
+    console.log("Received form data:", JSON.stringify(data, null, 2)); // ← very important!
 
     await connectDB();
 
-    // Validate required fields
+    // Validation (make sure all required fields are here)
     if (
-      !data.contractorName ||
       !data.policyHolderName ||
       !data.email ||
       !data.phone ||
       !data.address ||
-      !data.products ||
-      data.products.length === 0
+      !data.country ||
+      !data.postcode ||
+      !data.products || data.products.length === 0
     ) {
+      console.log("Missing required fields in data:", data);
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 }
       );
     }
 
+    // Load contractor (prefix logic)
+    const contractor = await User.findById(userId).select(
+      "policyNoPrefix lastCertificateSequence companyName name isPrefixLocked"
+    );
+
+    if (!contractor) {
+      console.log("Contractor not found for userId:", userId);
+      return NextResponse.json({ success: false, error: "Contractor not found" }, { status: 404 });
+    }
+
+    console.log("Contractor loaded:", {
+      id: contractor._id,
+      prefix: contractor.policyNoPrefix,
+      sequence: contractor.lastCertificateSequence
+    });
+    // Generate policy number
+    let policyNumber;
+
+    if (contractor.policyNoPrefix && contractor.policyNoPrefix.trim() !== "") {
+      // Atomically increment sequence
+      const updated = await User.findByIdAndUpdate(
+        userId,
+        { $inc: { lastCertificateSequence: 1 } },
+        { new: true, select: "lastCertificateSequence policyNoPrefix" }
+      );
+
+      const sequence = updated.lastCertificateSequence;
+      policyNumber = `${updated.policyNoPrefix}${sequence
+        .toString()
+        .padStart(5, "0")}`;
+
+      // Lock prefix after first certificate (if not already locked)
+      if (sequence === 1 && !contractor.isPrefixLocked) {
+        await User.updateOne(
+          { _id: userId },
+          { $set: { isPrefixLocked: true } }
+        );
+      }
+    } else {
+      // Fallback to old random format
+      const year = new Date().getFullYear().toString().slice(-2);
+      const random = Math.floor(Math.random() * 1000000)
+        .toString()
+        .padStart(6, "0");
+      policyNumber = `${year}${random}`;
+    }
+
     // Create new insurance
+    // const insurance = new Insurance({
+    //   ...data,
+    //   userId: decoded.userId,
+    //   status: "active",
+    // });
+
     const insurance = new Insurance({
       ...data,
-      userId: decoded.userId,
+      policyNumber,  // from prefix logic
+      userId,
+      contractorName: contractor.companyName || contractor.name || data.contractorName,
       status: "active",
     });
 
     await insurance.save();
+
+    console.log("Insurance saved successfully:", insurance._id);
 
     return NextResponse.json({
       success: true,
@@ -104,22 +167,137 @@ export async function POST(request) {
       insuranceId: insurance._id,
       policyNumber: insurance.policyNumber,
     });
+
   } catch (error) {
-    console.error("Create insurance error:", error);
-
-    if (error.name === "ValidationError") {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 400 }
-      );
-    }
-
+    console.error("POST /api/insurance full error:", error);
+    console.error("Error stack:", error.stack);
     return NextResponse.json(
-      { success: false, error: "Failed to create insurance" },
+      { success: false, error: error.message || "Failed to create insurance" },
       { status: 500 }
     );
   }
 }
+// export async function POST(request) {
+//   try {
+//     // Check authentication
+//     const cookieStore = await cookies();
+//     const token = cookieStore.get("auth_token")?.value;
+
+//     if (!token) {
+//       return NextResponse.json(
+//         { success: false, error: "Not authenticated" },
+//         { status: 401 }
+//       );
+//     }
+
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     const data = await request.json();
+
+//     console.log("Creating insurance with data:", data);
+
+//     await connectDB();
+
+//     // Validate required fields
+//     if (
+//       !data.contractorName ||
+//       !data.policyHolderName ||
+//       !data.email ||
+//       !data.phone ||
+//       !data.address ||
+//       !data.products ||
+//       data.products.length === 0
+//     ) {
+//       return NextResponse.json(
+//         { success: false, error: "Missing required fields" },
+//         { status: 400 }
+//       );
+//     }
+
+//     // Load contractor to get prefix & sequence
+//     const contractor = await User.findById(userId).select(
+//       "policyNoPrefix lastCertificateSequence companyName name isPrefixLocked"
+//     );
+
+//     if (!contractor) {
+//       return NextResponse.json(
+//         { success: false, error: "Contractor not found" },
+//         { status: 404 }
+//       );
+//     }
+
+//     // Generate policy number
+//     let policyNumber;
+
+//     if (contractor.policyNoPrefix && contractor.policyNoPrefix.trim() !== "") {
+//       // Atomically increment sequence
+//       const updated = await User.findByIdAndUpdate(
+//         userId,
+//         { $inc: { lastCertificateSequence: 1 } },
+//         { new: true, select: "lastCertificateSequence policyNoPrefix" }
+//       );
+
+//       const sequence = updated.lastCertificateSequence;
+//       policyNumber = `${updated.policyNoPrefix}${sequence
+//         .toString()
+//         .padStart(5, "0")}`;
+
+//       // Lock prefix after first certificate (if not already locked)
+//       if (sequence === 1 && !contractor.isPrefixLocked) {
+//         await User.updateOne(
+//           { _id: userId },
+//           { $set: { isPrefixLocked: true } }
+//         );
+//       }
+//     } else {
+//       // Fallback to old random format
+//       const year = new Date().getFullYear().toString().slice(-2);
+//       const random = Math.floor(Math.random() * 1000000)
+//         .toString()
+//         .padStart(6, "0");
+//       policyNumber = `${year}${random}`;
+//     }
+
+//     // Create new insurance
+//     // const insurance = new Insurance({
+//     //   ...data,
+//     //   userId: decoded.userId,
+//     //   status: "active",
+//     // });
+
+//     const insurance = new Insurance({
+//       ...data,
+//       policyNumber, 
+//       userId: decoded.userId,
+//       contractorName:
+//         contractor.companyName || contractor.name || data.contractorName,
+//       status: "active",
+//     });
+//     await insurance.save();
+
+//     return NextResponse.json({
+//       success: true,
+//       message: "Insurance created successfully",
+//       insuranceId: insurance._id,
+//       policyNumber: insurance.policyNumber,
+//     });
+//   } catch (error) {
+//     console.error("Create insurance error:", error);
+
+//     if (error.name === "ValidationError") {
+//       return NextResponse.json(
+//         { success: false, error: error.message },
+//         { status: 400 }
+//       );
+//     }
+
+//     return NextResponse.json(
+//       { success: false, error: "Failed to create insurance" },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+// PUT
 
 export async function PUT(request) {
   await connectDB();

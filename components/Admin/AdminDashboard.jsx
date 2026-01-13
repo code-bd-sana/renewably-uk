@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [topContractors, setTopContractors] = useState([]);
   const [downloading, setDownloading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [downloadingAll, setDownloadingAll] = useState(false);
   const [stats, setStats] = useState({
     totalCertificates: 0,
     totalContractors: 0,
@@ -54,144 +55,264 @@ export default function AdminDashboard() {
     contractorName
   ) => {
     try {
-      // Show confirmation
       if (!confirm(`Download all certificates for ${contractorName}?`)) {
         return;
       }
 
-      // Show loading state
-      const loadingDiv = document.createElement("div");
-      loadingDiv.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.9);
-        display: flex;
-        flex-direction:column: justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        backdrop-filter: blur(5px);
-      ">
-        <div style="
-          background: white;
-          padding: 2rem;
-          border-radius: 12px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-          text-align: center;
-          max-width: 400px;
-          margin: 1rem;
-        ">
-          <Loader2 class="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <h3 style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin-bottom: 1rem;">
-            Downloading Certificates
-          </h3>
-          <p style="color: #6b7280; margin-bottom: 1.5rem;">
-            Please wait while we prepare ${contractorName}'s certificates...
-          </p>
-          <div style="
-            width: 100%;
-            background: #e5e7eb;
-            height: 6px;
-            border-radius: 3px;
-            overflow: hidden;
-          ">
-            <div id="progressBar" style="
-              width: 0%;
-              height: 100%;
-              background: #0F47A8;
-              transition: width 0.3s;
-            "></div>
-          </div>
-        </div>
-      </div>
-    `;
-      document.body.appendChild(loadingDiv);
+      toast.loading(`Preparing certificates...`);
+      setDownloadingAll(true);
 
-      // Fetch contractor details
+      // 1. Get contractor details
       const contractorRes = await fetch(
         `/api/admin/contractor/${contractorId}`
       );
-
-      if (!contractorRes.ok) {
-        throw new Error(`Failed to fetch contractor: ${contractorRes.status}`);
-      }
+      if (!contractorRes.ok) throw new Error("Failed to fetch contractor");
 
       const contractorData = await contractorRes.json();
+      const contractor = contractorData.contractor || {
+        name: contractorName,
+        companyName: contractorName,
+        email: "N/A",
+        phone: "N/A",
+        address: "N/A",
+      };
 
-      if (!contractorData.success) {
-        throw new Error(
-          contractorData.error || "Failed to fetch contractor data"
-        );
-      }
+      // 2. Get all certificates for this contractor WITH COMPLETE DATA
+      // Try different endpoints or create a new one that returns all data
+      let certificates = [];
 
-      const contractor = contractorData.contractor;
-
-      // Fetch certificates for this contractor
+      // Try to get from a complete endpoint
       const certsRes = await fetch(
-        `/api/admin/certificates?contractorId=${contractorId}`
+        `/api/admin/certificates?contractorId=${contractorId}&fullData=true`
       );
 
-      if (!certsRes.ok) {
-        throw new Error(`Failed to fetch certificates: ${certsRes.status}`);
+      if (certsRes.ok) {
+        const certsData = await certsRes.json();
+        if (certsData.success && certsData.certificates) {
+          certificates = certsData.certificates;
+        }
       }
 
-      const certsData = await certsRes.json();
+      // If no certificates, try another approach
+      if (certificates.length === 0) {
+        // Try to get insurance policies directly
+        const insuranceRes = await fetch(
+          `/api/admin/insurances?userId=${contractorId}`
+        );
+        if (insuranceRes.ok) {
+          const insuranceData = await insuranceRes.json();
+          if (insuranceData.success && insuranceData.insurances) {
+            // Flatten products into certificates
+            certificates = insuranceData.insurances.flatMap((insurance) => {
+              return insurance.products.map((product, index) => ({
+                // Basic identification
+                id: `${insurance._id}-${index}`,
+                _id: insurance._id,
+                insuranceId: insurance._id,
 
-      if (
-        certsData.success &&
-        certsData.certificates &&
-        certsData.certificates.length > 0
-      ) {
-        const certificates = certsData.certificates;
-        const total = certificates.length;
+                // Policy details
+                policyNo: insurance.policyNumber,
+                policyNumber: insurance.policyNumber,
+                holderName: insurance.policyHolderName,
+                policyHolderName: insurance.policyHolderName,
+                policyHolderAddress: insurance.address,
 
-        // Download each certificate as separate PDF
-        for (let i = 0; i < certificates.length; i++) {
-          const certificate = certificates[i];
+                // Contact details
+                email: insurance.email,
+                phone: insurance.phone,
+                address: insurance.address,
+                country: insurance.country,
+                postcode: insurance.postcode,
+                contractorName: insurance.contractorName,
 
-          // Update progress
-          const progress = ((i + 1) / total) * 100;
-          const progressBar = document.getElementById("progressBar");
-          if (progressBar) {
-            progressBar.style.width = `${progress}%`;
+                // Product details
+                productType: product.productType,
+                contractValue: `£ ${
+                  product.contractValue?.toFixed(2) || "0.00"
+                }`,
+                inceptionDate: new Date(
+                  product.inceptionDate
+                ).toLocaleDateString("en-GB"),
+                expiryDate: new Date(product.expiryDate).toLocaleDateString(
+                  "en-GB"
+                ),
+                price: `£ ${product.price?.toFixed(2) || "0.00"}`,
+
+                // Additional fields for PDF
+                retrofitAssessor: insurance.retrofitAssessor,
+                retrofitCoordinator: insurance.retrofitCoordinator,
+                schemeProvider: insurance.schemeProvider,
+                fundingPartner: insurance.fundingPartner,
+                abs: insurance.abs,
+                status: insurance.status,
+                createdAt: insurance.createdAt,
+                userId: insurance.userId,
+
+                // Raw data structure
+                rawData: {
+                  insurance: {
+                    contractorName: insurance.contractorName,
+                    contractorAddress:
+                      insurance.contractorAddress || contractor.address || "",
+                    policyHolderName: insurance.policyHolderName,
+                    email: insurance.email,
+                    phone: insurance.phone,
+                    address: insurance.address,
+                    country: insurance.country,
+                    postcode: insurance.postcode,
+                    retrofitAssessor: insurance.retrofitAssessor,
+                    retrofitCoordinator: insurance.retrofitCoordinator,
+                    schemeProvider: insurance.schemeProvider,
+                    fundingPartner: insurance.fundingPartner,
+                    abs: insurance.abs,
+                    document: insurance.document,
+                    status: insurance.status,
+                  },
+                  product: {
+                    productType: product.productType,
+                    coverOption: "Insurance Backed Guarantee",
+                  },
+                },
+              }));
+            });
           }
+        }
+      }
 
-          // Download PDF
-          await downloadPdf(certificate, contractor);
+      if (certificates.length === 0) {
+        toast.dismiss();
+        setDownloadingAll(false);
+        alert(`No certificates found for ${contractorName}`);
+        return;
+      }
 
-          // Add a small delay between downloads
-          if (i < certificates.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 500));
+      console.log(`Found ${certificates.length} certificates`, certificates[0]);
+
+      // 3. Download each certificate
+      for (let i = 0; i < certificates.length; i++) {
+        const certificate = certificates[i];
+
+        toast.loading(`Downloading ${i + 1} of ${certificates.length}...`);
+
+        // If still missing data, fetch individual certificate
+        if (!certificate.retrofitAssessor || !certificate.schemeProvider) {
+          try {
+            const singleCertRes = await fetch(
+              `/api/admin/certificates/${
+                certificate._id || certificate.insuranceId || certificate.id
+              }`
+            );
+            if (singleCertRes.ok) {
+              const singleCertData = await singleCertRes.json();
+              if (singleCertData.success && singleCertData.certificate) {
+                // Merge the data
+                Object.assign(certificate, singleCertData.certificate);
+              }
+            }
+          } catch (fetchError) {
+            console.log("Could not fetch individual certificate:", fetchError);
           }
         }
 
-        // Remove loading overlay
-        document.body.removeChild(loadingDiv);
+        // Prepare complete certificate data for PDF
+        const certData = {
+          // Core fields
+          policyNo: certificate.policyNo || certificate.policyNumber,
+          policyNumber: certificate.policyNumber || certificate.policyNo,
+          holderName: certificate.holderName || certificate.policyHolderName,
+          policyHolderName:
+            certificate.policyHolderName || certificate.holderName,
+          policyHolderAddress:
+            certificate.policyHolderAddress || certificate.address,
 
-        // Show success message
-        alert(
-          `Successfully downloaded ${certificates.length} certificate(s) for ${contractorName}`
-        );
-      } else {
-        // Remove loading overlay
-        document.body.removeChild(loadingDiv);
-        alert(`No certificates found for ${contractorName}`);
+          // Contact details
+          address: certificate.address || "N/A",
+          country: certificate.country || "N/A",
+          postcode: certificate.postcode || "N/A",
+          email: certificate.email || "N/A",
+          phone: certificate.phone || "N/A",
+          contractorName: certificate.contractorName || contractor.name,
+
+          // Product details
+          productType: certificate.productType || "Unknown",
+          contractValue: certificate.contractValue || `£ 0.00`,
+          inceptionDate: certificate.inceptionDate || "N/A",
+          expiryDate: certificate.expiryDate || "N/A",
+          price: certificate.price || `£ 0.00`,
+
+          // Additional fields for your PDF template
+          retrofitAssessor:
+            certificate.retrofitAssessor ||
+            certificate.rawData?.insurance?.retrofitAssessor ||
+            "Not Assigned",
+          retrofitCoordinator:
+            certificate.retrofitCoordinator ||
+            certificate.rawData?.insurance?.retrofitCoordinator ||
+            "Not Assigned",
+          schemeProvider:
+            certificate.schemeProvider ||
+            certificate.rawData?.insurance?.schemeProvider ||
+            "Not Assigned",
+          fundingPartner:
+            certificate.fundingPartner ||
+            certificate.rawData?.insurance?.fundingPartner ||
+            "Not Assigned",
+          abs: certificate.abs || "N/A",
+
+          // Timestamps
+          createdAt: certificate.createdAt || new Date().toISOString(),
+
+          // Raw data structure
+          rawData: certificate.rawData || {
+            insurance: {
+              contractorName: certificate.contractorName || contractor.name,
+              contractorAddress:
+                certificate.contractorAddress || contractor.address || "",
+              policyHolderName:
+                certificate.holderName || certificate.policyHolderName,
+              email: certificate.email,
+              phone: certificate.phone,
+              address: certificate.address,
+              country: certificate.country,
+              postcode: certificate.postcode,
+              retrofitAssessor: certificate.retrofitAssessor,
+              retrofitCoordinator: certificate.retrofitCoordinator,
+              schemeProvider: certificate.schemeProvider,
+              fundingPartner: certificate.fundingPartner,
+              abs: certificate.abs,
+            },
+            product: {
+              productType: certificate.productType,
+              coverOption: "Insurance Backed Guarantee",
+            },
+          },
+        };
+
+        console.log(`Downloading certificate ${i + 1}:`, {
+          policyNo: certData.policyNo,
+          hasRetrofitAssessor: !!certData.retrofitAssessor,
+          hasSchemeProvider: !!certData.schemeProvider,
+        });
+
+        // Download the PDF
+        await downloadPdf(certData, contractor);
+
+        // Small delay between downloads
+        if (i < certificates.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
       }
+
+      toast.dismiss();
+      toast.success(
+        `Downloaded ${certificates.length} certificates for ${contractorName}`
+      );
     } catch (error) {
       console.error("Download error:", error);
-
-      // Remove loading overlay if it exists
-      const loadingOverlay = document.querySelector(
-        'div[style*="position: fixed; top: 0"]'
-      );
-      if (loadingOverlay) {
-        document.body.removeChild(loadingOverlay);
-      }
-
+      toast.dismiss();
       alert(`Error: ${error.message}`);
+    } finally {
+      setDownloadingAll(false);
     }
   };
 
@@ -260,9 +381,9 @@ export default function AdminDashboard() {
 
   const handleApproveUser = async (userId, userName) => {
     toast.custom((t) => (
-      <div className="bg-white p-4 rounded-lg shadow-lg border">
-        <p className="font-medium">Approve {userName}’s Signup Request?</p>
-        <div className="flex gap-2 mt-3">
+      <div className='bg-white p-4 rounded-lg shadow-lg border'>
+        <p className='font-medium'>Approve {userName}’s Signup Request?</p>
+        <div className='flex gap-2 mt-3'>
           <button
             onClick={async () => {
               toast.dismiss(t.id);
@@ -301,14 +422,12 @@ export default function AdminDashboard() {
                 toast.error("Failed to approve", { id: loadingToast });
               }
             }}
-            className="px-3 py-1.5 bg-green-600 text-white rounded text-sm"
-          >
+            className='px-3 py-1.5 bg-green-600 text-white rounded text-sm'>
             Yes
           </button>
           <button
             onClick={() => toast.dismiss(t.id)}
-            className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm"
-          >
+            className='px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm'>
             No
           </button>
         </div>
@@ -318,9 +437,9 @@ export default function AdminDashboard() {
 
   const handleRejectUser = async (userId, userName) => {
     toast.custom((t) => (
-      <div className="bg-white p-4 rounded-lg shadow-lg border">
-        <p className="font-medium">Reject {userName}’s Signup Request?</p>
-        <div className="flex gap-2 mt-3">
+      <div className='bg-white p-4 rounded-lg shadow-lg border'>
+        <p className='font-medium'>Reject {userName}’s Signup Request?</p>
+        <div className='flex gap-2 mt-3'>
           <button
             onClick={async () => {
               toast.dismiss(t.id);
@@ -351,14 +470,12 @@ export default function AdminDashboard() {
                 toast.error("Failed to reject", { id: loadingToast });
               }
             }}
-            className="px-3 py-1.5 bg-red-600 text-white rounded text-sm"
-          >
+            className='px-3 py-1.5 bg-red-600 text-white rounded text-sm'>
             Yes
           </button>
           <button
             onClick={() => toast.dismiss(t.id)}
-            className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm"
-          >
+            className='px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm'>
             No
           </button>
         </div>
@@ -525,44 +642,69 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDownloadSingle = async (certificate) => {
-  try {
-    setDownloading(true);
-    
-    // Show immediate feedback
-    toast.success("Starting PDF generation...");
-    
-    const contractor = {
-      name: certificate.contractorName || "Unknown",
-      companyName: certificate.contractorName || "Unknown",
-    };
-    
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("PDF generation timeout (30s)")), 30000)
-    );
-    
-    // Race between download and timeout
-    await Promise.race([
-      downloadPdf(certificate, contractor),
-      timeoutPromise
-    ]);
-    
-    toast.success("PDF generated successfully");
-    
-  } catch (error) {
-    toast.error("Download error:", error);
-    
-    if (error.message.includes("timeout")) {
-      alert("PDF generation is taking too long. The images might be too large.");
-    } else {
-      alert("Failed to download certificate. Please try again.");
+  const handleDownloadSingle = async (requestId) => {
+    try {
+      setDownloading(true);
+
+      const response = await fetch(`/api/admin/certificates/${requestId}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success || !data.certificate) {
+        throw new Error("Certificate not found");
+      }
+
+      console.log("Certificate data:", data.certificate);
+      console.log("Contractor data:", data.contractor);
+
+      // If certificate doesn't have all fields, format it
+      const certificateData = {
+        ...data.certificate,
+        // Make sure these fields exist
+        policyNo: data.certificate.policyNo || data.certificate.policyNumber,
+        policyNumber:
+          data.certificate.policyNumber || data.certificate.policyNo,
+        holderName:
+          data.certificate.holderName || data.certificate.policyHolderName,
+        // Add any missing fields
+        productType:
+          data.certificate.productType ||
+          data.certificate.products?.[0]?.productType ||
+          "Unknown",
+        contractValue:
+          data.certificate.contractValue ||
+          `£ ${
+            data.certificate.products?.[0]?.contractValue?.toFixed(2) || "0.00"
+          }`,
+        inceptionDate:
+          data.certificate.inceptionDate ||
+          new Date(
+            data.certificate.products?.[0]?.inceptionDate
+          ).toLocaleDateString("en-GB"),
+        expiryDate:
+          data.certificate.expiryDate ||
+          new Date(
+            data.certificate.products?.[0]?.expiryDate
+          ).toLocaleDateString("en-GB"),
+        price:
+          data.certificate.price ||
+          `£ ${data.certificate.products?.[0]?.price?.toFixed(2) || "0.00"}`,
+      };
+
+      await downloadPdf(certificateData, data.contractor);
+
+      toast.success("Certificate downloaded!");
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download: " + error.message);
+    } finally {
+      setDownloading(false);
     }
-    
-  } finally {
-    setDownloading(false);
-  }
-};
+  };
 
   const handleViewRequest = async (requestId) => {
     try {
@@ -735,19 +877,19 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-          <p className="text-gray-600">Loading dashboard...</p>
+      <div className='min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center'>
+        <div className='text-center'>
+          <Loader2 className='w-8 h-8 animate-spin text-blue-600 mx-auto mb-3' />
+          <p className='text-gray-600'>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 mt-12 md:mt-0 p-2 md:p-6">
+    <div className='min-h-screen bg-gray-50 mt-12 md:mt-0 p-2 md:p-6'>
       <Toaster
-        position="top-right"
+        position='top-right'
         toastOptions={{
           duration: 4000,
           style: {
@@ -763,39 +905,39 @@ export default function AdminDashboard() {
         }}
       />
       {/* Mobile Header */}
-      <div className="md:hidden bg-[#0F47A8] text-white p-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Admin Dashboard</h1>
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2">
+      <div className='md:hidden bg-[#0F47A8] text-white p-4 sticky top-0 z-10'>
+        <div className='flex items-center justify-between'>
+          <h1 className='text-xl font-semibold'>Admin Dashboard</h1>
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className='p-2'>
             <Menu size={24} />
           </button>
         </div>
         {isMenuOpen && (
-          <div className="mt-4 bg-blue-700 rounded-lg p-3">
-            <p className="text-sm opacity-90">Welcome Back, Admin 👋</p>
+          <div className='mt-4 bg-blue-700 rounded-lg p-3'>
+            <p className='text-sm opacity-90'>Welcome Back, Admin 👋</p>
           </div>
         )}
       </div>
 
       {/* Desktop Header */}
-      <div className="hidden md:block bg-[#0F47A8] text-white p-6 md:p-8 rounded-lg mb-4 md:mb-6 mx-4 md:mx-0">
-        <h1 className="text-2xl md:text-3xl font-semibold flex items-center gap-2">
+      <div className='hidden md:block bg-[#0F47A8] text-white p-6 md:p-8 rounded-lg mb-4 md:mb-6 mx-4 md:mx-0'>
+        <h1 className='text-2xl md:text-3xl font-semibold flex items-center gap-2'>
           Welcome Back, Admin 👋
         </h1>
       </div>
 
-      {/* Stats Grid - Responsive */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-6 px-4 md:px-0">
+      {/* Stats Grid */}
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-6 px-4 md:px-0'>
         {[
           {
             title: "This Month Policies",
-            value: stats.thisMonthPolicies,
+            value: stats.thisMonthCertificates || stats.thisMonthPolicies || 0,
             icon: Calendar,
             color: "#0F47A8",
           },
           {
             title: "This Month Premium Total",
-            value: `£${stats.premiumTotal.toLocaleString("en-GB", {
+            value: `£${(stats.thisMonthRevenue || 0).toLocaleString("en-GB", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}`,
@@ -804,13 +946,17 @@ export default function AdminDashboard() {
           },
           {
             title: "Total Policies",
-            value: stats.totalPolicies,
+            value: stats.totalCertificates || stats.totalPolicies || 0,
             icon: FileText,
             color: "#0F47A8",
           },
           {
             title: "Premium Total",
-            value: `£${stats.premiumTotal.toLocaleString("en-GB", {
+            value: `£${(
+              stats.totalRevenue ||
+              stats.premiumTotal ||
+              0
+            ).toLocaleString("en-GB", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}`,
@@ -819,11 +965,10 @@ export default function AdminDashboard() {
           },
           {
             title: "Total Contractors",
-            value: stats.totalContractors,
+            value: stats.totalContractors || 0,
             icon: Users,
             color: "#0F47A8",
           },
-
           {
             title: "Edit Request Pending",
             value: pendingRequests.length,
@@ -833,17 +978,16 @@ export default function AdminDashboard() {
         ].map((stat, index) => (
           <div
             key={index}
-            className="bg-white rounded-lg shadow-sm p-4 md:p-5 lg:p-6 border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-2 md:mb-3">
-              <div className="text-xs md:text-sm text-gray-600 truncate">
+            className='bg-white rounded-lg shadow-sm p-4 md:p-5 lg:p-6 border border-gray-100'>
+            <div className='flex items-center justify-between mb-2 md:mb-3'>
+              <div className='text-xs md:text-sm text-gray-600 truncate'>
                 {stat.title}
               </div>
-              <div className="bg-[#EAF1FD] p-1.5 md:p-2 rounded">
-                <stat.icon className="w-4 h-4 md:w-5 md:h-5 text-[#0F47A8]" />
+              <div className='bg-[#EAF1FD] p-1.5 md:p-2 rounded'>
+                <stat.icon className='w-4 h-4 md:w-5 md:h-5 text-[#0F47A8]' />
               </div>
             </div>
-            <div className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
+            <div className='text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 truncate'>
               {stat.value}
             </div>
           </div>
@@ -851,57 +995,54 @@ export default function AdminDashboard() {
       </div>
 
       {/* Pending Sections Container */}
-      <div className="px-4 md:px-0 space-y-4 md:space-y-6">
+      <div className='px-4 md:px-0 space-y-4 md:space-y-6'>
         {/* Pending Approvals - Mobile Card View */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-          <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900">
+        <div className='bg-white rounded-lg shadow-sm border border-gray-100'>
+          <div className='px-4 md:px-6 py-3 md:py-4 border-b border-gray-200'>
+            <h2 className='text-lg md:text-xl font-semibold text-gray-900'>
               New Contractor Request ({pendingUsers.length})
             </h2>
           </div>
 
           {pendingUsers.length === 0 ? (
-            <div className="p-8 md:p-12 text-center text-gray-500">
+            <div className='p-8 md:p-12 text-center text-gray-500'>
               No pending approvals
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className='overflow-x-auto'>
               {/* Mobile Card View */}
-              <div className="md:hidden divide-y divide-gray-200">
+              <div className='md:hidden divide-y divide-gray-200'>
                 {pendingUsers.map((user) => (
-                  <div key={user.id || user._id} className="p-4">
-                    <div className="flex justify-between items-start mb-2">
+                  <div key={user.id || user._id} className='p-4'>
+                    <div className='flex justify-between items-start mb-2'>
                       <div>
-                        <h3 className="font-medium text-gray-900">
+                        <h3 className='font-medium text-gray-900'>
                           {user.companyName}
                         </h3>
-                        <p className="text-sm text-gray-600">{user.name}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+                        <p className='text-sm text-gray-600'>{user.name}</p>
+                        <p className='text-xs text-gray-500'>{user.email}</p>
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className='text-xs text-gray-500'>
                         {new Date(user.createdAt).toLocaleDateString("en-GB")}
                       </span>
                     </div>
-                    <div className="flex justify-end gap-2 mt-3">
+                    <div className='flex justify-end gap-2 mt-3'>
                       <button
                         onClick={() => handleViewRequest(user.id)}
-                        className="p-2 text-gray-600 hover:bg-gray-100 rounded"
-                        title="View"
-                      >
+                        className='p-2 text-gray-600 hover:bg-gray-100 rounded'
+                        title='View'>
                         <Eye size={16} />
                       </button>
                       <button
                         onClick={() => handleApproveUser(user.id, user.name)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded"
-                        title="Approve"
-                      >
+                        className='p-2 text-green-600 hover:bg-green-50 rounded'
+                        title='Approve'>
                         <CheckCircle size={16} />
                       </button>
                       <button
                         onClick={() => handleRejectUser(user.id, user.name)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded"
-                        title="Reject"
-                      >
+                        className='p-2 text-red-600 hover:bg-red-50 rounded'
+                        title='Reject'>
                         <XCircle size={16} />
                       </button>
                     </div>
@@ -910,64 +1051,61 @@ export default function AdminDashboard() {
               </div>
 
               {/* Desktop Table View */}
-              <table className="hidden md:table w-full">
-                <thead className="bg-gray-50 border-b border-gray-200 text-center">
+              <table className='hidden md:table w-full'>
+                <thead className='bg-gray-50 border-b border-gray-200 text-center'>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Apply Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Company Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Contractor Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Email Address
                     </th>
-                    <th className="px-6 py-3 text-center mx-auto text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-center mx-auto text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className='bg-white divide-y divide-gray-200'>
                   {pendingUsers.map((user) => (
-                    <tr key={user.id || user._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <tr key={user.id || user._id} className='hover:bg-gray-50'>
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
                         {new Date(user.createdAt).toLocaleDateString("en-GB")}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
                         {user.companyName}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
                         {user.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
                         {user.email}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm'>
+                        <div className='flex items-center justify-center gap-2'>
                           <button
                             onClick={() => handleViewRequest(user.id)}
-                            className="p-2 text-gray-600 hover:bg-gray-100 rounded cursor-pointer"
-                            title="View Request Details"
-                          >
+                            className='p-2 text-gray-600 hover:bg-gray-100 rounded cursor-pointer'
+                            title='View Request Details'>
                             View
                           </button>
                           <button
                             onClick={() =>
                               handleApproveUser(user.id, user.name)
                             }
-                            className="p-2 text-green-600 hover:bg-green-50 rounded cursor-pointer"
-                            title="Approve Request"
-                          >
+                            className='p-2 text-green-600 hover:bg-green-50 rounded cursor-pointer'
+                            title='Approve Request'>
                             Approve
                           </button>
                           <button
                             onClick={() => handleRejectUser(user.id, user.name)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded cursor-pointer"
-                            title="Reject Request"
-                          >
+                            className='p-2 text-red-600 hover:bg-red-50 rounded cursor-pointer'
+                            title='Reject Request'>
                             Reject
                           </button>
                         </div>
@@ -981,23 +1119,23 @@ export default function AdminDashboard() {
         </div>
 
         {/* Pending Policy Requests - Mobile Card View */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-          <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className='bg-white rounded-lg shadow-sm border border-gray-100'>
+          <div className='px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-3'>
             <div>
-              <h2 className="text-lg md:text-xl font-semibold text-gray-900">
+              <h2 className='text-lg md:text-xl font-semibold text-gray-900'>
                 Pending Policy Requests ({pendingRequests.length})
               </h2>
-              <p className="text-xs md:text-sm text-gray-500 mt-1">
+              <p className='text-xs md:text-sm text-gray-500 mt-1'>
                 Edit and cancellation requests
               </p>
             </div>
-            <div className="flex justify-center">
+            <div className='flex justify-center'>
               <Image
-                src="/bluedrop.png"
-                height="190"
-                width="190"
-                alt="Renewably UK"
-                className="h-auto w-auto"
+                src='/bluedrop.png'
+                height='190'
+                width='190'
+                alt='Renewably UK'
+                className='h-auto w-auto'
                 onError={(e) => {
                   e.target.style.display = "none";
                   e.target.nextSibling.style.display = "flex";
@@ -1006,39 +1144,38 @@ export default function AdminDashboard() {
               <button
                 onClick={handleRefreshRequests}
                 disabled={requestsLoading}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 self-end md:self-auto"
-              >
+                className='flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 self-end md:self-auto'>
                 <RefreshCw
                   className={`w-4 h-4 ${requestsLoading ? "animate-spin" : ""}`}
                 />
-                <span className="hidden md:inline">Refresh</span>
+                <span className='hidden md:inline'>Refresh</span>
               </button>
             </div>
           </div>
 
           {requestsLoading ? (
-            <div className="p-8 md:p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-blue-600"></div>
-              <p className="text-gray-500 mt-2 text-sm md:text-base">
+            <div className='p-8 md:p-12 text-center'>
+              <div className='inline-block animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-blue-600'></div>
+              <p className='text-gray-500 mt-2 text-sm md:text-base'>
                 Loading requests...
               </p>
             </div>
           ) : pendingRequests.length === 0 ? (
-            <div className="p-8 md:p-12 text-center text-gray-500">
+            <div className='p-8 md:p-12 text-center text-gray-500'>
               No pending requests
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className='overflow-x-auto'>
               {/* Mobile Card View */}
-              <div className="md:hidden divide-y divide-gray-200">
+              <div className='md:hidden divide-y divide-gray-200'>
                 {pendingRequests.map((request) => (
-                  <div key={request.id} className="p-4">
-                    <div className="flex justify-between items-start mb-3">
+                  <div key={request.id} className='p-4'>
+                    <div className='flex justify-between items-start mb-3'>
                       <div>
-                        <h3 className="font-medium text-gray-900">
+                        <h3 className='font-medium text-gray-900'>
                           {request.policyNumber}
                         </h3>
-                        <p className="text-sm text-gray-600">
+                        <p className='text-sm text-gray-600'>
                           {request.policyHolderName}
                         </p>
                       </div>
@@ -1047,49 +1184,45 @@ export default function AdminDashboard() {
                           request.requestType === "edit"
                             ? "bg-blue-100 text-blue-800"
                             : "bg-red-100 text-red-800"
-                        }`}
-                      >
+                        }`}>
                         {request.requestType === "edit" ? "Edit" : "Cancel"}
                       </span>
                     </div>
-                    <div className="mb-3">
-                      <p className="text-sm text-gray-900">
+                    <div className='mb-3'>
+                      <p className='text-sm text-gray-900'>
                         {request.contractor?.name || "Unknown"}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className='text-xs text-gray-500'>
                         {request.contractor?.companyName || "No company"}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className='text-xs text-gray-500'>
                         {request.contractor?.email}
                       </p>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500">
+                    <div className='flex justify-between items-center'>
+                      <span className='text-xs text-gray-500'>
                         {new Date(request.requestedAt).toLocaleDateString(
                           "en-GB"
                         )}
                       </span>
-                      <div className="flex gap-1">
+                      <div className='flex gap-1'>
                         <button
                           onClick={() => handleViewRequest(request.id)}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded"
-                          title="View"
-                        >
-                          <Eye className="w-4 h-4" />
+                          className='p-2 text-gray-600 hover:bg-gray-100 rounded'
+                          title='View'>
+                          <Eye className='w-4 h-4' />
                         </button>
                         <button
                           onClick={() => handleApproveRequest(request.id)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded"
-                          title="Approve"
-                        >
-                          <CheckCircle className="w-4 h-4" />
+                          className='p-2 text-green-600 hover:bg-green-50 rounded'
+                          title='Approve'>
+                          <CheckCircle className='w-4 h-4' />
                         </button>
                         <button
                           onClick={() => handleRejectRequest(request.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded"
-                          title="Reject"
-                        >
-                          <XCircle className="w-4 h-4" />
+                          className='p-2 text-red-600 hover:bg-red-50 rounded'
+                          title='Reject'>
+                          <XCircle className='w-4 h-4' />
                         </button>
                       </div>
                     </div>
@@ -1098,66 +1231,66 @@ export default function AdminDashboard() {
               </div>
 
               {/* Desktop Pending Table View */}
-              <table className="hidden md:table w-full">
-                <thead className="bg-gray-50 border-b border-gray-200 ">
+              <table className='hidden md:table w-full'>
+                <thead className='bg-gray-50 border-b border-gray-200 '>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Contractor
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Policy Number
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Policy Holder Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Policy Holder Address
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Request Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Requested At
                     </th>
-                    <th className="px-6 py-3 text-center mx-auto text-xs font-medium text-gray-600 uppercase tracking-wider">
+                    <th className='px-6 py-3 text-center mx-auto text-xs font-medium text-gray-600 uppercase tracking-wider'>
                       Actions
                     </th>
                   </tr>
                 </thead>
 
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className='bg-white divide-y divide-gray-200'>
                   {pendingRequests.map((request) => (
-                    <tr key={request.id} className="hover:bg-gray-50">
+                    <tr key={request.id} className='hover:bg-gray-50'>
                       {/* Contractor */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                      <td className='px-6 py-4 whitespace-nowrap'>
+                        <div className='text-sm text-gray-900'>
                           {request.contractor?.name || "Unknown"}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className='text-xs text-gray-500'>
                           {request.contractor?.companyName || "No company"}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className='text-xs text-gray-500'>
                           {request.contractor?.email}
                         </div>
                       </td>
 
                       {/* Policy Number */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td className='px-6 py-4 whitespace-nowrap'>
+                        <div className='text-sm font-medium text-gray-900'>
                           {request.policyNumber}
                         </div>
                       </td>
 
                       {/* Policy Holder Name */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                      <td className='px-6 py-4 whitespace-nowrap'>
+                        <div className='text-sm text-gray-900'>
                           {request.policyHolderName}
                         </div>
                       </td>
 
                       {/* Policy Holder Address */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                      <td className='px-6 py-4 whitespace-nowrap'>
+                        <div className='text-sm text-gray-900'>
                           {request.policyHolderAddress}
                         </div>
                       </td>
@@ -1165,25 +1298,24 @@ export default function AdminDashboard() {
                       {/* Measure (Product Type) */}
 
                       {/* Request Type */}
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className='px-6 py-4 whitespace-nowrap'>
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             request.requestType === "edit"
                               ? "bg-blue-100 text-blue-800"
                               : "bg-red-100 text-red-800"
-                          }`}
-                        >
+                          }`}>
                           {request.requestType === "edit" ? "Edit" : "Cancel"}
                         </span>
                         {request.reason && (
-                          <div className="text-xs text-gray-500 mt-1 max-w-xs">
+                          <div className='text-xs text-gray-500 mt-1 max-w-xs'>
                             Reason: {request.reason}
                           </div>
                         )}
                       </td>
 
                       {/* Requested At (DD/MM/YYYY - HH:MM) */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                         {request.formattedRequestedAt ||
                           new Date(request.requestedAt).toLocaleString(
                             "en-GB",
@@ -1198,21 +1330,24 @@ export default function AdminDashboard() {
                       </td>
 
                       {/* Actions */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex gap-2 items-center justify-center">
+                      <td className='px-6 py-4 whitespace-nowrap text-sm'>
+                        <div className='flex gap-2 items-center justify-center'>
                           <button
                             onClick={() => handleViewRequest(request.id)}
-                            className="px-3 py-1.5 text-gray-700 hover:bg-gray-200 rounded text-sm cursor-pointer"
-                            title="View Details"
-                          >
+                            className='px-3 py-1.5 text-gray-700 hover:bg-gray-200 rounded text-sm cursor-pointer'
+                            title='View Details'>
                             View
                           </button>
                           <button
                             onClick={() => handleDownloadSingle(request.id)}
-                            className="px-3 py-1.5 text-blue-600 hover:bg-blue-100 rounded text-sm cursor-pointer"
-                            title="Download Certificate"
-                          >
-                            <DownloadIcon />
+                            className='px-3 py-1.5 text-blue-600 hover:bg-blue-100 rounded text-sm cursor-pointer'
+                            title='Download Certificate'
+                            disabled={downloading}>
+                            {downloading ? (
+                              <Loader2 className='w-4 h-4 animate-spin' />
+                            ) : (
+                              <DownloadIcon />
+                            )}
                           </button>
                           {/* <button
                             onClick={() => handleApproveRequest(request.id)}
@@ -1240,53 +1375,51 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts Section - Responsive */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6 px-4 md:px-0">
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6 px-4 md:px-0'>
         {/* Bar Chart */}
-        <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-100">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 gap-2">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900">
+        <div className='bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-100'>
+          <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 gap-2'>
+            <h3 className='text-base md:text-lg font-semibold text-gray-900'>
               Insurance Policies
             </h3>
-            <span className="text-xs md:text-sm text-gray-500">
+            <span className='text-xs md:text-sm text-gray-500'>
               {new Date().getFullYear()}
             </span>
           </div>
 
-          <div className="relative h-64 md:h-80">
+          <div className='relative h-64 md:h-80'>
             {/* Y-axis labels - nicer stepped scale */}
-            <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between text-xs text-gray-500 pr-2">
+            <div className='absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between text-xs text-gray-500 pr-2'>
               {yAxisLabels.map((label, i) => (
-                <div key={i} className="text-right">
+                <div key={i} className='text-right'>
                   {label.toLocaleString()}
                 </div>
               ))}
             </div>
 
             {/* Chart area */}
-            <div className="ml-16 h-full border-l border-b border-gray-200 pl-4 pb-8">
-              <div className="grid grid-cols-12 md:flex md:flex-row items-end justify-between gap-1 md:gap-3 h-full">
+            <div className='ml-16 h-full border-l border-b border-gray-200 pl-4 pb-8'>
+              <div className='grid grid-cols-12 md:flex md:flex-row items-end justify-between gap-1 md:gap-3 h-full'>
                 {monthlyStats.map((data, index) => {
                   const barHeight =
                     maxValue > 0 ? (data.value / maxValue) * 100 : 0;
                   return (
                     <div
                       key={index}
-                      className="flex flex-col items-center flex-1"
-                    >
+                      className='flex flex-col items-center flex-1'>
                       <button
                         onClick={() => handleMonthClick(data.monthNumber)}
-                        className="w-full bg-[#0F47A8] rounded-t transition-all hover:bg-blue-700 group relative cursor-pointer"
+                        className='w-full bg-[#0F47A8] rounded-t transition-all hover:bg-blue-700 group relative cursor-pointer'
                         style={{
                           height: `${barHeight}%`,
                           minHeight: data.value > 0 ? "10px" : "0px",
                         }}
-                        title={`${data.month}: ${data.value} policies`}
-                      >
-                        <div className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-50">
+                        title={`${data.month}: ${data.value} policies`}>
+                        <div className='absolute bottom-full mb-1 hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-50'>
                           {data.value} policies
                         </div>
                       </button>
-                      <span className="text-[10px] md:text-xs text-gray-600 mt-2 truncate w-full text-center">
+                      <span className='text-[10px] md:text-xs text-gray-600 mt-2 truncate w-full text-center'>
                         {data.month.slice(0, 3)}
                       </span>
                     </div>
@@ -1298,51 +1431,48 @@ export default function AdminDashboard() {
         </div>
 
         {/* Top Contractors Table */}
-        <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-100">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 gap-2">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900">
+        <div className='bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-100'>
+          <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 gap-2'>
+            <h3 className='text-base md:text-lg font-semibold text-gray-900'>
               Top Contractors
             </h3>
             <Link
-              href="/admin/manage-contractors"
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline self-end sm:self-auto"
-            >
+              href='/admin/manage-contractors'
+              className='text-sm text-blue-600 hover:text-blue-800 hover:underline self-end sm:self-auto'>
               View All →
             </Link>
           </div>
-          <div className="overflow-x-auto">
+          <div className='overflow-x-auto'>
             {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
+            <div className='md:hidden space-y-3'>
               {topContractors.slice(0, 5).map((contractor, index) => (
                 <div
                   key={contractor.userId}
-                  className="bg-gray-50 rounded-lg p-3"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-500">
+                  className='bg-gray-50 rounded-lg p-3'>
+                  <div className='flex justify-between items-start mb-2'>
+                    <div className='flex items-center gap-3'>
+                      <span className='text-sm font-medium text-gray-500'>
                         #{index + 1}
                       </span>
                       <div>
-                        <h4 className="font-medium text-gray-900">
+                        <h4 className='font-medium text-gray-900'>
                           {contractor.name}
                         </h4>
-                        <p className="text-xs text-gray-600">
+                        <p className='text-xs text-gray-600'>
                           {contractor.companyName}
                         </p>
                       </div>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className='text-sm font-medium text-gray-900'>
                       {contractor.certificates} certs
                     </span>
                   </div>
-                  <div className="flex justify-end gap-2">
+                  <div className='flex justify-end gap-2'>
                     <Link
                       href={`/admin/manage-contractors/${contractor.userId}`}
-                      className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
-                      title="View"
-                    >
-                      <Eye className="w-4 h-4" />
+                      className='p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded'
+                      title='View'>
+                      <Eye className='w-4 h-4' />
                     </Link>
                     <button
                       onClick={() =>
@@ -1351,10 +1481,9 @@ export default function AdminDashboard() {
                           contractor.name
                         )
                       }
-                      className="p-1.5 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded"
-                      title="Download All Certificates"
-                    >
-                      <DownloadIcon className="w-4 h-4" />
+                      className='p-1.5 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded'
+                      title='Download All Certificates'>
+                      <DownloadIcon className='w-4 h-4' />
                     </button>
                   </div>
                 </div>
@@ -1362,49 +1491,48 @@ export default function AdminDashboard() {
             </div>
 
             {/* Desktop Table View */}
-            <table className="hidden md:table w-full">
-              <thead className="border-b border-gray-200">
+            <table className='hidden md:table w-full'>
+              <thead className='border-b border-gray-200'>
                 <tr>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     #
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     Contractor Name
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     Company Name
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     Total Certificate
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3">
+                  <th className='text-left text-xs font-medium text-gray-600 pb-3'>
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className='divide-y divide-gray-100'>
                 {topContractors.map((contractor, index) => (
-                  <tr key={contractor.userId} className="hover:bg-gray-50">
-                    <td className="py-4 text-sm text-gray-500 font-medium">
+                  <tr key={contractor.userId} className='hover:bg-gray-50'>
+                    <td className='py-4 text-sm text-gray-500 font-medium'>
                       {index + 1}
                     </td>
-                    <td className="py-4 text-sm text-gray-900">
+                    <td className='py-4 text-sm text-gray-900'>
                       {contractor.name}
                     </td>
-                    <td className="py-4 text-sm text-gray-900">
+                    <td className='py-4 text-sm text-gray-900'>
                       {contractor.companyName}
                     </td>
-                    <td className="py-4 text-sm text-gray-900 font-medium">
+                    <td className='py-4 text-sm text-gray-900 font-medium'>
                       {contractor.certificates}
                     </td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-3">
+                    <td className='py-4'>
+                      <div className='flex items-center gap-3'>
                         <Link
                           href={`/admin/manage-contractors/${contractor.userId}`}
-                          className="text-blue-600 hover:text-blue-700 p-1"
-                          title="View Contractor"
-                        >
-                          <Eye className="w-4 h-4" />
+                          className='text-blue-600 hover:text-blue-700 p-1'
+                          title='View Contractor'>
+                          <Eye className='w-4 h-4' />
                         </Link>
                         <button
                           onClick={() =>
@@ -1413,10 +1541,9 @@ export default function AdminDashboard() {
                               contractor.name
                             )
                           }
-                          className="p-1.5 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded"
-                          title="Download All Certificates"
-                        >
-                          <DownloadIcon className="w-4 h-4" />
+                          className='p-1.5 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded'
+                          title='Download All Certificates'>
+                          <DownloadIcon className='w-4 h-4' />
                         </button>
                       </div>
                     </td>
@@ -1430,24 +1557,24 @@ export default function AdminDashboard() {
 
       {/* Request Modal - Mobile Responsive */}
       {showRequestModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black/50 flex items-start md:items-center justify-center p-2 md:p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh]  overflow-hidden my-auto">
+        <div className='fixed inset-0 bg-black/50 flex items-start md:items-center justify-center p-2 md:p-4 z-50 overflow-y-auto'>
+          <div className='bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh]  overflow-hidden my-auto'>
             {/* Header */}
-            <div className="p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-lg md:text-2xl font-bold text-gray-900 truncate">
+            <div className='p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white z-10'>
+              <div className='flex items-center justify-between mb-3'>
+                <div className='flex-1 min-w-0'>
+                  <h1 className='text-lg md:text-2xl font-bold text-gray-900 truncate'>
                     {selectedRequest.type === "user_request"
                       ? `Contractor Application: ${selectedRequest.name}`
                       : `Policy Request: ${selectedRequest.policyNumber}`}
                   </h1>
-                  <p className="text-xs md:text-sm text-gray-600 truncate">
+                  <p className='text-xs md:text-sm text-gray-600 truncate'>
                     {selectedRequest.type === "user_request"
                       ? `Company: ${selectedRequest.companyName}`
                       : `By: ${selectedRequest.contractor?.name}`}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className='flex items-center gap-3'>
                   <CertificateActionsDropdown
                     requestId={selectedRequest.id || selectedRequest._id}
                     requestData={selectedRequest}
@@ -1489,14 +1616,13 @@ export default function AdminDashboard() {
 
                 <button
                   onClick={() => setShowRequestModal(false)}
-                  className="p-1 md:p-2 hover:bg-gray-100 rounded shrink-0"
-                >
+                  className='p-1 md:p-2 hover:bg-gray-100 rounded shrink-0'>
                   <X size={20} />
                 </button>
               </div>
 
               {/* Badges */}
-              <div className="flex flex-wrap gap-2">
+              <div className='flex flex-wrap gap-2'>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${
                     selectedRequest.type === "user_request"
@@ -1504,18 +1630,17 @@ export default function AdminDashboard() {
                       : selectedRequest.requestType === "edit"
                       ? "bg-blue-100 text-blue-800"
                       : "bg-red-100 text-red-800"
-                  }`}
-                >
+                  }`}>
                   {selectedRequest.type === "user_request"
                     ? "New Contractor"
                     : selectedRequest.requestType === "edit"
                     ? "Edit Request"
                     : "Cancel Request"}
                 </span>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                <span className='px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs'>
                   Pending Review
                 </span>
-                <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+                <span className='px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs'>
                   {new Date(
                     selectedRequest.requestedAt || selectedRequest.createdAt
                   ).toLocaleDateString()}
@@ -1524,49 +1649,49 @@ export default function AdminDashboard() {
             </div>
 
             {/* Content - Different content for user vs policy requests */}
-            <div className="p-4 md:p-6 overflow-y-auto max-h-[60vh]">
+            <div className='p-4 md:p-6 overflow-y-auto max-h-[60vh]'>
               {selectedRequest.type === "user_request" ? (
                 /* USER REQUEST CONTENT  */
                 <>
                   {/* User Details */}
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  <div className='mb-6'>
+                    <h3 className='text-lg font-semibold text-gray-800 mb-4'>
                       Contractor Details
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                       <div>
-                        <p className="text-sm text-gray-500">Full Name</p>
-                        <p className="font-medium">{selectedRequest.name}</p>
+                        <p className='text-sm text-gray-500'>Full Name</p>
+                        <p className='font-medium'>{selectedRequest.name}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Company Name</p>
-                        <p className="font-medium">
+                        <p className='text-sm text-gray-500'>Company Name</p>
+                        <p className='font-medium'>
                           {selectedRequest.companyName}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Email Address</p>
-                        <p className="font-medium">{selectedRequest.email}</p>
+                        <p className='text-sm text-gray-500'>Email Address</p>
+                        <p className='font-medium'>{selectedRequest.email}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Phone Number</p>
-                        <p className="font-medium">
+                        <p className='text-sm text-gray-500'>Phone Number</p>
+                        <p className='font-medium'>
                           {selectedRequest.phoneNumber}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">
+                        <p className='text-sm text-gray-500'>
                           Application Date
                         </p>
-                        <p className="font-medium">
+                        <p className='font-medium'>
                           {new Date(
                             selectedRequest.createdAt
                           ).toLocaleDateString("en-GB")}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Status</p>
-                        <p className="font-medium">Pending Approval</p>
+                        <p className='text-sm text-gray-500'>Status</p>
+                        <p className='font-medium'>Pending Approval</p>
                       </div>
                     </div>
                   </div>
@@ -1574,22 +1699,20 @@ export default function AdminDashboard() {
                   {/* Documents (if any) */}
                   {selectedRequest.documents &&
                     selectedRequest.documents.length > 0 && (
-                      <div className="mb-6">
-                        <h4 className="font-medium text-gray-700 mb-3">
+                      <div className='mb-6'>
+                        <h4 className='font-medium text-gray-700 mb-3'>
                           Submitted Documents
                         </h4>
-                        <div className="space-y-2">
+                        <div className='space-y-2'>
                           {selectedRequest.documents.map((doc, index) => (
                             <div
                               key={index}
-                              className="flex items-center gap-2 text-sm"
-                            >
-                              <FileText size={14} className="text-gray-400" />
+                              className='flex items-center gap-2 text-sm'>
+                              <FileText size={14} className='text-gray-400' />
                               <span>{doc.name}</span>
                               <a
                                 href={doc.url}
-                                className="text-blue-600 hover:underline ml-2"
-                              >
+                                className='text-blue-600 hover:underline ml-2'>
                                 View
                               </a>
                             </div>
@@ -1602,116 +1725,116 @@ export default function AdminDashboard() {
                 /* POLICY REQUEST CONTENT - WITH SIDE-BY-SIDE COMPARISON */
                 <>
                   {/* Reason */}
-                  <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                    <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                  <div className='mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100'>
+                    <h3 className='font-semibold text-gray-800 mb-2 flex items-center gap-2'>
                       <FileText size={16} /> Request Reason:
                     </h3>
-                    <p className="text-gray-800 bg-white p-3 rounded border">
+                    <p className='text-gray-800 bg-white p-3 rounded border'>
                       {selectedRequest.reason || "No reason provided"}
                     </p>
                   </div>
 
                   {/* Side by Side Comparison */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
                     {/* Original Details */}
-                    <div className="bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="p-4 border-b border-gray-200 bg-white">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                    <div className='bg-gray-50 rounded-lg border border-gray-200'>
+                      <div className='p-4 border-b border-gray-200 bg-white'>
+                        <h3 className='text-lg font-semibold text-gray-900'>
                           Original Details
                         </h3>
                       </div>
-                      <div className="p-4">
-                        <div className="space-y-3">
+                      <div className='p-4'>
+                        <div className='space-y-3'>
                           {/* Contractor Information */}
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Contractor
                             </p>
-                            <p className="text-gray-900 font-medium">
+                            <p className='text-gray-900 font-medium'>
                               {selectedRequest.contractor?.name}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className='text-sm text-gray-600'>
                               {selectedRequest.contractor?.companyName}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className='text-sm text-gray-600'>
                               {selectedRequest.contractor?.email}
                             </p>
                           </div>
 
                           {/* Policy Information */}
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Policy Number
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.policyNumber}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Policy Holder Name
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.policyHolderName}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Policy Holder Address
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.policyHolderAddress}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Measure (Product Type)
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.productType}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Country
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.country}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Postcode
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.postcode}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Email</p>
-                            <p className="text-gray-900">
+                            <p className='text-sm text-gray-600 mb-1'>Email</p>
+                            <p className='text-gray-900'>
                               {selectedRequest.email}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Phone</p>
-                            <p className="text-gray-900">
+                            <p className='text-sm text-gray-600 mb-1'>Phone</p>
+                            <p className='text-gray-900'>
                               {selectedRequest.phone}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Contract Value
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.contractValue
                                 ?.toString()
                                 .includes("€")
@@ -1721,37 +1844,37 @@ export default function AdminDashboard() {
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Insurance Coverage
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.insuranceCoverage}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Inception Date
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.inceptionDate}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Expiry Date
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.expiryDate}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Requested At
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.formattedRequestedAt ||
                                 new Date(
                                   selectedRequest.requestedAt
@@ -1769,14 +1892,14 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Edited Details */}
-                    <div className="bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="p-4 border-b border-gray-200 bg-white">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                    <div className='bg-gray-50 rounded-lg border border-gray-200'>
+                      <div className='p-4 border-b border-gray-200 bg-white'>
+                        <h3 className='text-lg font-semibold text-gray-900'>
                           Requested Changes
                         </h3>
                       </div>
-                      <div className="p-4">
-                        <div className="space-y-3">
+                      <div className='p-4'>
+                        <div className='space-y-3'>
                           {[
                             {
                               changeKey: "policyHolderName",
@@ -1853,17 +1976,16 @@ export default function AdminDashboard() {
                                     hasChange
                                       ? "bg-yellow-50 p-3 rounded border border-yellow-200"
                                       : ""
-                                  }
-                                >
-                                  <p className="text-sm text-gray-600 mb-1">
+                                  }>
+                                  <p className='text-sm text-gray-600 mb-1'>
                                     {label}
                                   </p>
-                                  <div className="flex justify-between items-center">
-                                    <p className="text-gray-900">
+                                  <div className='flex justify-between items-center'>
+                                    <p className='text-gray-900'>
                                       {displayValue || "N/A"}
                                     </p>
                                     {hasChange && (
-                                      <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+                                      <span className='text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded'>
                                         CHANGED
                                       </span>
                                     )}
@@ -1875,10 +1997,10 @@ export default function AdminDashboard() {
 
                           {/* Static fields that don't change often */}
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className='text-sm text-gray-600 mb-1'>
                               Insurance Coverage
                             </p>
-                            <p className="text-gray-900">
+                            <p className='text-gray-900'>
                               {selectedRequest.insuranceCoverage ||
                                 "Insurance Backed Guarantee"}
                             </p>
@@ -1889,38 +2011,38 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Contractor Information */}
-                  <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  <div className='mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200'>
+                    <h3 className='text-lg font-semibold text-gray-800 mb-4'>
                       Contractor Information
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">
+                        <p className='text-sm text-gray-600 mb-1'>
                           Contractor Name
                         </p>
-                        <p className="font-medium">
+                        <p className='font-medium'>
                           {selectedRequest.contractor?.name || "N/A"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">
+                        <p className='text-sm text-gray-600 mb-1'>
                           Company Name
                         </p>
-                        <p className="font-medium">
+                        <p className='font-medium'>
                           {selectedRequest.contractor?.companyName || "N/A"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">Email</p>
-                        <p className="font-medium">
+                        <p className='text-sm text-gray-600 mb-1'>Email</p>
+                        <p className='font-medium'>
                           {selectedRequest.contractor?.email || "N/A"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">
+                        <p className='text-sm text-gray-600 mb-1'>
                           Contractor Address
                         </p>
-                        <p className="font-medium">
+                        <p className='font-medium'>
                           {selectedRequest.changes?.contractorAddress || "N/A"}
                         </p>
                       </div>
@@ -1930,18 +2052,18 @@ export default function AdminDashboard() {
               )}
 
               {/* Admin Notes (Common for both types) */}
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              <div className='mb-4'>
+                <h3 className='text-lg font-semibold text-gray-800 mb-3'>
                   Admin Notes
                 </h3>
                 <textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  rows="3"
-                  placeholder="Add your notes here... (These notes will be visible to the contractor)"
+                  className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                  rows='3'
+                  placeholder='Add your notes here... (These notes will be visible to the contractor)'
                 />
-                <p className="text-sm text-gray-500 mt-2">
+                <p className='text-sm text-gray-500 mt-2'>
                   These notes will be sent to the contractor along with your
                   decision.
                 </p>
@@ -1949,12 +2071,12 @@ export default function AdminDashboard() {
             </div>
 
             {/* Action Buttons */}
-            <div className="p-4 md:p-6 border-t border-gray-200 bg-gray-50">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className='p-4 md:p-6 border-t border-gray-200 bg-gray-50'>
+              <div className='flex flex-col sm:flex-row justify-between items-center gap-3'>
                 {/* <p className="text-xs md:text-sm text-gray-600 text-center sm:text-left">
                   Review and take action
                 </p> */}
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className='flex gap-2 w-full sm:w-auto'>
                   {/* <button
                     onClick={() => {
                       if (
