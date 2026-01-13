@@ -37,10 +37,12 @@ export async function GET(request) {
     // Find contractor to get their email
     let contractor = null;
     let query = {};
-    
+
     if (contractorId) {
-      contractor = await User.findById(contractorId).select("email name companyName companyAddress");
-      
+      contractor = await User.findById(contractorId).select(
+        "email name companyName companyAddress"
+      );
+
       if (contractor) {
         // Find certificates by user ID (contractor ID)
         query.userId = contractorId;
@@ -75,10 +77,10 @@ export async function GET(request) {
       const year = new Date().getFullYear();
       const startDate = new Date(year, monthNum - 1, 1);
       const endDate = new Date(year, monthNum, 1);
-      
+
       query.createdAt = {
         $gte: startDate,
-        $lt: endDate
+        $lt: endDate,
       };
     }
 
@@ -97,62 +99,102 @@ export async function GET(request) {
     const total = await Insurance.countDocuments(query);
 
     // Format response to match frontend expectations
-    const formattedCertificates = certificates.map((cert) => {
-      // Get the first product (assuming one product per certificate for now)
-      const product = cert.products && cert.products.length > 0 ? cert.products[0] : {};
-      
-      // Format policy number
-      const policyNo = cert.policyNumber || `POL-${cert._id.toString().slice(-6)}`;
-      
-      // Format dates
-      const inceptionDate = product.inceptionDate 
-        ? new Date(product.inceptionDate).toLocaleDateString("en-GB")
-        : "N/A";
-      
-      const expiryDate = product.expiryDate 
-        ? new Date(product.expiryDate).toLocaleDateString("en-GB")
-        : "N/A";
-      
-      // Format contract value
-      const contractValue = product.contractValue 
-        ? `£ ${product.contractValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : "£ 0.00";
-      
-      // Format price
-      const price = product.price 
-        ? `£ ${product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : "£ 0.00";
-      
-      return {
-        id: cert._id.toString(),
-        policyNo: policyNo,
-        policyNumber: cert.policyNumber,
-        holderName: cert.policyHolderName,
-        productType: product.productType || "Insurance Backed Guarantee",
-        contractValue: contractValue,
-        inceptionDate: inceptionDate,
-        expiryDate: expiryDate,
-        transactionType: "Certificate Generated",
-        price: price,
-        createdAt: cert.createdAt,
-        status: cert.status || "active",
-        email: cert.email,
-        phone: cert.phone,
-        address: cert.address,
-        country: cert.country,
-        postcode: cert.postcode,
-        userId: cert.userId,
-        contractorName: cert.contractorName,
-        rawData: cert, // Include full data
-      };
-    });
+    // Replace the current formattedCertificates block with this:
+
+    const formattedCertificates = [];
+
+    for (const cert of certificates) {
+      const policyNo =
+        cert.policyNumber || `POL-${cert._id.toString().slice(-6)}`;
+
+      // If no products → add one fallback row
+      if (!cert.products || cert.products.length === 0) {
+        formattedCertificates.push({
+          id: cert._id.toString(),
+          policyNo,
+          holderName: cert.policyHolderName,
+          productType: "Insurance Backed Guarantee",
+          contractValue: "£ 0.00",
+          inceptionDate: "N/A",
+          expiryDate: "N/A",
+          price: "£ 0.00",
+          createdAt: cert.createdAt,
+          status: cert.status || "active",
+          email: cert.email,
+          phone: cert.phone,
+          address: cert.address,
+          country: cert.country,
+          postcode: cert.postcode,
+          userId: cert.userId,
+          contractorName: cert.contractorName,
+          rawData: cert,
+          insuranceId: cert._id.toString(), // ← useful for later detail fetch
+        });
+        continue;
+      }
+
+      // One row per product
+      cert.products.forEach((product, index) => {
+        const inceptionDate = product.inceptionDate
+          ? new Date(product.inceptionDate).toLocaleDateString("en-GB")
+          : "N/A";
+
+        const expiryDate = product.expiryDate
+          ? new Date(product.expiryDate).toLocaleDateString("en-GB")
+          : "N/A";
+
+        const contractValue = product.contractValue
+          ? `£ ${product.contractValue.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          : "£ 0.00";
+
+        const price = product.price
+          ? `£ ${product.price.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          : "£ 0.00";
+
+        formattedCertificates.push({
+          id: `${cert._id}-${index}`, // ← compound ID! Important
+          policyNo,
+          policyNumber: cert.policyNumber,
+          holderName: cert.policyHolderName,
+          productType: product.productType || "Insurance Backed Guarantee",
+          contractValue,
+          inceptionDate,
+          expiryDate,
+          transactionType: "Certificate Generated",
+          price,
+          createdAt: cert.createdAt,
+          status: cert.status || "active",
+          email: cert.email,
+          phone: cert.phone,
+          address: cert.address,
+          country: cert.country,
+          postcode: cert.postcode,
+          userId: cert.userId,
+          contractorName: cert.contractorName,
+          rawData: cert,
+          insuranceId: cert._id.toString(), // ← reference to parent document
+          productIndex: index, // optional, but useful
+        });
+      });
+    }
+
+    // Then return them sorted by createdAt (newest first)
+    formattedCertificates.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
 
     return Response.json({
       success: true,
       certificates: formattedCertificates,
-      total,
+      total: formattedCertificates.length, // ← now it's count of product-rows, not documents
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(formattedCertificates.length / limit),
       contractor: contractor
         ? {
             id: contractor._id.toString(),

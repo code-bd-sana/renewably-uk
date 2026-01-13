@@ -12,9 +12,10 @@ import {
   Search,
   Trash2,
   X,
-  MoreVertical, 
-  PauseCircle, 
-  PlayCircle, 
+  MoreVertical,
+  PauseCircle,
+  PlayCircle,
+  Edit2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -43,6 +44,8 @@ export default function ManageContractorsPage() {
     useState(null);
   const [actionType, setActionType] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [prefixInput, setPrefixInput] = useState("");
+  const [savingPrefix, setSavingPrefix] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -167,6 +170,44 @@ export default function ManageContractorsPage() {
     fetchContractors();
   }, [fetchContractors]);
 
+  const savePrefix = async (contractorId, prefix) => {
+    try {
+      setSavingPrefix(true);
+
+      const res = await fetch("/api/admin/contractor/prefix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contractorId, prefix }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert(`Prefix set to ${prefix}`);
+
+        // Refresh the contractors list
+        await fetchContractors();
+
+        // Also update local selected contractor if in modal
+        if (selectedContractor?.id === contractorId) {
+          setSelectedContractor((prev) => ({
+            ...prev,
+            policyNoPrefix: prefix,
+            isPrefixLocked: false,
+          }));
+        }
+
+        setPrefixInput(""); // optional: clear input
+      } else {
+        alert(data.error || "Failed to set prefix");
+      }
+    } catch (error) {
+      console.error("Save prefix error:", error);
+      alert("Failed to save prefix");
+    } finally {
+      setSavingPrefix(false);
+    }
+  };
   // Open contractor details modal and fetch documents
   const openContractorModal = async (contractor) => {
     setSelectedContractor(contractor);
@@ -246,28 +287,6 @@ export default function ManageContractorsPage() {
     return contractorDocuments[contractorId] || [];
   };
 
-  // Handle document download
-  const downloadPdfDocument = async (document) => {
-    try {
-      // Create full URL for the document
-      const documentUrl = `${window.location.origin}${document.ducoment}`;
-
-      // Create a temporary link element
-      const link = document.createElement("a");
-      link.href = documentUrl;
-      link.download = document.title || `document-${document._id}.pdf`;
-      link.target = "_blank";
-
-      // Append to body, click and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error("Error downloading document:", error);
-      alert("Failed to download document. Please try again.");
-    }
-  };
-
   // View document in new tab
   const handleViewDocument = (document) => {
     const documentUrl = `${window.location.origin}${document.ducoment}`;
@@ -275,7 +294,7 @@ export default function ManageContractorsPage() {
   };
 
   // Filter contractors by search
-  console.log("contractor", contractors)
+  console.log("contractor", contractors);
   const filteredContractors = contractors.filter((contractor) => {
     return (
       searchTerm === "" ||
@@ -292,76 +311,6 @@ export default function ManageContractorsPage() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentContractors = filteredContractors.slice(startIndex, endIndex);
-console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
-  // Handle download contractor data - Generate certificate PDF
-
-  // const downloadHandler = async (contractorId) => {
-  //   setLoader2(true);
-  //   try {
-  //     // Fetch contractor details
-  //     const contractorRes = await fetch(
-  //       `/api/admin/contractor/${contractorId}`
-  //     );
-
-  //     if (!contractorRes.ok) {
-  //       throw new Error(`Failed to fetch contractor: ${contractorRes.status}`);
-  //       setLoader2(false);
-  //     }
-
-  //     const contractorData = await contractorRes.json();
-
-  //     if (!contractorData.success) {
-  //       throw new Error(
-  //         contractorData.error || "Failed to fetch contractor data"
-  //       );
-  //       setLoader2(false);
-  //     }
-
-  //     // Fetch certificates for this contractor
-  //     const certsRes = await fetch(
-  //       `/api/admin/certificates?contractorId=${contractorId}`
-  //     );
-  //     setLoader2(false);
-
-  //     if (!certsRes.ok) {
-  //       throw new Error(`Failed to fetch certificates: ${certsRes.status}`);
-  //       setLoader2(false);
-  //     }
-
-  //     const certsData = await certsRes.json();
-
-  //     if (
-  //       certsData.success &&
-  //       certsData.certificates &&
-  //       certsData.certificates.length > 0
-  //     ) {
-  //       // যদি একটাই certificate থাকে
-  //       if (certsData.certificates.length === 1) {
-  //         await downloadPdf(certsData.certificates[0], contractor);
-  //         setLoader2(false);
-  //       }
-  //       // যদি একাধিক certificate থাকে
-  //       else {
-  //         // প্রতিটি certificate এর জন্য একেকটা PDF generate করুন
-  //         for (const certificate of certsData.certificates) {
-  //           await downloadPdf(certificate, contractor);
-  //           // প্রতিটি ডাউনলোডের মধ্যে সামান্য ডিলে (optional)
-  //           await new Promise((resolve) => setTimeout(resolve, 500));
-  //           setLoader2(false);
-  //         }
-  //       }
-  //     } else {
-  //       alert("No certificates found for this contractor");
-  //       setLoader2(false);
-  //     }
-  //   } catch (error) {
-  //     console.error("Download error:", error);
-  //     alert(`Error: ${error.message}`);
-  //     setLoader2(false);
-  //   } finally {
-  //     setLoader2(false);
-  //   }
-  // };
 
   const downloadHandler = async (contractorId) => {
   setLoader2(true);
@@ -372,10 +321,16 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
     const contractorData = await contractorRes.json();
     if (!contractorData.success) throw new Error("Contractor fetch failed");
 
-    const contractor = contractorData.contractor;
+    const contractor = contractorData.contractor || {
+      name: "Unknown",
+      companyName: "Unknown",
+      email: "N/A",
+      phone: "N/A",
+      address: "N/A"
+    };
 
-    // 2. Get certificates
-    const certsRes = await fetch(`/api/admin/certificates?contractorId=${contractorId}`);
+    // 2. Get certificates list (just IDs)
+    const certsRes = await fetch(`/api/admin/certificates?contractorId=${contractorId}&brief=true`);
     if (!certsRes.ok) throw new Error("Failed to load certificates");
     const certsData = await certsRes.json();
 
@@ -384,15 +339,62 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
       return;
     }
 
-    // 3. Download one or multiple
-    if (certsData.certificates.length === 1) {
-      await downloadPdf(certsData.certificates[0], contractor);
-    } else {
-      for (const cert of certsData.certificates) {
-        await downloadPdf(cert, contractor);
-        await new Promise(r => setTimeout(r, 400)); // prevent browser blocking
+    const certificateIds = certsData.certificates.map(cert => cert.id || cert._id);
+    
+    // 3. Fetch each certificate individually for complete data
+    const certificates = [];
+    for (const certId of certificateIds) {
+      try {
+        const singleCertRes = await fetch(`/api/admin/certificates/${certId}`);
+        if (singleCertRes.ok) {
+          const singleCertData = await singleCertRes.json();
+          if (singleCertData.success && singleCertData.certificate) {
+            certificates.push(singleCertData.certificate);
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching certificate ${certId}:`, error);
       }
     }
+
+    if (certificates.length === 0) {
+      alert("Could not fetch certificate details");
+      return;
+    }
+
+    // 4. Download certificates
+    for (const cert of certificates) {
+      // Prepare complete data
+      const completeCertificate = {
+        ...cert,
+        policyNo: cert.policyNo || cert.policyNumber,
+        policyNumber: cert.policyNumber || cert.policyNo,
+        holderName: cert.holderName || cert.policyHolderName,
+        // Ensure rawData exists
+        rawData: cert.rawData || {
+          insurance: {
+            contractorName: cert.contractorName || contractor.name,
+            contractorAddress: contractor.address || "",
+            policyHolderName: cert.holderName || cert.policyHolderName,
+            email: cert.email || contractor.email,
+            phone: cert.phone || contractor.phone,
+            address: cert.address || "",
+            country: cert.country || "",
+            postcode: cert.postcode || ""
+          },
+          product: {
+            productType: cert.productType,
+            coverOption: "Insurance Backed Guarantee"
+          }
+        }
+      };
+      
+      await downloadPdf(completeCertificate, contractor);
+      await new Promise(r => setTimeout(r, 400));
+    }
+    
+    alert(`Successfully downloaded ${certificates.length} certificate(s)`);
+    
   } catch (error) {
     console.error("Download handler error:", error);
     alert("Error generating certificates: " + error.message);
@@ -400,42 +402,6 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
     setLoader2(false);
   }
 };
-
-  const downloadPdfSelected = async () => {
-    if (selectedRows.length === 0) {
-      alert("Please select certificates to download");
-      return;
-    }
-
-    try {
-      setDownloadingAll(true);
-      const selectedCerts = certificates.filter((cert) =>
-        selectedRows.includes(cert.id)
-      );
-      for (const cert of selectedCerts) {
-        await downloadPdf(cert.id);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
-    } catch (error) {
-      console.error("Download error:", error);
-      alert("Failed to download certificates");
-    } finally {
-      setDownloadingAll(false);
-    }
-  };
-
-  // downloadPdfSingle
-  const downloadPdfSingle = async (certificate) => {
-    try {
-      setDownloading(true);
-      await downloadPdf(certificate.id);
-    } catch (error) {
-      console.error("Download error:", error);
-      alert("Failed to download certificate");
-    } finally {
-      setDownloading(false);
-    }
-  };
 
   // Handle delete contractor
   const handleDelete = async (contractorId) => {
@@ -613,7 +579,6 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
-
 
   if (loading) {
     return (
@@ -914,26 +879,6 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
                     </div>
                   </div>
 
-                  {/* <div className="flex justify-between items-start py-3 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">
-                      Pending Edit Request
-                    </div>
-                    <div className="text-sm text-gray-900 text-right">
-                      {selectedContractor.pendingRequests || 0}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-start py-3 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">
-                      Last Certificate Generated
-                    </div>
-                    <div className="text-sm text-gray-900 text-right">
-                      {selectedContractor.lastCertificateDate
-                        ? formatDate(selectedContractor.lastCertificateDate)
-                        : "N/A"}
-                    </div>
-                  </div> */}
-
                   <div className="flex justify-between items-start py-3">
                     <div className="text-sm font-medium text-gray-700">
                       Documents
@@ -960,6 +905,140 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
                         )}
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* ========== PREFIX SETTING SECTION ========== */}
+                <div className="pt-6 border-t border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Certificate Prefix Settings
+                  </h3>
+
+                  <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Policy Number Prefix (for future certificates)
+                        </label>
+                        <input
+                          type="text"
+                          value={
+                            prefixInput ||
+                            selectedContractor?.policyNoPrefix ||
+                            ""
+                          }
+                          onChange={(e) =>
+                            setPrefixInput(e.target.value.toUpperCase())
+                          }
+                          placeholder="e.g. GFT"
+                          disabled={selectedContractor?.isPrefixLocked}
+                          maxLength={10}
+                          className={`w-full px-4 py-3 border rounded-lg text-lg font-medium uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            selectedContractor?.isPrefixLocked
+                              ? "bg-gray-100 cursor-not-allowed"
+                              : ""
+                          }`}
+                        />
+                        <p className="mt-2 text-xs text-gray-500">
+                          3–10 uppercase letters (A–Z). Cannot be changed after
+                          first certificate.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          if (!prefixInput || prefixInput.length < 3) {
+                            alert(
+                              "Prefix must be at least 3 uppercase letters"
+                            );
+                            return;
+                          }
+
+                          if (
+                            window.confirm(
+                              `Set prefix to ${prefixInput.toUpperCase()}?`
+                            )
+                          ) {
+                            try {
+                              const res = await fetch(
+                                "/api/admin/contractor/prefix",
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    contractorId: selectedContractor.id,
+                                    prefix: prefixInput,
+                                  }),
+                                }
+                              );
+
+                              const data = await res.json();
+
+                              if (data.success) {
+                                alert(`Prefix set to ${data.prefix}`);
+                                // Update local state
+                                setSelectedContractor((prev) => ({
+                                  ...prev,
+                                  policyNoPrefix: data.prefix,
+                                  isPrefixLocked: false,
+                                }));
+                                setPrefixInput("");
+                              } else {
+                                alert(data.error || "Failed to set prefix");
+                              }
+                            } catch (err) {
+                              alert("Error saving prefix");
+                            }
+                          }
+                        }}
+                        disabled={
+                          !prefixInput ||
+                          prefixInput.length < 3 ||
+                          prefixInput === selectedContractor?.policyNoPrefix ||
+                          selectedContractor?.isPrefixLocked
+                        }
+                        className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors whitespace-nowrap"
+                      >
+                        {selectedContractor?.policyNoPrefix
+                          ? "Update Prefix"
+                          : "Set Prefix"}
+                      </button>
+                    </div>
+
+                    {/* Preview */}
+                    {prefixInput && prefixInput.length >= 3 && (
+                      <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                        <p className="text-sm font-medium text-blue-800 mb-2">
+                          Preview of next certificates:
+                        </p>
+                        {[1, 2, 3].map((offset) => (
+                          <div
+                            key={offset}
+                            className="flex items-center gap-3 mb-1"
+                          >
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <code className="bg-white px-3 py-1 rounded border font-mono">
+                              {prefixInput.toUpperCase()}
+                              {(
+                                (selectedContractor?.lastCertificateSequence ||
+                                  0) + offset
+                              )
+                                .toString()
+                                .padStart(5, "0")}
+                            </code>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedContractor?.isPrefixLocked && (
+                      <p className="mt-4 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg">
+                        This prefix is locked because the contractor has already
+                        issued at least one certificate.
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1064,7 +1143,7 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
           </div>
         </div>
       )}
-
+      {/* Suspend Modal */}
       {showSuspendModal && <SuspendModal />}
 
       {/* Mobile Header */}
@@ -1338,6 +1417,9 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Prefix
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Contractor Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
@@ -1379,6 +1461,68 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
                     key={contractor.id}
                     className="hover:bg-gray-50 transition-colors"
                   >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {contractor.policyNoPrefix ? (
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              contractor.isPrefixLocked
+                                ? "bg-green-100 text-green-800"
+                                : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {contractor.policyNoPrefix}
+                          </span>
+
+                          {!contractor.isPrefixLocked && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newPrefix = prompt(
+                                  `Update prefix (current: ${contractor.policyNoPrefix}):`,
+                                  contractor.policyNoPrefix
+                                );
+                                if (newPrefix) {
+                                  const upper = newPrefix.trim().toUpperCase();
+                                  if (/^[A-Z]{3,10}$/.test(upper)) {
+                                    savePrefix(contractor.id, upper);
+                                  } else {
+                                    alert(
+                                      "Invalid prefix — 3–10 uppercase letters only"
+                                    );
+                                  }
+                                }
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-xs"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newPrefix = prompt(
+                              `Set prefix for ${contractor.name} (3-10 uppercase letters):`
+                            );
+                            if (newPrefix) {
+                              const upper = newPrefix.trim().toUpperCase();
+                              if (/^[A-Z]{3,10}$/.test(upper)) {
+                                savePrefix(contractor.id, upper);
+                              } else {
+                                alert(
+                                  "Prefix must be 3–10 uppercase letters (A-Z)"
+                                );
+                              }
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-xs underline"
+                        >
+                          Set Prefix
+                        </button>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       <button
                         onClick={() =>
@@ -1391,6 +1535,7 @@ console.log("sjhdfyuewgytfgsdyfhus", currentContractors)
                         {contractor.name}
                       </button>
                     </td>
+
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {contractor.companyName || "N/A"}
                     </td>
