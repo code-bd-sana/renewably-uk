@@ -66,24 +66,24 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    // // for policy prefix after admin sets itttttttt
-    // policyNoPrefix: {
-    //   type: String,
-    //   default: null, // Initially null
-    //   uppercase: true,
-    //   trim: true,
-    //   match: [/^[A-Z]{3,10}$/, "Prefix must be 3-10 uppercase letters"],
-    // },
+    policyNoPrefix: {
+      type: String,
+      default: null,
+      uppercase: true,
+      trim: true,
+      maxlength: 10,
+      minlength: 3,
+    },
 
-    // lastCertificateSequence: {
-    //   type: Number,
-    //   default: 0, // Start from 0
-    // },
+    lastCertificateSequence: {
+      type: Number,
+      default: 0,
+    },
 
-    // isPrefixLocked: {
-    //   type: Boolean,
-    //   default: false, // Becomes true after first prefixed certificate
-    // },
+    isPrefixLocked: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

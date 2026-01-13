@@ -3,15 +3,22 @@ import mongoose from "mongoose";
 const insuranceSchema = new mongoose.Schema(
   {
     // Basic info
+    // policyNumber: {
+    //   type: String,
+    //   default: function () {
+    //     const year = new Date().getFullYear().toString().slice(-2);
+    //     const random = Math.floor(Math.random() * 1000000)
+    //       .toString()
+    //       .padStart(6, "0");
+    //     return `${year}${random}`;
+    //   },
+    // },
+
     policyNumber: {
       type: String,
-      default: function () {
-        const year = new Date().getFullYear().toString().slice(-2);
-        const random = Math.floor(Math.random() * 1000000)
-          .toString()
-          .padStart(6, "0");
-        return `${year}${random}`;
-      },
+      required: true,
+      unique: true,
+      trim: true,
     },
 
     userId: {
@@ -131,7 +138,6 @@ const insuranceSchema = new mongoose.Schema(
   }
 );
 
-
 insuranceSchema.virtual("policyNo").get(function () {
   return this.policyNumber;
 });
@@ -143,10 +149,6 @@ insuranceSchema.index({ createdAt: -1 });
 
 export default mongoose.models.Insurance ||
   mongoose.model("Insurance", insuranceSchema);
-
-
-
-  
 
 // import mongoose from "mongoose";
 

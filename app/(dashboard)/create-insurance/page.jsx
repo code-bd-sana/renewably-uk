@@ -100,7 +100,7 @@ export default function CreateInsuranceForm() {
   useEffect(() => {
     // Show connecting message for 3 seconds on page load
     setShowConnectingMessage(true);
-    
+
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -152,15 +152,14 @@ export default function CreateInsuranceForm() {
   const getFilteredSchemeProviders = (type) => {
     return schemeProviders
       .filter(
-        (provider) => 
-          provider.providerType?.includes(type) && 
-          provider.status === "active"
+        (provider) =>
+          provider.providerType?.includes(type) && provider.status === "active"
       )
-      .map(provider => ({
+      .map((provider) => ({
         name: provider.companyName,
         address: provider.address,
         phone: provider.phone,
-        email: provider.contactEmail
+        email: provider.contactEmail,
       }));
   };
 
@@ -459,65 +458,74 @@ export default function CreateInsuranceForm() {
     show && (
       <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md max-h-96 overflow-y-auto'>
         {/* First show scheme providers from API */}
-        {options.filter(opt => typeof opt === 'object').map((provider, index) => (
-          <button
-            key={index}
-            onClick={() => {
-              onSelect(provider.name);
-              onClose();
-            }}
-            className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex flex-col ${
-              index === 0 ? "rounded-t-lg" : ""
-            } ${selected === provider.name ? "bg-blue-50" : ""}`}>
-            <span className="font-medium text-gray-800">{provider.name}</span>
-            {provider.address && (
-              <span className="text-xs text-gray-500 mt-1">{provider.address}</span>
-            )}
-            <div className="flex gap-4 mt-1 text-xs text-gray-600">
-              {provider.phone && <span>📞 {provider.phone}</span>}
-              {provider.email && <span>✉️ {provider.email}</span>}
-            </div>
-            {selected === provider.name && (
-              <Check
-                size={18}
-                className='absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-blue-600 rounded-full p-0.5'
-              />
-            )}
-          </button>
-        ))}
+        {options
+          .filter((opt) => typeof opt === "object")
+          .map((provider, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                onSelect(provider.name);
+                onClose();
+              }}
+              className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex flex-col ${
+                index === 0 ? "rounded-t-lg" : ""
+              } ${selected === provider.name ? "bg-blue-50" : ""}`}>
+              <span className='font-medium text-gray-800'>{provider.name}</span>
+              {provider.address && (
+                <span className='text-xs text-gray-500 mt-1'>
+                  {provider.address}
+                </span>
+              )}
+              <div className='flex gap-4 mt-1 text-xs text-gray-600'>
+                {provider.phone && <span>📞 {provider.phone}</span>}
+                {provider.email && <span>✉️ {provider.email}</span>}
+              </div>
+              {selected === provider.name && (
+                <Check
+                  size={18}
+                  className='absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-blue-600 rounded-full p-0.5'
+                />
+              )}
+            </button>
+          ))}
 
         {/* Separator */}
-        {options.filter(opt => typeof opt === 'object').length > 0 && (
-          <div className="border-t border-gray-200 my-1"></div>
+        {options.filter((opt) => typeof opt === "object").length > 0 && (
+          <div className='border-t border-gray-200 my-1'></div>
         )}
 
         {/* Then show static options */}
-        {options.filter(opt => typeof opt === 'string').map((option, index) => (
-          <button
-            key={index}
-            onClick={() => {
-              onSelect(option);
-              onClose();
-            }}
-            className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${
-              index === 0 && options.filter(opt => typeof opt === 'object').length === 0 
-                ? "rounded-t-lg" : ""
-            } ${
-              index === options.filter(opt => typeof opt === 'string').length - 1
-                ? "rounded-b-lg"
-                : ""
-            } ${selected === option ? "bg-blue-50" : ""}`}>
-            <span className={option === "Not Required" ? "font-medium" : ""}>
-              {option}
-            </span>
-            {selected === option && (
-              <Check
-                size={18}
-                className='text-white bg-blue-600 rounded-full p-0.5'
-              />
-            )}
-          </button>
-        ))}
+        {options
+          .filter((opt) => typeof opt === "string")
+          .map((option, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                onSelect(option);
+                onClose();
+              }}
+              className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${
+                index === 0 &&
+                options.filter((opt) => typeof opt === "object").length === 0
+                  ? "rounded-t-lg"
+                  : ""
+              } ${
+                index ===
+                options.filter((opt) => typeof opt === "string").length - 1
+                  ? "rounded-b-lg"
+                  : ""
+              } ${selected === option ? "bg-blue-50" : ""}`}>
+              <span className={option === "Not Required" ? "font-medium" : ""}>
+                {option}
+              </span>
+              {selected === option && (
+                <Check
+                  size={18}
+                  className='text-white bg-blue-600 rounded-full p-0.5'
+                />
+              )}
+            </button>
+          ))}
       </div>
     );
 
@@ -557,9 +565,13 @@ export default function CreateInsuranceForm() {
                   onClick={() => selectProductType(productId, product.Measures)}
                   className={`w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center justify-between transition-colors ${
                     index > 0 ? "border-t border-gray-100" : ""
-                  } ${selectedMeasure === product.Measures ? "bg-blue-50" : ""}`}>
+                  } ${
+                    selectedMeasure === product.Measures ? "bg-blue-50" : ""
+                  }`}>
                   <div>
-                    <span className='font-medium text-gray-800'>{product.Measures}</span>
+                    <span className='font-medium text-gray-800'>
+                      {product.Measures}
+                    </span>
                     <div className='text-xs text-gray-500 mt-1'>
                       <span>Guarantee Period: {product.Year} years</span>
                       {product.Month > 0 && (
@@ -715,10 +727,13 @@ export default function CreateInsuranceForm() {
       }
 
       // 5. Success handling
-      toast.success("Insurance Backed Guarantee Certificates generated successfully! PDFs have been emailed.", {
-        duration: 5000,
-        position: "top-right",
-      });
+      toast.success(
+        "Insurance Backed Guarantee Certificates generated successfully! PDFs have been emailed.",
+        {
+          duration: 5000,
+          position: "top-right",
+        }
+      );
 
       setTimeout(() => {
         router.push("/certificates");
@@ -751,7 +766,13 @@ export default function CreateInsuranceForm() {
       <main className='min-h-screen bg-gray-50 flex items-center justify-center p-4'>
         <div className='bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center'>
           <div className='mb-6'>
-            <Image src={bluedrop} height={150} width={192} alt="logo" className="mx-auto flex justify-center"/>
+            <Image
+              src={bluedrop}
+              height={150}
+              width={192}
+              alt='logo'
+              className='mx-auto flex justify-center'
+            />
             <h1 className='text-2xl font-bold text-gray-800 mb-2'>
               Connecting to Bluedrop Services
             </h1>
@@ -759,14 +780,13 @@ export default function CreateInsuranceForm() {
               Please wait while we connect you to our services...
             </p>
           </div>
-          
+
           {/* Progress Bar */}
           <div className='mb-4'>
             <div className='w-full bg-gray-200 rounded-full h-2.5 mb-2'>
-              <div 
+              <div
                 className='bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out'
-                style={{ width: `${progress}%` }}
-              ></div>
+                style={{ width: `${progress}%` }}></div>
             </div>
             <div className='flex justify-between text-sm text-gray-500'>
               <span>Connecting...</span>
@@ -812,7 +832,7 @@ export default function CreateInsuranceForm() {
       {/* Logo */}
       <div className='mb-6'>
         <div className='mb-6 px-4 mt-4'>
-          <Image src={bluedrop} height={150} width={192} alt="logo"/>
+          <Image src={bluedrop} height={150} width={192} alt='logo' />
         </div>
       </div>
 
@@ -931,9 +951,7 @@ export default function CreateInsuranceForm() {
               </select>
             </div>
             <div>
-              <label className='block text-sm font-medium mb-2'>
-                Postcode
-              </label>
+              <label className='block text-sm font-medium mb-2'>Postcode</label>
               <input
                 type='text'
                 placeholder='Enter Policy Holder postcode (e.g., LL31 9FF)'
@@ -942,9 +960,8 @@ export default function CreateInsuranceForm() {
                 onChange={(e) =>
                   setFormData({ ...formData, postcode: e.target.value })
                 }
-                pattern="[A-Za-z0-9 ]{5,8}"
-                title="Enter a valid UK postcode (e.g., LL31 9FF)"
-                
+                pattern='[A-Za-z0-9 ]{5,8}'
+                title='Enter a valid UK postcode (e.g., LL31 9FF)'
               />
             </div>
           </div>
@@ -1109,7 +1126,9 @@ export default function CreateInsuranceForm() {
                 {index === formData.products.length - 1 && (
                   <div className='md:col-span-2 pt-4 border-t border-gray-200'>
                     <div className='flex justify-between items-center'>
-                      <span className='font-medium text-gray-700'>Total Project Cost:</span>
+                      <span className='font-medium text-gray-700'>
+                        Total Project Cost:
+                      </span>
                       <span className='text-lg font-bold text-blue-600'>
                         £{calculateTotalProjectCost().toFixed(2)}
                       </span>
@@ -1150,14 +1169,17 @@ export default function CreateInsuranceForm() {
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
-                options={[...getFilteredSchemeProviders("Retrofit Assessor"), ...dropdownOptions]}
+                options={[
+                  ...getFilteredSchemeProviders("Retrofit Assessor"),
+                  ...dropdownOptions,
+                ]}
                 selected={formData.retrofitAssessor}
                 onSelect={(option) =>
                   setFormData({ ...formData, retrofitAssessor: option })
                 }
                 show={showRetrofitAssessor}
                 onClose={() => setShowRetrofitAssessor(false)}
-                type="Retrofit Assessor"
+                type='Retrofit Assessor'
               />
             </div>
             <div className='relative dropdown-container'>
@@ -1176,14 +1198,17 @@ export default function CreateInsuranceForm() {
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
-                options={[...getFilteredSchemeProviders("Retrofit Coordinator"), ...dropdownOptions]}
+                options={[
+                  ...getFilteredSchemeProviders("Retrofit Coordinator"),
+                  ...dropdownOptions,
+                ]}
                 selected={formData.retrofitCoordinator}
                 onSelect={(option) =>
                   setFormData({ ...formData, retrofitCoordinator: option })
                 }
                 show={showRetrofitCoordinator}
                 onClose={() => setShowRetrofitCoordinator(false)}
-                type="Retrofit Coordinator"
+                type='Retrofit Coordinator'
               />
             </div>
             <div className='relative dropdown-container'>
@@ -1198,14 +1223,17 @@ export default function CreateInsuranceForm() {
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
-                options={[...getFilteredSchemeProviders("Funding Partner"), ...dropdownOptions]}
+                options={[
+                  ...getFilteredSchemeProviders("Funding Partner"),
+                  ...dropdownOptions,
+                ]}
                 selected={formData.fundingPartner}
                 onSelect={(option) =>
                   setFormData({ ...formData, fundingPartner: option })
                 }
                 show={showFundingPartner}
                 onClose={() => setShowFundingPartner(false)}
-                type="Funding Partner"
+                type='Funding Partner'
               />
             </div>
             <div className='relative dropdown-container'>
@@ -1222,14 +1250,17 @@ export default function CreateInsuranceForm() {
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
-                options={[...getFilteredSchemeProviders("Scheme Provider"), ...dropdownOptions]}
+                options={[
+                  ...getFilteredSchemeProviders("Scheme Provider"),
+                  ...dropdownOptions,
+                ]}
                 selected={formData.schemeProvider}
                 onSelect={(option) =>
                   setFormData({ ...formData, schemeProvider: option })
                 }
                 show={showSchemeProvider}
                 onClose={() => setShowSchemeProvider(false)}
-                type="Scheme Provider"
+                type='Scheme Provider'
               />
             </div>
             <div className='relative md:col-span-1'>
