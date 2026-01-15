@@ -37,7 +37,7 @@ export async function GET(request, { params }) {
     // Find contractor by ID
     const contractor = await User.findOne({
       _id: id,
-      role: "contractor",
+      // role: "contractor",
     })
       .select("-passwordHash")
       .lean();
@@ -68,6 +68,7 @@ export async function GET(request, { params }) {
         companyAddress: contractor.companyAddress || "",
         position: contractor.position || "",
         role: contractor.role,
+        roles: contractor.roles,
         isApproved: contractor.isApproved,
         createdAt: contractor.createdAt,
         updatedAt: contractor.updatedAt,
@@ -130,8 +131,6 @@ export async function POST(request, { params }) {
     );
   }
 }
-
-// Helper function to handle insurance requests
 
 // async function handleInsuranceRequest(insuranceId, request) {
 //   console.log(insuranceId, "ami hola insurance id");
@@ -384,15 +383,14 @@ async function handleInsuranceRequest(insuranceId, request) {
       insurance.status = "active";
       statusAfterUpdate = "active";
     }
-    
+
     // Update request status
     insurance.requestData.status = "approved";
-    
   } else if (action === "reject") {
     // REJECT LOGIC - Set back to active, don't apply changes
     insurance.status = "active";
     statusAfterUpdate = "active";
-    
+
     // Update request status to rejected
     insurance.requestData.status = "rejected";
   }
@@ -579,6 +577,60 @@ export async function DELETE(request, { params }) {
     });
   } catch (error) {
     console.error("Delete contractor error:", error);
+    return Response.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH
+export async function PATCH(request, { params }) {
+  try {
+    // Auth check
+    const auth = await authenticate(request);
+    if (!auth.success || auth.userRole !== "admin") {
+      return Response.json(
+        { success: false, error: "Admin only" },
+        { status: 403 }
+      );
+    }
+
+    await connectDB();
+    const { id } = await params;
+    const data = await request.json();
+
+    console.log("=== UPDATE ROLES ===");
+    console.log("User ID:", id);
+    console.log("New roles:", data.roles);
+
+    // Update the user
+    const updated = await User.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          roles: data.roles || ["contractor"],
+        },
+      },
+      { new: true }
+    ).select("name email roles");
+
+    if (!updated) {
+      return Response.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    console.log("Updated user:", updated);
+
+    return Response.json({
+      success: true,
+      message: "Roles updated",
+      contractor: updated,
+    });
+  } catch (error) {
+    console.error("PATCH error:", error);
     return Response.json(
       { success: false, error: error.message },
       { status: 500 }

@@ -61,7 +61,7 @@ function DashboardPage() {
         if (certsResponse.ok) {
           const certsData = await certsResponse.json();
 
-          console.log(certsData, "This is certs Data, yeah");
+          // console.log(certsData, "This is certs Data, yeah");
 
           if (certsData.success) {
             setCertificates(certsData.certificates || []);
