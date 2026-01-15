@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function ManageContractorsPage() {
   const router = useRouter();
@@ -47,17 +48,64 @@ export default function ManageContractorsPage() {
   const [prefixInput, setPrefixInput] = useState("");
   const [savingPrefix, setSavingPrefix] = useState(false);
 
+  const [showRolesModal, setShowRolesModal] = useState(false);
+  const [editingContractor, setEditingContractor] = useState(null);
+
   const itemsPerPage = 10;
 
+  const openRolesModal = (contractor) => {
+    if (!contractor.isApproved) {
+      alert(
+        "This user is not yet approved. Roles can only be assigned to approved users."
+      );
+      return;
+    }
+
+    if (contractor.isSuspended) {
+      alert(
+        "This user is currently suspended. You cannot edit roles until unsuspend them."
+      );
+      return;
+    }
+
+    setEditingContractor(contractor);
+    setShowRolesModal(true);
+  };
+
+  const closeRolesModal = () => {
+    setShowRolesModal(false);
+    setEditingContractor(null);
+  };
   // Fetch contractors
+  // const fetchContractors = useCallback(async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await fetch("/api/admin/contractor");
+  //     const data = await res.json();
+  //     console.log("Fetched contractors data:", data); // Add this line
+  //     console.log("Full response:", data.users);
+  //     if (data.success) {
+  //       setContractors(data.users);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching contractors:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, []);
+
   const fetchContractors = useCallback(async () => {
     try {
-      setLoading(true);
+      console.log("Fetching contractors...");
       const res = await fetch("/api/admin/contractor");
       const data = await res.json();
-      console.log("Fetched contractors data:", data); // Add this line
-      console.log("Full response:", data.users);
+      console.log("Fetched contractors:", data.users);
+
       if (data.success) {
+        // Log one contractor to check roles
+        if (data.users && data.users.length > 0) {
+          console.log("First contractor roles:", data.users[0].roles);
+        }
         setContractors(data.users);
       }
     } catch (error) {
@@ -313,95 +361,102 @@ export default function ManageContractorsPage() {
   const currentContractors = filteredContractors.slice(startIndex, endIndex);
 
   const downloadHandler = async (contractorId) => {
-  setLoader2(true);
-  try {
-    // 1. Get contractor
-    const contractorRes = await fetch(`/api/admin/contractor/${contractorId}`);
-    if (!contractorRes.ok) throw new Error("Failed to load contractor");
-    const contractorData = await contractorRes.json();
-    if (!contractorData.success) throw new Error("Contractor fetch failed");
+    setLoader2(true);
+    try {
+      // 1. Get contractor
+      const contractorRes = await fetch(
+        `/api/admin/contractor/${contractorId}`
+      );
+      if (!contractorRes.ok) throw new Error("Failed to load contractor");
+      const contractorData = await contractorRes.json();
+      if (!contractorData.success) throw new Error("Contractor fetch failed");
 
-    const contractor = contractorData.contractor || {
-      name: "Unknown",
-      companyName: "Unknown",
-      email: "N/A",
-      phone: "N/A",
-      address: "N/A"
-    };
-
-    // 2. Get certificates list (just IDs)
-    const certsRes = await fetch(`/api/admin/certificates?contractorId=${contractorId}&brief=true`);
-    if (!certsRes.ok) throw new Error("Failed to load certificates");
-    const certsData = await certsRes.json();
-
-    if (!certsData.success || !certsData.certificates?.length) {
-      alert("No certificates found for this contractor");
-      return;
-    }
-
-    const certificateIds = certsData.certificates.map(cert => cert.id || cert._id);
-    
-    // 3. Fetch each certificate individually for complete data
-    const certificates = [];
-    for (const certId of certificateIds) {
-      try {
-        const singleCertRes = await fetch(`/api/admin/certificates/${certId}`);
-        if (singleCertRes.ok) {
-          const singleCertData = await singleCertRes.json();
-          if (singleCertData.success && singleCertData.certificate) {
-            certificates.push(singleCertData.certificate);
-          }
-        }
-      } catch (error) {
-        console.error(`Error fetching certificate ${certId}:`, error);
-      }
-    }
-
-    if (certificates.length === 0) {
-      alert("Could not fetch certificate details");
-      return;
-    }
-
-    // 4. Download certificates
-    for (const cert of certificates) {
-      // Prepare complete data
-      const completeCertificate = {
-        ...cert,
-        policyNo: cert.policyNo || cert.policyNumber,
-        policyNumber: cert.policyNumber || cert.policyNo,
-        holderName: cert.holderName || cert.policyHolderName,
-        // Ensure rawData exists
-        rawData: cert.rawData || {
-          insurance: {
-            contractorName: cert.contractorName || contractor.name,
-            contractorAddress: contractor.address || "",
-            policyHolderName: cert.holderName || cert.policyHolderName,
-            email: cert.email || contractor.email,
-            phone: cert.phone || contractor.phone,
-            address: cert.address || "",
-            country: cert.country || "",
-            postcode: cert.postcode || ""
-          },
-          product: {
-            productType: cert.productType,
-            coverOption: "Insurance Backed Guarantee"
-          }
-        }
+      const contractor = contractorData.contractor || {
+        name: "Unknown",
+        companyName: "Unknown",
+        email: "N/A",
+        phone: "N/A",
+        address: "N/A",
       };
-      
-      await downloadPdf(completeCertificate, contractor);
-      await new Promise(r => setTimeout(r, 400));
+
+      // 2. Get certificates list (just IDs)
+      const certsRes = await fetch(
+        `/api/admin/certificates?contractorId=${contractorId}&brief=true`
+      );
+      if (!certsRes.ok) throw new Error("Failed to load certificates");
+      const certsData = await certsRes.json();
+
+      if (!certsData.success || !certsData.certificates?.length) {
+        alert("No certificates found for this contractor");
+        return;
+      }
+
+      const certificateIds = certsData.certificates.map(
+        (cert) => cert.id || cert._id
+      );
+
+      // 3. Fetch each certificate individually for complete data
+      const certificates = [];
+      for (const certId of certificateIds) {
+        try {
+          const singleCertRes = await fetch(
+            `/api/admin/certificates/${certId}`
+          );
+          if (singleCertRes.ok) {
+            const singleCertData = await singleCertRes.json();
+            if (singleCertData.success && singleCertData.certificate) {
+              certificates.push(singleCertData.certificate);
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching certificate ${certId}:`, error);
+        }
+      }
+
+      if (certificates.length === 0) {
+        alert("Could not fetch certificate details");
+        return;
+      }
+
+      // 4. Download certificates
+      for (const cert of certificates) {
+        // Prepare complete data
+        const completeCertificate = {
+          ...cert,
+          policyNo: cert.policyNo || cert.policyNumber,
+          policyNumber: cert.policyNumber || cert.policyNo,
+          holderName: cert.holderName || cert.policyHolderName,
+          // Ensure rawData exists
+          rawData: cert.rawData || {
+            insurance: {
+              contractorName: cert.contractorName || contractor.name,
+              contractorAddress: contractor.address || "",
+              policyHolderName: cert.holderName || cert.policyHolderName,
+              email: cert.email || contractor.email,
+              phone: cert.phone || contractor.phone,
+              address: cert.address || "",
+              country: cert.country || "",
+              postcode: cert.postcode || "",
+            },
+            product: {
+              productType: cert.productType,
+              coverOption: "Insurance Backed Guarantee",
+            },
+          },
+        };
+
+        await downloadPdf(completeCertificate, contractor);
+        await new Promise((r) => setTimeout(r, 400));
+      }
+
+      alert(`Successfully downloaded ${certificates.length} certificate(s)`);
+    } catch (error) {
+      console.error("Download handler error:", error);
+      alert("Error generating certificates: " + error.message);
+    } finally {
+      setLoader2(false);
     }
-    
-    alert(`Successfully downloaded ${certificates.length} certificate(s)`);
-    
-  } catch (error) {
-    console.error("Download handler error:", error);
-    alert("Error generating certificates: " + error.message);
-  } finally {
-    setLoader2(false);
-  }
-};
+  };
 
   // Handle delete contractor
   const handleDelete = async (contractorId) => {
@@ -582,47 +637,47 @@ export default function ManageContractorsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-blue-600 text-lg">Loading contractors...</div>
+      <div className='flex items-center justify-center min-h-screen'>
+        <div className='text-blue-600 text-lg'>Loading contractors...</div>
       </div>
     );
   }
 
   if (loader2) {
     return (
-      <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
-          <div className="text-center">
+      <div className='fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center'>
+        <div className='bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4'>
+          <div className='text-center'>
             {/* Simple Spinner */}
-            <div className="relative w-20 h-20 mx-auto mb-6">
-              <Loader2 className="w-20 h-20 text-blue-600 animate-spin" />
+            <div className='relative w-20 h-20 mx-auto mb-6'>
+              <Loader2 className='w-20 h-20 text-blue-600 animate-spin' />
             </div>
 
             {/* Simple Text */}
-            <h3 className="text-xl font-bold text-gray-800 mb-3">
+            <h3 className='text-xl font-bold text-gray-800 mb-3'>
               Downloading Certificates
             </h3>
 
             {/* Simple Progress Steps */}
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <span className="text-gray-700">Downloading data...</span>
+            <div className='space-y-4 mb-6'>
+              <div className='flex items-center gap-3'>
+                <div className='w-2 h-2 bg-blue-600 rounded-full'></div>
+                <span className='text-gray-700'>Downloading data...</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <span className="text-gray-700">Processing files...</span>
+              <div className='flex items-center gap-3'>
+                <div className='w-2 h-2 bg-blue-600 rounded-full'></div>
+                <span className='text-gray-700'>Processing files...</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-                <span className="text-gray-700">Scanning for errors...</span>
+              <div className='flex items-center gap-3'>
+                <div className='w-2 h-2 bg-blue-600 rounded-full animate-pulse'></div>
+                <span className='text-gray-700'>Scanning for errors...</span>
               </div>
             </div>
 
             {/* Simple Progress Bar */}
 
             {/* Simple Message */}
-            <p className="text-gray-500 text-sm">
+            <p className='text-gray-500 text-sm'>
               Please wait while we prepare your certificates. This will take a
               few seconds.
             </p>
@@ -657,70 +712,68 @@ export default function ManageContractorsPage() {
     };
 
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-4">
+      <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
+        <div className='bg-white rounded-lg shadow-xl max-w-md w-full'>
+          <div className='p-6'>
+            <div className='flex items-center gap-3 mb-4'>
               <div
                 className={`p-2 rounded-full ${
                   actionType === "suspend"
                     ? "bg-yellow-100 text-yellow-600"
                     : "bg-green-100 text-green-600"
-                }`}
-              >
+                }`}>
                 {actionType === "suspend" ? (
-                  <PauseCircle className="w-6 h-6" />
+                  <PauseCircle className='w-6 h-6' />
                 ) : (
-                  <PlayCircle className="w-6 h-6" />
+                  <PlayCircle className='w-6 h-6' />
                 )}
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className='text-lg font-semibold text-gray-900'>
                   {actionType === "suspend" ? "Suspend User" : "Unsuspend User"}
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className='text-sm text-gray-600'>
                   {selectedContractorForAction?.name} •{" "}
                   {selectedContractorForAction?.companyName}
                 </p>
               </div>
             </div>
 
-            <p className="text-gray-600 mb-4">
+            <p className='text-gray-600 mb-4'>
               {actionType === "suspend"
                 ? `User will be blocked from logging in until unsuspended.`
                 : `User will regain access to their account immediately.`}
             </p>
 
             {actionType === "suspend" && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className='mb-4'>
+                <label className='block text-sm font-medium text-gray-700 mb-2'>
                   Reason for suspension (optional):
                 </label>
                 <textarea
                   value={localReason}
                   onChange={handleReasonChange}
                   onInput={handleReasonChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                  rows="3"
-                  placeholder="Enter reason for suspension..."
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none'
+                  rows='3'
+                  placeholder='Enter reason for suspension...'
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className='text-xs text-gray-500 mt-1'>
                   This message will be shown to the user when they try to log
                   in.
                 </p>
               </div>
             )}
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className='flex justify-end gap-3 mt-6'>
               <button
                 onClick={() => {
                   setShowSuspendModal(false);
                   setSuspendReason("");
                   setSelectedContractorForAction(null);
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
-                disabled={actionLoading}
-              >
+                className='px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium'
+                disabled={actionLoading}>
                 Cancel
               </button>
               <button
@@ -730,10 +783,9 @@ export default function ManageContractorsPage() {
                     ? "bg-yellow-600 hover:bg-yellow-700 text-white"
                     : "bg-green-600 hover:bg-green-700 text-white"
                 }`}
-                disabled={actionLoading}
-              >
+                disabled={actionLoading}>
                 {actionLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                  <Loader2 className='w-5 h-5 animate-spin mx-auto' />
                 ) : actionType === "suspend" ? (
                   "Suspend User"
                 ) : (
@@ -748,23 +800,22 @@ export default function ManageContractorsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-8">
+    <div className='min-h-screen bg-white p-4 md:p-8'>
       {/* Contractor Details Modal */}
       {showContractorModal && selectedContractor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
+          <div className='bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto'>
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200">
-              <div className="flex items-center gap-3">
+            <div className='flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200'>
+              <div className='flex items-center gap-3'>
                 <button
                   onClick={closeContractorModal}
-                  className="text-gray-600 hover:text-gray-900 text-2xl p-1"
-                  title="Back"
-                >
+                  className='text-gray-600 hover:text-gray-900 text-2xl p-1'
+                  title='Back'>
                   ≫
                 </button>
               </div>
-              <div className="flex items-center gap-3">
+              <div className='flex items-center gap-3'>
                 <span
                   className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
                     selectedContractor.isApproved
@@ -772,8 +823,7 @@ export default function ManageContractorsPage() {
                         ? "bg-yellow-100 text-yellow-700"
                         : "bg-green-100 text-green-700"
                       : "bg-red-100 text-red-700"
-                  }`}
-                >
+                  }`}>
                   {!selectedContractor.isApproved
                     ? "Not Approved"
                     : selectedContractor.isSuspended
@@ -800,104 +850,100 @@ export default function ManageContractorsPage() {
             </div>
 
             {/* Modal Content */}
-            <div className="p-6">
+            <div className='p-6'>
               {/* Details Grid */}
-              <div className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-start py-3 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">
+              <div className='space-y-4'>
+                <div className='space-y-4'>
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
                       Create Account Date
                     </div>
-                    <div className="text-sm text-gray-900 text-right">
+                    <div className='text-sm text-gray-900 text-right'>
                       {formatDate(selectedContractor.createdAt)}
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-start py-3 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
                       Contractor Name
                     </div>
-                    <div className="text-sm text-gray-900 text-right">
+                    <div className='text-sm text-gray-900 text-right'>
                       <Link
                         href={`/admin/manage-contractors/${selectedContractor.id}`}
-                        className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                        target="_blank"
-                      >
+                        className='text-blue-600 hover:text-blue-800 hover:underline transition-colors'
+                        target='_blank'>
                         {selectedContractor.name || "N/A"}
                       </Link>
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-start py-3 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
                       Company Name
                     </div>
-                    <div className="text-sm text-gray-900 text-right">
+                    <div className='text-sm text-gray-900 text-right'>
                       {selectedContractor.companyName || "N/A"}
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-start py-3 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
                       Company Address
                     </div>
-                    <div className="text-sm text-gray-900 text-right">
+                    <div className='text-sm text-gray-900 text-right'>
                       {selectedContractor.address || "N/A"}
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-start py-3 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
                       Phone Number
                     </div>
-                    <div className="text-sm text-gray-900 text-right">
+                    <div className='text-sm text-gray-900 text-right'>
                       {selectedContractor.phone || "N/A"}
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-start py-3 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
                       Email Address
                     </div>
-                    <div className="text-sm text-gray-900 text-right">
+                    <div className='text-sm text-gray-900 text-right'>
                       <a
                         href={`mailto:${selectedContractor.email}`}
-                        className="text-blue-600 hover:text-blue-800 hover:underline"
-                      >
+                        className='text-blue-600 hover:text-blue-800 hover:underline'>
                         {selectedContractor.email}
                       </a>
                     </div>
                   </div>
 
                   {/* Additional Stats - Replace with real API data */}
-                  <div className="flex justify-between items-start py-3 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">
+                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
+                    <div className='text-sm font-medium text-gray-700'>
                       Total Certificate
                     </div>
-                    <div className="text-sm text-gray-900 text-right">
+                    <div className='text-sm text-gray-900 text-right'>
                       {selectedContractor.certificateCount || 0}
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-start py-3">
-                    <div className="text-sm font-medium text-gray-700">
+                  <div className='flex justify-between items-start py-3'>
+                    <div className='text-sm font-medium text-gray-700'>
                       Documents
                     </div>
-                    <div className="text-sm text-gray-900 text-right">
-                      <div className="space-y-1">
+                    <div className='text-sm text-gray-900 text-right'>
+                      <div className='space-y-1'>
                         {getContractorDocuments(selectedContractor).map(
                           (doc, index) => (
                             <div
                               key={index}
-                              className="flex items-center justify-end gap-1"
-                            >
+                              className='flex items-center justify-end gap-1'>
                               <a
                                 href={`/api/admin/documents/${doc.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
-                              >
-                                <FileText className="w-3 h-3" />
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                className='text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1'>
+                                <FileText className='w-3 h-3' />
                                 <span>files:{doc.id}</span>
                               </a>
                             </div>
@@ -909,19 +955,19 @@ export default function ManageContractorsPage() {
                 </div>
 
                 {/* ========== PREFIX SETTING SECTION ========== */}
-                <div className="pt-6 border-t border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <div className='pt-6 border-t border-gray-100'>
+                  <h3 className='text-lg font-semibold text-gray-900 mb-4'>
                     Certificate Prefix Settings
                   </h3>
 
-                  <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className='bg-gray-50 p-5 rounded-lg border border-gray-200'>
+                    <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6'>
+                      <div className='flex-1'>
+                        <label className='block text-sm font-medium text-gray-700 mb-2'>
                           Policy Number Prefix (for future certificates)
                         </label>
                         <input
-                          type="text"
+                          type='text'
                           value={
                             prefixInput ||
                             selectedContractor?.policyNoPrefix ||
@@ -930,7 +976,7 @@ export default function ManageContractorsPage() {
                           onChange={(e) =>
                             setPrefixInput(e.target.value.toUpperCase())
                           }
-                          placeholder="e.g. GFT"
+                          placeholder='e.g. GFT'
                           disabled={selectedContractor?.isPrefixLocked}
                           maxLength={10}
                           className={`w-full px-4 py-3 border rounded-lg text-lg font-medium uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -939,7 +985,7 @@ export default function ManageContractorsPage() {
                               : ""
                           }`}
                         />
-                        <p className="mt-2 text-xs text-gray-500">
+                        <p className='mt-2 text-xs text-gray-500'>
                           3–10 uppercase letters (A–Z). Cannot be changed after
                           first certificate.
                         </p>
@@ -999,8 +1045,7 @@ export default function ManageContractorsPage() {
                           prefixInput === selectedContractor?.policyNoPrefix ||
                           selectedContractor?.isPrefixLocked
                         }
-                        className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors whitespace-nowrap"
-                      >
+                        className='px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors whitespace-nowrap'>
                         {selectedContractor?.policyNoPrefix
                           ? "Update Prefix"
                           : "Set Prefix"}
@@ -1009,17 +1054,16 @@ export default function ManageContractorsPage() {
 
                     {/* Preview */}
                     {prefixInput && prefixInput.length >= 3 && (
-                      <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
-                        <p className="text-sm font-medium text-blue-800 mb-2">
+                      <div className='mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg'>
+                        <p className='text-sm font-medium text-blue-800 mb-2'>
                           Preview of next certificates:
                         </p>
                         {[1, 2, 3].map((offset) => (
                           <div
                             key={offset}
-                            className="flex items-center gap-3 mb-1"
-                          >
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <code className="bg-white px-3 py-1 rounded border font-mono">
+                            className='flex items-center gap-3 mb-1'>
+                            <div className='w-2 h-2 bg-blue-500 rounded-full'></div>
+                            <code className='bg-white px-3 py-1 rounded border font-mono'>
                               {prefixInput.toUpperCase()}
                               {(
                                 (selectedContractor?.lastCertificateSequence ||
@@ -1034,7 +1078,7 @@ export default function ManageContractorsPage() {
                     )}
 
                     {selectedContractor?.isPrefixLocked && (
-                      <p className="mt-4 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg">
+                      <p className='mt-4 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg'>
                         This prefix is locked because the contractor has already
                         issued at least one certificate.
                       </p>
@@ -1043,75 +1087,73 @@ export default function ManageContractorsPage() {
                 </div>
 
                 {/* Documents Section */}
-                <div className="pt-4 border-t border-gray-100">
-                  <div className="flex justify-between items-start mb-3">
+                <div className='pt-4 border-t border-gray-100'>
+                  <div className='flex justify-between items-start mb-3'>
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700">
+                      <h4 className='text-sm font-medium text-gray-700'>
                         Documents
                       </h4>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className='text-xs text-gray-500 mt-1'>
                         Contractor uploaded documents
                       </p>
                     </div>
                     {documentsLoading && (
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      <Loader2 className='w-4 h-4 animate-spin text-blue-600' />
                     )}
                   </div>
 
                   {documentsLoading ? (
-                    <div className="text-center py-4">
-                      <Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto" />
-                      <p className="text-sm text-gray-500 mt-2">
+                    <div className='text-center py-4'>
+                      <Loader2 className='w-6 h-6 animate-spin text-gray-400 mx-auto' />
+                      <p className='text-sm text-gray-500 mt-2'>
                         Loading documents...
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className='space-y-2'>
                       {getContractorDocuments(selectedContractor.id).length >
                       0 ? (
                         getContractorDocuments(selectedContractor.id).map(
                           (doc, index) => (
                             <div
                               key={doc._id || index}
-                              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <FileText className="w-4 h-4 text-gray-500" />
-                                  <span className="text-sm font-medium text-gray-700">
+                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200'>
+                              <div className='flex-1'>
+                                <div className='flex items-center gap-2 mb-1'>
+                                  <FileText className='w-4 h-4 text-gray-500' />
+                                  <span className='text-sm font-medium text-gray-700'>
                                     {doc.title || `Document ${index + 1}`}
                                   </span>
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                  <span className="inline-block px-2 py-0.5 bg-gray-100 rounded mr-2">
+                                <div className='text-xs text-gray-500'>
+                                  <span className='inline-block px-2 py-0.5 bg-gray-100 rounded mr-2'>
                                     {doc.category || "Other"}
                                   </span>
                                   {doc.description && (
-                                    <span className="truncate">
+                                    <span className='truncate'>
                                       {doc.description}
                                     </span>
                                   )}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2 ml-4">
+                              <div className='flex items-center gap-2 ml-4'>
                                 <button
                                   onClick={() => handleViewDocument(doc)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                  title="View Document"
-                                >
-                                  <Eye className="w-4 h-4" />
+                                  className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors'
+                                  title='View Document'>
+                                  <Eye className='w-4 h-4' />
                                 </button>
                               </div>
                             </div>
                           )
                         )
                       ) : (
-                        <div className="text-center py-6">
-                          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                          <p className="text-sm text-gray-500">
+                        <div className='text-center py-6'>
+                          <FileText className='w-12 h-12 text-gray-300 mx-auto mb-2' />
+                          <p className='text-sm text-gray-500'>
                             No documents found
                           </p>
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className='text-xs text-gray-400 mt-1'>
                             This contractor has not uploaded any documents yet
                           </p>
                         </div>
@@ -1122,20 +1164,18 @@ export default function ManageContractorsPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+              <div className='flex justify-between items-center mt-8 pt-6 border-t border-gray-200'>
                 <button
                   onClick={() => {
                     closeContractorModal();
                     handleDelete(selectedContractor.id);
                   }}
-                  className="px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
-                >
+                  className='px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium'>
                   Delete Contractor
                 </button>
                 <button
                   onClick={closeContractorModal}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium"
-                >
+                  className='px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium'>
                   Close
                 </button>
               </div>
@@ -1147,64 +1187,63 @@ export default function ManageContractorsPage() {
       {showSuspendModal && <SuspendModal />}
 
       {/* Mobile Header */}
-      <div className="md:hidden mb-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className='md:hidden mb-4'>
+        <div className='flex items-center justify-between mb-4'>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2"
-          >
+            className='p-2'>
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
+              <X className='w-6 h-6' />
             ) : (
-              <Menu className="w-6 h-6" />
+              <Menu className='w-6 h-6' />
             )}
           </button>
-          <h1 className="text-xl font-semibold text-gray-900">Contractors</h1>
-          <div className="w-10"></div>
+          <h1 className='text-xl font-semibold text-gray-900'>Contractors</h1>
+          <div className='w-10'></div>
         </div>
 
         {/* Mobile Search */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <div className='relative mb-4'>
+          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
           <input
-            type="text"
-            placeholder="Search contractors..."
+            type='text'
+            placeholder='Search contractors...'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base"
+            className='pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base'
           />
         </div>
       </div>
 
       {/* Desktop Header */}
-      <div className="hidden md:flex justify-between items-center mb-8">
+      <div className='hidden md:flex justify-between items-center mb-8'>
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Contractors</h1>
+          <h1 className='text-2xl font-semibold text-gray-900'>Contractors</h1>
         </div>
 
-        <div className="relative w-96">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <div className='relative w-96'>
+          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
           <input
-            type="text"
-            placeholder="Search by name, company, or email..."
+            type='text'
+            placeholder='Search by name, company, or email...'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-sm"
+            className='pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-sm'
           />
         </div>
       </div>
 
       {/* Mobile Stats Grid */}
-      <div className="md:hidden grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-3">
-          <p className="text-xs text-gray-600">Total</p>
-          <p className="text-xl font-bold text-gray-900">
+      <div className='md:hidden grid grid-cols-2 gap-3 mb-6'>
+        <div className='bg-white border border-gray-200 rounded-lg p-3'>
+          <p className='text-xs text-gray-600'>Total</p>
+          <p className='text-xl font-bold text-gray-900'>
             {contractors.length}
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-3">
-          <p className="text-xs text-gray-600">This Month</p>
-          <p className="text-xl font-bold text-blue-600">
+        <div className='bg-white border border-gray-200 rounded-lg p-3'>
+          <p className='text-xs text-gray-600'>This Month</p>
+          <p className='text-xl font-bold text-blue-600'>
             {
               contractors.filter((c) => {
                 const created = new Date(c.createdAt);
@@ -1217,31 +1256,31 @@ export default function ManageContractorsPage() {
             }
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-3">
-          <p className="text-xs text-gray-600">Active</p>
-          <p className="text-xl font-bold text-green-600">
+        <div className='bg-white border border-gray-200 rounded-lg p-3'>
+          <p className='text-xs text-gray-600'>Active</p>
+          <p className='text-xl font-bold text-green-600'>
             {contractors.filter((c) => c.isApproved).length}
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-3">
-          <p className="text-xs text-gray-600">Inactive</p>
-          <p className="text-xl font-bold text-red-600">
+        <div className='bg-white border border-gray-200 rounded-lg p-3'>
+          <p className='text-xs text-gray-600'>Inactive</p>
+          <p className='text-xl font-bold text-red-600'>
             {contractors.filter((c) => !c.isApproved).length}
           </p>
         </div>
       </div>
 
       {/* Desktop Stats Grid */}
-      <div className="hidden md:grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600">Total Contractors</p>
-          <p className="text-2xl font-bold text-gray-900">
+      <div className='hidden md:grid grid-cols-4 gap-4 mb-6'>
+        <div className='bg-white border border-gray-200 rounded-lg p-4'>
+          <p className='text-sm text-gray-600'>Total Contractors</p>
+          <p className='text-2xl font-bold text-gray-900'>
             {contractors.length}
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600">This Month</p>
-          <p className="text-2xl font-bold text-blue-600">
+        <div className='bg-white border border-gray-200 rounded-lg p-4'>
+          <p className='text-sm text-gray-600'>This Month</p>
+          <p className='text-2xl font-bold text-blue-600'>
             {
               contractors.filter((c) => {
                 const created = new Date(c.createdAt);
@@ -1254,48 +1293,46 @@ export default function ManageContractorsPage() {
             }
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600">Active</p>
-          <p className="text-2xl font-bold text-green-600">
+        <div className='bg-white border border-gray-200 rounded-lg p-4'>
+          <p className='text-sm text-gray-600'>Active</p>
+          <p className='text-2xl font-bold text-green-600'>
             {contractors.filter((c) => c.isApproved).length}
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600">Inactive</p>
-          <p className="text-2xl font-bold text-red-600">
+        <div className='bg-white border border-gray-200 rounded-lg p-4'>
+          <p className='text-sm text-gray-600'>Inactive</p>
+          <p className='text-2xl font-bold text-red-600'>
             {contractors.filter((c) => !c.isApproved).length}
           </p>
         </div>
       </div>
 
       {/* Mobile Contractor Cards */}
-      <div className="md:hidden space-y-4 mb-6">
+      <div className='md:hidden space-y-4 mb-6'>
         {currentContractors.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className='text-center py-12 text-gray-500'>
             No contractors found
           </div>
         ) : (
           currentContractors.map((contractor) => (
             <div
               key={contractor.id}
-              className="bg-white border border-gray-200 rounded-lg p-4"
-            >
-              <div className="flex justify-between items-start mb-3">
+              className='bg-white border border-gray-200 rounded-lg p-4'>
+              <div className='flex justify-between items-start mb-3'>
                 <div>
-                  <h3 className="font-medium text-gray-900">
+                  <h3 className='font-medium text-gray-900'>
                     <button
                       onClick={() =>
                         router.push(
                           `/admin/manage-contractors/${contractor.id}`
                         )
                       }
-                      className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                    >
+                      className='text-blue-600 hover:text-blue-800 hover:underline transition-colors'>
                       {contractor.name}
                     </button>
                   </h3>
 
-                  <p className="text-sm text-gray-600">
+                  <p className='text-sm text-gray-600'>
                     {contractor.companyName || "N/A"}
                   </p>
                 </div>
@@ -1306,8 +1343,7 @@ export default function ManageContractorsPage() {
                         ? "bg-yellow-100 text-yellow-700"
                         : "bg-green-100 text-green-700"
                       : "bg-red-100 text-red-700"
-                  }`}
-                >
+                  }`}>
                   {!contractor.isApproved
                     ? "Not Approved"
                     : contractor.isSuspended
@@ -1316,62 +1352,73 @@ export default function ManageContractorsPage() {
                 </span>
               </div>
 
-              <div className="space-y-2 text-sm text-gray-600 mb-4">
-                <div className="flex items-center">
-                  <span className="w-24 font-medium">Email:</span>
-                  <span className="truncate">{contractor.email}</span>
+              <div className='space-y-2 text-sm text-gray-600 mb-4'>
+                <div className='flex items-center'>
+                  <span className='w-24 font-medium'>Email:</span>
+                  <span className='truncate'>{contractor.email}</span>
                 </div>
-                <div className="flex items-center">
-                  <span className="w-24 font-medium">Phone:</span>
+                <div className='flex items-center'>
+                  <span className='w-24 font-medium'>Phone:</span>
                   <span>{contractor.phoneNumber || "N/A"}</span>
                 </div>
-                <div className="flex items-center">
-                  <span className="w-24 font-medium">Total Certificates:</span>
+                <div className='flex items-center'>
+                  <span className='w-24 font-medium'>Total Certificates:</span>
                   <span>{contractor.certificateCount || 0}</span>
                 </div>
-                <div className="flex items-center">
-                  <span className="w-24 font-medium">Registered:</span>
+                <div className='flex items-center'>
+                  <span className='w-24 font-medium'>Registered:</span>
                   <span>{formatDate(contractor.createdAt)}</span>
                 </div>
               </div>
-
-              <div className="flex justify-between border-t border-gray-100 pt-3 action-dropdown-container">
+              <div className='flex flex-wrap gap-1.5 mt-2'>
+                <span className='text-xs font-medium text-gray-600'>
+                  Roles:
+                </span>
+                {contractor.roles?.length > 0 ? (
+                  contractor.roles.map((role) => (
+                    <span
+                      key={role}
+                      className='px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full'>
+                      {role.replace(/_/g, " ")}
+                    </span>
+                  ))
+                ) : (
+                  <span className='text-xs text-gray-500'>None</span>
+                )}
+              </div>
+              <div className='flex justify-between border-t border-gray-100 pt-3 action-dropdown-container'>
                 <button
                   onClick={() => openContractorModal(contractor)}
-                  className="text-blue-600 hover:text-blue-800 transition-colors p-2"
-                  title="View Details"
-                >
-                  <Eye className="w-5 h-5" />
+                  className='text-blue-600 hover:text-blue-800 transition-colors p-2'
+                  title='View Details'>
+                  <Eye className='w-5 h-5' />
                 </button>
                 <button
                   onClick={() => downloadHandler(contractor.id)}
-                  className="text-green-600 hover:text-green-800 transition-colors p-2"
-                  title="Download Data"
-                >
-                  <Download className="w-5 h-5" />
+                  className='text-green-600 hover:text-green-800 transition-colors p-2'
+                  title='Download Data'>
+                  <Download className='w-5 h-5' />
                 </button>
 
                 {/* Mobile Dropdown */}
-                <div className="relative">
+                <div className='relative'>
                   <button
                     onClick={(e) => handleOpenActionMenu(contractor.id, e)}
-                    className="text-gray-600 hover:text-gray-800 transition-colors p-2"
-                    title="More Actions"
-                  >
-                    <MoreVertical className="w-5 h-5" />
+                    className='text-gray-600 hover:text-gray-800 transition-colors p-2'
+                    title='More Actions'>
+                    <MoreVertical className='w-5 h-5' />
                   </button>
 
                   {showActionMenu === contractor.id && (
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg border border-gray-200 z-50 shadow-xl">
-                      <div className="py-1">
+                    <div className='absolute right-0 top-full mt-1 w-48 bg-white rounded-lg border border-gray-200 z-50 shadow-xl'>
+                      <div className='py-1'>
                         {contractor.isApproved && !contractor.isSuspended && (
                           <button
                             onClick={() =>
                               openSuspendModal(contractor, "suspend")
                             }
-                            className="w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2"
-                          >
-                            <PauseCircle className="w-4 h-4" />
+                            className='w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2'>
+                            <PauseCircle className='w-4 h-4' />
                             Suspend User
                           </button>
                         )}
@@ -1381,23 +1428,21 @@ export default function ManageContractorsPage() {
                             onClick={() =>
                               openSuspendModal(contractor, "unsuspend")
                             }
-                            className="w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50 flex items-center gap-2"
-                          >
-                            <PlayCircle className="w-4 h-4" />
+                            className='w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50 flex items-center gap-2'>
+                            <PlayCircle className='w-4 h-4' />
                             Unsuspend User
                           </button>
                         )}
 
-                        <div className="border-t border-gray-200 my-1"></div>
+                        <div className='border-t border-gray-200 my-1'></div>
 
                         <button
                           onClick={() => {
                             setShowActionMenu(null);
                             handleDelete(contractor.id);
                           }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center gap-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
+                          className='w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center gap-2'>
+                          <Trash2 className='w-4 h-4' />
                           Delete Contractor
                         </button>
                       </div>
@@ -1411,47 +1456,49 @@ export default function ManageContractorsPage() {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+      <div className='hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden'>
+        <div className='overflow-x-auto'>
+          <table className='w-full'>
+            <thead className='bg-gray-50 border-b border-gray-200'>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                   Prefix
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                   Contractor Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                   Company Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                   Email Address
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                   Phone Number
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className='px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider'>
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
+                  User Type
+                </th>
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                   Registered Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                   Total Certificates
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className='bg-white divide-y divide-gray-100'>
               {currentContractors.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="7"
-                    className="px-6 py-12 text-center text-gray-500"
-                  >
+                    colSpan='7'
+                    className='px-6 py-12 text-center text-gray-500'>
                     No contractors found
                   </td>
                 </tr>
@@ -1459,18 +1506,16 @@ export default function ManageContractorsPage() {
                 currentContractors.map((contractor) => (
                   <tr
                     key={contractor.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    className='hover:bg-gray-50 transition-colors'>
+                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
                       {contractor.policyNoPrefix ? (
-                        <div className="flex items-center gap-2">
+                        <div className='flex items-center gap-2'>
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               contractor.isPrefixLocked
                                 ? "bg-green-100 text-green-800"
                                 : "bg-blue-100 text-blue-800"
-                            }`}
-                          >
+                            }`}>
                             {contractor.policyNoPrefix}
                           </span>
 
@@ -1493,8 +1538,7 @@ export default function ManageContractorsPage() {
                                   }
                                 }
                               }}
-                              className="text-blue-600 hover:text-blue-800 text-xs"
-                            >
+                              className='text-blue-700 hover:text-blue-800 text-xs'>
                               Edit
                             </button>
                           )}
@@ -1517,36 +1561,34 @@ export default function ManageContractorsPage() {
                               }
                             }
                           }}
-                          className="text-blue-600 hover:text-blue-800 text-xs underline"
-                        >
+                          className='text-blue-700 hover:text-blue-800 text-xs underline'>
                           Set Prefix
                         </button>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
                       <button
                         onClick={() =>
                           router.push(
                             `/admin/manage-contractors/${contractor.id}`
                           )
                         }
-                        className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                      >
+                        className='text-blue-700 hover:text-blue-800 hover:underline transition-colors'>
                         {contractor.name}
                       </button>
                     </td>
 
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className='px-6 py-4 text-sm text-gray-600'>
                       {contractor.companyName || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
                       {contractor.email}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
                       {contractor.phoneNumber || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col gap-1">
+                    <td className='px-6 py-4 whitespace-nowrap'>
+                      <div className='flex flex-col gap-1'>
                         <span
                           className={`inline-block px-3 py-1 rounded-full mx-auto text-xs font-medium ${
                             contractor.isApproved
@@ -1554,8 +1596,7 @@ export default function ManageContractorsPage() {
                                 ? "bg-yellow-100 text-yellow-700"
                                 : "bg-green-100 text-green-700"
                               : "bg-red-100 text-red-700"
-                          }`}
-                        >
+                          }`}>
                           {!contractor.isApproved
                             ? "Not Approved"
                             : contractor.isSuspended
@@ -1564,46 +1605,93 @@ export default function ManageContractorsPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className='px-6 py-4 whitespace-nowrap'>
+                      <div className='flex items-center gap-x-1 group'>
+                        <div className='flex flex-wrap gap-1.5'>
+                          {contractor.roles?.length > 0 ? (
+                            contractor.roles.map((role) => (
+                              <span
+                                key={role}
+                                className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-800 capitalize'>
+                                {role.replace(/_/g, " ")}
+                              </span>
+                            ))
+                          ) : (
+                            <span className='text-gray-500 text-sm italic'>
+                              None
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Edit button - only visible & clickable if allowed */}
+                        {!contractor.isSuspended && contractor.isApproved ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRolesModal(contractor);
+                            }}
+                            className='opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-100'
+                            title='Edit roles'>
+                            <Edit2 size={16} className='text-gray-500' />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              alert(
+                                contractor.isSuspended
+                                  ? "This user is currently suspended. You cannot edit roles until unsuspended."
+                                  : "This user is not yet approved. Roles can only be assigned to approved users."
+                              );
+                            }}
+                            className='opacity-50 cursor-not-allowed p-1 rounded'
+                            title={
+                              contractor.isSuspended
+                                ? "Suspended - cannot edit"
+                                : "Not approved - cannot edit"
+                            }>
+                            <Edit2 size={16} className='text-gray-400' />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                       {formatDate(contractor.createdAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                       {contractor.certificateCount}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 action-dropdown-container">
+                    <td className='px-6 py-4 whitespace-nowrap '>
+                      <div className='flex items-center justify-center gap-2 action-dropdown-container'>
                         <button
                           onClick={() => openContractorModal(contractor)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
-                          title="View Details"
-                        >
-                          <Eye className="w-5 h-5" />
+                          className='text-blue-700 hover:text-blue-800 transition-colors p-1'
+                          title='View Details'>
+                          <Eye className='w-5 h-5' />
                         </button>
 
                         <button
                           onClick={() => downloadHandler(contractor.id)}
-                          className="text-green-600 hover:text-green-800 transition-colors p-1"
-                          title="Download Data"
-                        >
-                          <Download className="w-5 h-5" />
+                          className='text-gray-600 hover:text-gray-800 transition-colors p-1'
+                          title='Download Data'>
+                          <Download className='w-5 h-5' />
                         </button>
 
                         {/* Action Dropdown */}
-                        <div className="relative">
+                        <div className='relative'>
                           <button
                             onClick={(e) =>
                               handleOpenActionMenu(contractor.id, e)
                             }
-                            className="text-gray-600 hover:text-gray-800 transition-colors p-1"
-                            title="More Actions"
-                          >
-                            <MoreVertical className="w-5 h-5" />
+                            className='text-gray-600 hover:text-gray-800 transition-colors p-1'
+                            title='More Actions'>
+                            <MoreVertical className='w-5 h-5' />
                           </button>
 
                           {/* Dropdown Menu */}
                           {showActionMenu === contractor.id && (
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg border border-gray-200 z-50 shadow-xl">
-                              <div className="py-1">
+                            <div className='absolute right-0 top-full mt-1 w-48 bg-white rounded-lg border border-gray-200 z-50 shadow-xl'>
+                              <div className='py-1'>
                                 {/* Suspend/Unsuspend option */}
                                 {contractor.isApproved &&
                                   !contractor.isSuspended && (
@@ -1611,9 +1699,8 @@ export default function ManageContractorsPage() {
                                       onClick={() =>
                                         openSuspendModal(contractor, "suspend")
                                       }
-                                      className="w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2"
-                                    >
-                                      <PauseCircle className="w-4 h-4" />
+                                      className='w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2'>
+                                      <PauseCircle className='w-4 h-4' />
                                       Suspend User
                                     </button>
                                   )}
@@ -1623,23 +1710,21 @@ export default function ManageContractorsPage() {
                                     onClick={() =>
                                       openSuspendModal(contractor, "unsuspend")
                                     }
-                                    className="w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50 flex items-center gap-2"
-                                  >
-                                    <PlayCircle className="w-4 h-4" />
+                                    className='w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50 flex items-center gap-2'>
+                                    <PlayCircle className='w-4 h-4' />
                                     Unsuspend User
                                   </button>
                                 )}
 
-                                <div className="border-t border-gray-200 my-1"></div>
+                                <div className='border-t border-gray-200 my-1'></div>
 
                                 <button
                                   onClick={() => {
                                     setShowActionMenu(null);
                                     handleDelete(contractor.id);
                                   }}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center gap-2"
-                                >
-                                  <Trash2 className="w-4 h-4" />
+                                  className='w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center gap-2'>
+                                  <Trash2 className='w-4 h-4' />
                                   Delete Contractor
                                 </button>
                               </div>
@@ -1653,30 +1738,139 @@ export default function ManageContractorsPage() {
               )}
             </tbody>
           </table>
+          {showRolesModal && editingContractor && (
+            <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
+              <div className='bg-white rounded-xl shadow-2xl max-w-md w-full p-6'>
+                <div className='flex justify-between items-center mb-6'>
+                  <h3 className='text-xl font-bold text-gray-900'>
+                    Edit Roles – {editingContractor.name}
+                  </h3>
+                  <button
+                    onClick={closeRolesModal}
+                    className='text-gray-500 hover:text-gray-700'>
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className='space-y-4'>
+                  {[
+                    {
+                      value: "retrofit_assessor",
+                      label: "Retrofit Assessor",
+                    },
+                    {
+                      value: "retrofit_coordinator",
+                      label: "Retrofit Coordinator",
+                    },
+                    {
+                      value: "funding_partner",
+                      label: "Funding Partner",
+                    },
+                    {
+                      value: "scheme_provider",
+                      label: "Scheme Provider",
+                    },
+                  ].map((role) => (
+                    <label key={role.value} className='flex items-center gap-3'>
+                      <input
+                        type='checkbox'
+                        checked={
+                          editingContractor.roles?.includes(role.value) || false
+                        }
+                        onChange={(e) => {
+                          const newRoles = e.target.checked
+                            ? [
+                                ...new Set([
+                                  ...(editingContractor.roles || []),
+                                  role.value,
+                                ]),
+                              ]
+                            : (editingContractor.roles || []).filter(
+                                (r) => r !== role.value
+                              );
+
+                          setEditingContractor((prev) => ({
+                            ...prev,
+                            roles: newRoles,
+                          }));
+                        }}
+                        className='h-5 w-5 text-blue-600 rounded'
+                      />
+                      <span>{role.label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className='flex justify-end gap-4 mt-8'>
+                  <button
+                    onClick={closeRolesModal}
+                    className='px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors'>
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(
+                          `/api/admin/contractor/${editingContractor.id}`,
+                          {
+                            method: "PATCH",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                              roles: editingContractor.roles,
+                            }),
+                          }
+                        );
+
+                        const result = await res.json();
+
+                        if (result.success) {
+                          // 1. Refresh the main list
+                          await fetchContractors();
+
+                          // 2. Also update the current modal's contractor
+                          setEditingContractor((prev) => ({
+                            ...prev,
+                            roles: editingContractor.roles,
+                          }));
+
+                          toast.success("Roles updated successfully");
+                          closeRolesModal();
+                        }
+                      } catch (err) {
+                        alert("Error: " + err.message);
+                      }
+                    }}>
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-gray-600">
+          <div className='px-6 py-4 border-t border-gray-200'>
+            <div className='flex flex-col sm:flex-row items-center justify-between gap-4'>
+              <div className='text-sm text-gray-600'>
                 Showing {startIndex + 1} to{" "}
                 {Math.min(endIndex, filteredContractors.length)} of{" "}
                 {filteredContractors.length} contractors
               </div>
-              <div className="flex items-center gap-2">
+              <div className='flex items-center gap-2'>
                 <button
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(1, prev - 1))
                   }
                   disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  className='px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
+                  <ChevronLeft className='w-4 h-4 mr-1' />
                   Previous
                 </button>
 
-                <div className="flex items-center gap-1">
+                <div className='flex items-center gap-1'>
                   {[...Array(totalPages)].map((_, index) => {
                     const pageNumber = index + 1;
                     if (
@@ -1693,8 +1887,7 @@ export default function ManageContractorsPage() {
                             currentPage === pageNumber
                               ? "bg-blue-600 text-white"
                               : "text-gray-600 hover:text-gray-900"
-                          }`}
-                        >
+                          }`}>
                           {pageNumber}
                         </button>
                       );
@@ -1703,7 +1896,7 @@ export default function ManageContractorsPage() {
                       pageNumber === currentPage + 2
                     ) {
                       return (
-                        <span key={pageNumber} className="px-2 text-gray-400">
+                        <span key={pageNumber} className='px-2 text-gray-400'>
                           ...
                         </span>
                       );
@@ -1717,10 +1910,9 @@ export default function ManageContractorsPage() {
                     setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                   }
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
+                  className='px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
                   Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <ChevronRight className='w-4 h-4 ml-1' />
                 </button>
               </div>
             </div>
@@ -1730,24 +1922,23 @@ export default function ManageContractorsPage() {
 
       {/* Mobile Pagination */}
       {totalPages > 1 && (
-        <div className="md:hidden bg-white border border-gray-200 rounded-lg p-4 mt-4">
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-sm text-gray-600 text-center">
+        <div className='md:hidden bg-white border border-gray-200 rounded-lg p-4 mt-4'>
+          <div className='flex flex-col items-center gap-4'>
+            <div className='text-sm text-gray-600 text-center'>
               Showing {startIndex + 1} to{" "}
               {Math.min(endIndex, filteredContractors.length)} of{" "}
               {filteredContractors.length} contractors
             </div>
-            <div className="flex items-center justify-between w-full">
+            <div className='flex items-center justify-between w-full'>
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
+                className='px-4 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
+                <ChevronLeft className='w-4 h-4 mr-1' />
                 Prev
               </button>
 
-              <div className="text-sm text-gray-700">
+              <div className='text-sm text-gray-700'>
                 Page {currentPage} of {totalPages}
               </div>
 
@@ -1756,10 +1947,9 @@ export default function ManageContractorsPage() {
                   setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
+                className='px-4 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
                 Next
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <ChevronRight className='w-4 h-4 ml-1' />
               </button>
             </div>
           </div>

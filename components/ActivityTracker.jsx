@@ -52,7 +52,7 @@ export default function ActivityTracker() {
       toast.error("Logged out due to inactivity");
 
       // Dispatch custom event for Navbar to listen to
-      window.dispatchEvent(new CustomEvent('user-logged-out'));
+      window.dispatchEvent(new CustomEvent("user-logged-out"));
 
       // Redirect ONLY if private page
       if (!isPublicPage) {
@@ -90,9 +90,7 @@ export default function ActivityTracker() {
     document.addEventListener("visibilitychange", visibilityHandler);
 
     return () => {
-      events.forEach((e) =>
-        document.removeEventListener(e, handleActivity)
-      );
+      events.forEach((e) => document.removeEventListener(e, handleActivity));
       document.removeEventListener("visibilitychange", visibilityHandler);
 
       if (timerRef.current) clearTimeout(timerRef.current);
