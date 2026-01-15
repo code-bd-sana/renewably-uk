@@ -39,6 +39,7 @@ export default function CreateInsuranceForm() {
   const [progress, setProgress] = useState(0);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [absValue, setAbsValue] = useState("");
+  const [allProviders, setAllProviders] = useState([]);
 
   const searchInputRef = useRef(null);
 
@@ -85,16 +86,59 @@ export default function CreateInsuranceForm() {
     }
   };
 
-  const fetchSchemeProviders = async () => {
-    try {
-      const response = await fetch("/api/admin/scheme-providers");
-      const data = await response.json();
-      if (data.success) {
-        setSchemeProviders(data.providers);
+  // const fetchSchemeProviders = async () => {
+  //   try {
+  //     const response = await fetch("/api/admin/scheme-providers");
+  //     const data = await response.json();
+  //     if (data.success) {
+  //       setSchemeProviders(data.providers);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching scheme providers:", error);
+  //   }
+  // };
+
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const res = await fetch("/api/compliance/providers");
+        const data = await res.json();
+        if (data.success) {
+          console.log("Compliance Providers Loaded:", data.providers);
+          setAllProviders(data.providers);
+        } else {
+          toast.error("Failed to load compliance providers");
+        }
+      } catch (err) {
+        console.error("Failed to load providers", err);
+        toast.error("Unable to load compliance providers");
       }
-    } catch (error) {
-      console.error("Error fetching scheme providers:", error);
-    }
+    };
+
+    loadProviders();
+    fetchProducts();
+    fetchContractorData();
+  }, []);
+
+  // Helper function
+  const getProvidersForRole = (role) => {
+    const roleProvider = allProviders
+      .filter((provider) => {
+        if (provider.roles) {
+          return provider.roles.includes(role);
+        }
+        // otherwise include all
+        return true;
+      })
+      .map((provider) => ({
+        name: provider.name || "Unnamed",
+        address: provider.address || "",
+        phone: provider.phone || "",
+        email: provider.email,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return roleProvider;
   };
 
   useEffect(() => {
@@ -165,9 +209,9 @@ export default function CreateInsuranceForm() {
 
   const dropdownOptions = [
     "Not Required",
-    "Assigned",
-    "Pending Assignment",
-    "External Provider",
+    // "Assigned",
+    // "Pending Assignment",
+    // "External Provider",
   ];
 
   const fetchContractorData = async () => {
@@ -1170,7 +1214,7 @@ export default function CreateInsuranceForm() {
               </button>
               <DropdownMenu
                 options={[
-                  ...getFilteredSchemeProviders("Retrofit Assessor"),
+                  ...getProvidersForRole("retrofit_assessor"),
                   ...dropdownOptions,
                 ]}
                 selected={formData.retrofitAssessor}
@@ -1179,7 +1223,6 @@ export default function CreateInsuranceForm() {
                 }
                 show={showRetrofitAssessor}
                 onClose={() => setShowRetrofitAssessor(false)}
-                type='Retrofit Assessor'
               />
             </div>
             <div className='relative dropdown-container'>
@@ -1199,7 +1242,7 @@ export default function CreateInsuranceForm() {
               </button>
               <DropdownMenu
                 options={[
-                  ...getFilteredSchemeProviders("Retrofit Coordinator"),
+                  ...getProvidersForRole("retrofit_coordinator"),
                   ...dropdownOptions,
                 ]}
                 selected={formData.retrofitCoordinator}
@@ -1208,7 +1251,6 @@ export default function CreateInsuranceForm() {
                 }
                 show={showRetrofitCoordinator}
                 onClose={() => setShowRetrofitCoordinator(false)}
-                type='Retrofit Coordinator'
               />
             </div>
             <div className='relative dropdown-container'>
@@ -1224,7 +1266,7 @@ export default function CreateInsuranceForm() {
               </button>
               <DropdownMenu
                 options={[
-                  ...getFilteredSchemeProviders("Funding Partner"),
+                  ...getProvidersForRole("funding_partner"),
                   ...dropdownOptions,
                 ]}
                 selected={formData.fundingPartner}
@@ -1233,9 +1275,9 @@ export default function CreateInsuranceForm() {
                 }
                 show={showFundingPartner}
                 onClose={() => setShowFundingPartner(false)}
-                type='Funding Partner'
               />
             </div>
+
             <div className='relative dropdown-container'>
               <label className='block text-sm font-medium mb-2'>
                 Scheme Provider *
@@ -1251,7 +1293,7 @@ export default function CreateInsuranceForm() {
               </button>
               <DropdownMenu
                 options={[
-                  ...getFilteredSchemeProviders("Scheme Provider"),
+                  ...getProvidersForRole("scheme_provider"),
                   ...dropdownOptions,
                 ]}
                 selected={formData.schemeProvider}
@@ -1260,7 +1302,6 @@ export default function CreateInsuranceForm() {
                 }
                 show={showSchemeProvider}
                 onClose={() => setShowSchemeProvider(false)}
-                type='Scheme Provider'
               />
             </div>
             <div className='relative md:col-span-1'>

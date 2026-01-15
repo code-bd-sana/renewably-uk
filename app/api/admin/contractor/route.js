@@ -234,7 +234,9 @@ export async function GET(request) {
     // Get contractors with pagination
     const contractors = await User.find(query)
       .select("-passwordHash")
-      .select("name companyName email phoneNumber isApproved isSuspended role createdAt updatedAt policyNoPrefix lastCertificateSequence isPrefixLocked")
+      .select(
+        "name companyName email phoneNumber isApproved isSuspended role roles createdAt updatedAt policyNoPrefix lastCertificateSequence isPrefixLocked"
+      )
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -262,6 +264,7 @@ export async function GET(request) {
         companyAddress: contractor.companyAddress || "",
         position: contractor.position || "",
         role: contractor.role,
+        roles: contractor.roles,
         isApproved: contractor.isApproved,
         isSuspended: contractor.isSuspended || false,
         suspensionReason: contractor.suspensionReason || "",
