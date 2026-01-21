@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { usePathname } from "next/navigation";
 
-// const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 10 minutes testing
-const INACTIVITY_TIMEOUT = 10 * 3600 * 1000; // 1 hourrtrrrrrfrrrr testing
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 const PUBLIC_PATHS = ["/", "/login", "/signup", "/forgot-password"];
 
 export default function ActivityTracker() {
