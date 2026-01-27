@@ -11,7 +11,7 @@ export async function GET(request, { params }) {
     if (!auth.success || auth.userRole !== "admin") {
       return Response.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -19,17 +19,17 @@ export async function GET(request, { params }) {
 
     const { month } = await params;
     const monthNum = parseInt(month);
-    
+
     if (monthNum < 1 || monthNum > 12) {
       return Response.json(
         { success: false, error: "Invalid month" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Get current year
     const currentYear = new Date().getFullYear();
-    
+
     // Calculate date range for the month
     const startDate = new Date(currentYear, monthNum - 1, 1);
     const endDate = new Date(currentYear, monthNum, 1);
@@ -38,8 +38,8 @@ export async function GET(request, { params }) {
     const query = {
       createdAt: {
         $gte: startDate,
-        $lt: endDate
-      }
+        $lt: endDate,
+      },
     };
 
     // Get query parameters
@@ -77,21 +77,23 @@ export async function GET(request, { params }) {
 
     // Format response
     const formattedCertificates = certificates.map((cert) => {
-      const product = cert.products && cert.products.length > 0 ? cert.products[0] : {};
-      
-      const policyNo = cert.policyNumber || `POL-${cert._id.toString().slice(-6)}`;
-      const inceptionDate = product.inceptionDate 
+      const product =
+        cert.products && cert.products.length > 0 ? cert.products[0] : {};
+
+      const policyNo =
+        cert.policyNumber || `POL-${cert._id.toString().slice(-6)}`;
+      const inceptionDate = product.inceptionDate
         ? new Date(product.inceptionDate).toLocaleDateString("en-GB")
         : "N/A";
-      const expiryDate = product.expiryDate 
+      const expiryDate = product.expiryDate
         ? new Date(product.expiryDate).toLocaleDateString("en-GB")
         : "N/A";
-      const contractValue = product.contractValue 
-        ? `€ ${product.contractValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : "€ 0.00";
-      const price = product.price 
-        ? `€ ${product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : "€ 0.00";
+      const contractValue = product.contractValue
+        ? `£ ${product.contractValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : "£ 0.00";
+      const price = product.price
+        ? `£ ${product.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : "£ 0.00";
 
       return {
         id: cert._id.toString(),
@@ -119,8 +121,18 @@ export async function GET(request, { params }) {
 
     // Month names for display
     const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
 
     return Response.json({
@@ -132,15 +144,14 @@ export async function GET(request, { params }) {
       month: {
         number: monthNum,
         name: monthNames[monthNum - 1],
-        year: currentYear
-      }
+        year: currentYear,
+      },
     });
-
   } catch (error) {
     console.error("Month certificates error:", error);
     return Response.json(
       { success: false, error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

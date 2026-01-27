@@ -74,14 +74,14 @@ function DashboardPage() {
                 if (!cert.inceptionDate) return false;
 
                 const certDate = new Date(
-                  cert.inceptionDate.split("/").reverse().join("-")
+                  cert.inceptionDate.split("/").reverse().join("-"),
                 );
 
                 return (
                   certDate.getMonth() === now.getMonth() &&
                   certDate.getFullYear() === now.getFullYear()
                 );
-              }
+              },
             );
 
             setThisMonthCerts(thisMonthCertificates);
@@ -91,14 +91,14 @@ function DashboardPage() {
               (total, cert) => {
                 if (!cert.price) return total;
 
-                // "€ 2.25" -> 2.25
+                // "£ 2.25" -> 2.25
                 const priceNumber = parseFloat(
-                  cert.price.replace(/[^\d.]/g, "")
+                  cert.price.replace(/[^\d.]/g, ""),
                 );
 
                 return total + (isNaN(priceNumber) ? 0 : priceNumber);
               },
-              0
+              0,
             );
 
             setStats({
@@ -106,7 +106,7 @@ function DashboardPage() {
               thisMonthCertificates: thisMonthCertificates.length,
               accountBalance: `£${accountBalanceNumber.toFixed(2)}`,
               editPending: certsData.certificates.filter(
-                (cert) => cert.status === "pending_edit"
+                (cert) => cert.status === "pending_edit",
               ).length,
             });
           }
@@ -124,7 +124,7 @@ function DashboardPage() {
   const filteredCertificates = thisMonthCerts.filter(
     (cert) =>
       cert.holderName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cert.policyNo?.toLowerCase().includes(searchTerm.toLowerCase())
+      cert.policyNo?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const totalPages = Math.ceil(filteredCertificates.length / itemsPerPage);
@@ -132,7 +132,7 @@ function DashboardPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedCertificates = filteredCertificates.slice(
     startIndex,
-    endIndex
+    endIndex,
   );
 
   // View Certificate Modal Function
@@ -622,7 +622,7 @@ function DashboardPage() {
                 <button
                   onClick={() => {
                     const cert = thisMonthCerts.find(
-                      (c) => c.policyNo === selectedCertificate.policyNumber
+                      (c) => c.policyNo === selectedCertificate.policyNumber,
                     );
                     if (cert) {
                       handleDownloadCertificate(cert);
@@ -674,7 +674,7 @@ function DashboardPage() {
                 <div className='space-y-3'>
                   {renderField(
                     "Policy Holder Name",
-                    selectedCertificate.policyHolderName
+                    selectedCertificate.policyHolderName,
                   )}
                   {renderField("Address", selectedCertificate.address)}
                   {renderField("Country", selectedCertificate.country)}
@@ -693,16 +693,16 @@ function DashboardPage() {
                   {renderField("Product Type", selectedCertificate.productType)}
                   {renderField(
                     "Insurance Coverage",
-                    "Insurance Backed Guarantee"
+                    "Insurance Backed Guarantee",
                   )}
                   {renderField(
                     "Inception Date",
-                    selectedCertificate.inceptionDate
+                    selectedCertificate.inceptionDate,
                   )}
                   {renderField("Expiry Date", selectedCertificate.expiryDate)}
                   {renderField(
                     "Contract Value",
-                    selectedCertificate.contractValue
+                    selectedCertificate.contractValue,
                   )}
                   {renderField("Transaction Type", "Certificate Generated")}
                   {renderField("Price", selectedCertificate.price)}
