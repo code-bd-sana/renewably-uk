@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
     if (!auth.success) {
       return Response.json(
         { success: false, error: auth.error },
-        { status: auth.status || 401 }
+        { status: auth.status || 401 },
       );
     }
 
@@ -23,7 +23,7 @@ export async function GET(request, { params }) {
     if (auth.userRole !== "admin") {
       return Response.json(
         { success: false, error: "Admin access required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -46,7 +46,7 @@ export async function GET(request, { params }) {
       console.log("Contractor not found for ID:", id);
       return Response.json(
         { success: false, error: "Contractor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -79,7 +79,7 @@ export async function GET(request, { params }) {
     console.error("GET /api/admin/contractor/[id] error:", error);
     return Response.json(
       { success: false, error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -93,7 +93,7 @@ export async function POST(request, { params }) {
     if (!auth.success) {
       return Response.json(
         { success: false, error: auth.error },
-        { status: auth.status || 401 }
+        { status: auth.status || 401 },
       );
     }
 
@@ -101,7 +101,7 @@ export async function POST(request, { params }) {
     if (auth.userRole !== "admin") {
       return Response.json(
         { success: false, error: "Admin access required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -120,14 +120,14 @@ export async function POST(request, { params }) {
       // Handle user/contractor request
       return Response.json(
         { success: false, error: "Invalid ID format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
   } catch (error) {
     console.error("Process request error:", error);
     return Response.json(
       { success: false, error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -292,20 +292,20 @@ async function handleInsuranceRequest(insuranceId, request) {
   if (!action || !["approve", "reject"].includes(action)) {
     return Response.json(
       { success: false, error: "Valid action required (approve/reject)" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   // Find the insurance request with populated contractor info
   const insurance = await Insurance.findById(insuranceId).populate(
     "userId",
-    "name email companyName"
+    "name email companyName",
   );
 
   if (!insurance) {
     return Response.json(
       { success: false, error: "Insurance request not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -318,7 +318,7 @@ async function handleInsuranceRequest(insuranceId, request) {
   if (!isPending) {
     return Response.json(
       { success: false, error: "No pending request found" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -355,13 +355,34 @@ async function handleInsuranceRequest(insuranceId, request) {
 
         if (changes.productType) product.productType = changes.productType;
 
-        // IMPORTANT: Clean and convert contractValue to Number
+        // Clean and convert contractValue to Number
         if (changes.contractValue !== undefined) {
           product.contractValue = cleanNumber(changes.contractValue);
         }
 
-        if (changes.inceptionDate)
-          product.inceptionDate = changes.inceptionDate;
+        if (changes.inceptionDate) {
+          try {
+            // Split DD/MM/YYYY and convert to YYYY-MM-DD
+            const [day, month, year] = changes.inceptionDate.split("/");
+            if (day && month && year) {
+              product.inceptionDate = new Date(
+                `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`,
+              );
+
+              // Optional: check if valid
+              if (isNaN(product.inceptionDate.getTime())) {
+                console.warn(
+                  "Invalid inceptionDate format:",
+                  changes.inceptionDate,
+                );
+                // You can skip or set default instead of failing
+              }
+            }
+          } catch (err) {
+            console.error("Date conversion error:", err);
+            // Don't throw – just skip or log
+          }
+        }
         if (changes.expiryDateCalculated) {
           product.expiryDate = changes.expiryDateCalculated;
           product.expiryDateCalculated = changes.expiryDateCalculated;
@@ -370,6 +391,15 @@ async function handleInsuranceRequest(insuranceId, request) {
         // Required for nested array updates
         insurance.markModified("products");
       }
+      // NEW: Update the additional fields from changes
+      if (changes.retrofitAssessor)
+        insurance.retrofitAssessor = changes.retrofitAssessor;
+      if (changes.retrofitCoordinator)
+        insurance.retrofitCoordinator = changes.retrofitCoordinator;
+      if (changes.fundingPartner)
+        insurance.fundingPartner = changes.fundingPartner;
+      if (changes.schemeProvider)
+        insurance.schemeProvider = changes.schemeProvider;
     }
 
     // Status update (unchanged)
@@ -416,7 +446,7 @@ async function handleInsuranceRequest(insuranceId, request) {
           contractorEmail,
           contractorName,
           policyNumber,
-          notes || ""
+          notes || "",
         );
         console.log(`Approval email sent to contractor: ${contractorEmail}`);
       } else if (action === "reject") {
@@ -424,7 +454,7 @@ async function handleInsuranceRequest(insuranceId, request) {
           contractorEmail,
           contractorName,
           policyNumber,
-          notes || ""
+          notes || "",
         );
         console.log(`Rejection email sent to contractor: ${contractorEmail}`);
       }
@@ -456,7 +486,7 @@ export async function PUT(request, { params }) {
     if (!auth.success) {
       return Response.json(
         { success: false, error: auth.error },
-        { status: auth.status || 401 }
+        { status: auth.status || 401 },
       );
     }
 
@@ -464,7 +494,7 @@ export async function PUT(request, { params }) {
     if (auth.userRole !== "admin") {
       return Response.json(
         { success: false, error: "Admin access required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -494,13 +524,13 @@ export async function PUT(request, { params }) {
     const contractor = await User.findOneAndUpdate(
       { _id: id, role: "contractor" },
       { $set: updates },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).select("-passwordHash");
 
     if (!contractor) {
       return Response.json(
         { success: false, error: "Contractor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -521,7 +551,7 @@ export async function PUT(request, { params }) {
     console.error("Update contractor error:", error);
     return Response.json(
       { success: false, error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -535,7 +565,7 @@ export async function DELETE(request, { params }) {
     if (!auth.success) {
       return Response.json(
         { success: false, error: auth.error },
-        { status: auth.status || 401 }
+        { status: auth.status || 401 },
       );
     }
 
@@ -543,7 +573,7 @@ export async function DELETE(request, { params }) {
     if (auth.userRole !== "admin") {
       return Response.json(
         { success: false, error: "Admin access required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -562,7 +592,7 @@ export async function DELETE(request, { params }) {
     if (!contractor) {
       return Response.json(
         { success: false, error: "Contractor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -579,7 +609,7 @@ export async function DELETE(request, { params }) {
     console.error("Delete contractor error:", error);
     return Response.json(
       { success: false, error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -592,7 +622,7 @@ export async function PATCH(request, { params }) {
     if (!auth.success || auth.userRole !== "admin") {
       return Response.json(
         { success: false, error: "Admin only" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -612,13 +642,13 @@ export async function PATCH(request, { params }) {
           roles: data.roles || ["contractor"],
         },
       },
-      { new: true }
+      { new: true },
     ).select("name email roles");
 
     if (!updated) {
       return Response.json(
         { success: false, error: "User not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -633,7 +663,7 @@ export async function PATCH(request, { params }) {
     console.error("PATCH error:", error);
     return Response.json(
       { success: false, error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

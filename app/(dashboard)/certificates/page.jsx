@@ -40,9 +40,31 @@ export default function CertificatesPage() {
   const [modalError, setModalError] = useState("");
   const [requestReason, setRequestReason] = useState("");
   const [showProductDropdown, setShowProductDropdown] = useState(false);
+
+  const [showRetrofitAssessor, setShowRetrofitAssessor] = useState(false);
+  const [showRetrofitCoordinator, setShowRetrofitCoordinator] = useState(false);
+  const [showFundingPartner, setShowFundingPartner] = useState(false);
+  const [showSchemeProvider, setShowSchemeProvider] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState("");
 
+  const [allProviders, setAllProviders] = useState([]);
+
   const itemsPerPage = 10;
+
+  const allowedEditFields = [
+    "policyHolderName",
+    "address",
+    "postcode",
+    "email", // Policy Holder Email
+    "phone", // Policy Holder Phone
+    "productType",
+    "contractValue",
+    "inceptionDate",
+    "retrofitAssessor",
+    "retrofitCoordinator",
+    "fundingPartner",
+    "schemeProvider",
+  ];
 
   // Fetch products from API
   const fetchProducts = async () => {
@@ -85,10 +107,45 @@ export default function CertificatesPage() {
     }
   };
 
+  // useEffect(() => {
+  //   fetchCertificates();
+  //   fetchProducts();
+  // }, [router]);
+
   useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const res = await fetch("/api/compliance/providers");
+        const data = await res.json();
+        if (data.success) {
+          setAllProviders(data.providers);
+        } else {
+          toast.error("Failed to load providers");
+        }
+      } catch (err) {
+        toast.error("Unable to load providers");
+      }
+    };
+
     fetchCertificates();
+    loadProviders();
     fetchProducts();
-  }, [router]);
+  }, []);
+
+  const getProvidersForRole = (role) => {
+    return allProviders
+      .filter((provider) => {
+        if (provider.roles) return provider.roles.includes(role);
+        return true;
+      })
+      .map((provider) => ({
+        name: provider.name || "Unnamed",
+        address: provider.address || "",
+        phone: provider.phone || "",
+        email: provider.email,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -112,7 +169,7 @@ export default function CertificatesPage() {
 
     const query = productSearchQuery.toLowerCase();
     return products.filter((product) =>
-      product.Measures.toLowerCase().includes(query)
+      product.Measures.toLowerCase().includes(query),
     );
   }, [products, productSearchQuery]);
 
@@ -163,14 +220,19 @@ export default function CertificatesPage() {
     });
 
     setEditableFields({
-      policyHolderName: certificate.holderName,
+      policyHolderName: certificate.holderName || "",
       address: certificate.rawData?.insurance?.address || "",
-      country: certificate.rawData?.insurance?.country || "",
       postcode: certificate.rawData?.insurance?.postcode || "",
       email: certificate.rawData?.insurance?.email || "",
       phone: certificate.rawData?.insurance?.phone || "",
-      productType: certificate.productType,
-      contractValue: certificate.contractValue.replace("€ ", ""),
+      productType: certificate.productType || "",
+      contractValue: certificate.contractValue?.replace(/[€£]\s*/g, "") || "",
+      inceptionDate: certificate.inceptionDate || "",
+      retrofitAssessor: certificate.rawData?.insurance?.retrofitAssessor || "",
+      retrofitCoordinator:
+        certificate.rawData?.insurance?.retrofitCoordinator || "",
+      fundingPartner: certificate.rawData?.insurance?.fundingPartner || "",
+      schemeProvider: certificate.rawData?.insurance?.schemeProvider || "",
     });
 
     setShowModal(true);
@@ -279,7 +341,7 @@ export default function CertificatesPage() {
     try {
       setDownloadingAll(true);
       const selectedCerts = certificates.filter((cert) =>
-        selectedRows.includes(cert.id)
+        selectedRows.includes(cert.id),
       );
 
       for (const cert of selectedCerts) {
@@ -347,11 +409,15 @@ export default function CertificatesPage() {
       calculateExpiry = false,
     } = options;
 
+    // Force non-editable if field is not allowed
+    const isAllowed = allowedEditFields.includes(field);
+    const isEditable = editable && isAllowed && requestType === "edit";
+
     return (
       <div className='flex items-start py-2'>
         <div className='w-1/3 text-sm font-medium text-gray-700'>{label}</div>
         <div className='w-2/3 flex items-center gap-2'>
-          {requestType === "edit" && editable && !nonEditable ? (
+          {isEditable ? (
             <div className='flex-1'>
               {type === "date" ? (
                 <input
@@ -365,7 +431,7 @@ export default function CertificatesPage() {
                       // Auto-calculate Expiry Date when Inception Date changes
                       if (calculateExpiry && editableFields.productType) {
                         const selectedProduct = products.find(
-                          (p) => p.Measures === editableFields.productType
+                          (p) => p.Measures === editableFields.productType,
                         );
                         if (selectedProduct && newDate) {
                           const inception = new Date(newDate);
@@ -373,15 +439,15 @@ export default function CertificatesPage() {
 
                           if (selectedProduct.Year)
                             expiry.setFullYear(
-                              expiry.getFullYear() + selectedProduct.Year
+                              expiry.getFullYear() + selectedProduct.Year,
                             );
                           if (selectedProduct.Month)
                             expiry.setMonth(
-                              expiry.getMonth() + selectedProduct.Month
+                              expiry.getMonth() + selectedProduct.Month,
                             );
                           if (selectedProduct.Days)
                             expiry.setDate(
-                              expiry.getDate() + selectedProduct.Days
+                              expiry.getDate() + selectedProduct.Days,
                             );
 
                           updated.expiryDateCalculated = expiry
@@ -396,7 +462,6 @@ export default function CertificatesPage() {
                   className='w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
                 />
               ) : field === "productType" ? (
-                // ← Keep your existing product dropdown code exactly as it is
                 <div className='relative product-dropdown'>
                   <button
                     type='button'
@@ -552,7 +617,15 @@ export default function CertificatesPage() {
       const requestData = {
         insuranceId: selectedCertificate.insuranceId || selectedCertificate.id,
         type: requestType,
-        changes: requestType === "edit" ? editableFields : {},
+        changes:
+          requestType === "edit"
+            ? Object.fromEntries(
+                allowedEditFields.map((field) => [
+                  field,
+                  editableFields[field] || "",
+                ]),
+              )
+            : {},
         reason:
           requestReason || `Request for ${requestType} submitted by contractor`,
       };
@@ -572,7 +645,7 @@ export default function CertificatesPage() {
 
       alert(
         result.message ||
-          "Request submitted successfully! Admin will review it."
+          "Request submitted successfully! Admin will review it.",
       );
 
       setShowModal(false);
@@ -592,7 +665,7 @@ export default function CertificatesPage() {
     } catch (error) {
       console.error("Submit request error:", error);
       setModalError(
-        error.message || "Failed to submit request. Please try again."
+        error.message || "Failed to submit request. Please try again.",
       );
     } finally {
       setSubmitting(false);
@@ -603,7 +676,7 @@ export default function CertificatesPage() {
     (cert) =>
       cert.holderName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cert.policyNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cert.productType?.toLowerCase().includes(searchTerm.toLowerCase())
+      cert.productType?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const totalPages = Math.ceil(filteredCertificates.length / itemsPerPage);
@@ -611,8 +684,68 @@ export default function CertificatesPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedCertificates = filteredCertificates.slice(
     startIndex,
-    endIndex
+    endIndex,
   );
+
+  const DropdownMenu = ({ options, selected, onSelect, show, onClose }) =>
+    show && (
+      <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md max-h-96 overflow-y-auto'>
+        {options
+          .filter((opt) => typeof opt === "object")
+          .map((provider, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                onSelect(provider.name);
+                onClose();
+              }}
+              className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex flex-col ${index === 0 ? "rounded-t-lg" : ""} ${selected === provider.name ? "bg-blue-50" : ""}`}>
+              <span className='font-medium text-gray-800'>{provider.name}</span>
+              {provider.address && (
+                <span className='text-xs text-gray-500 mt-1'>
+                  {provider.address}
+                </span>
+              )}
+              <div className='flex gap-4 mt-1 text-xs text-gray-600'>
+                {provider.phone && <span>📞 {provider.phone}</span>}
+                {provider.email && <span>✉️ {provider.email}</span>}
+              </div>
+              {selected === provider.name && (
+                <Check
+                  size={18}
+                  className='absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-blue-600 rounded-full p-0.5'
+                />
+              )}
+            </button>
+          ))}
+
+        {options.filter((opt) => typeof opt === "object").length > 0 && (
+          <div className='border-t border-gray-200 my-1'></div>
+        )}
+
+        {options
+          .filter((opt) => typeof opt === "string")
+          .map((option, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                onSelect(option);
+                onClose();
+              }}
+              className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between ${index === 0 && options.filter((opt) => typeof opt === "object").length === 0 ? "rounded-t-lg" : ""} ${index === options.filter((opt) => typeof opt === "string").length - 1 ? "rounded-b-lg" : ""} ${selected === option ? "bg-blue-50" : ""}`}>
+              <span className={option === "Not Required" ? "font-medium" : ""}>
+                {option}
+              </span>
+              {selected === option && (
+                <Check
+                  size={18}
+                  className='text-white bg-blue-600 rounded-full p-0.5'
+                />
+              )}
+            </button>
+          ))}
+      </div>
+    );
 
   if (loading) {
     return (
@@ -790,19 +923,19 @@ export default function CertificatesPage() {
                               cert.status === "active"
                                 ? "bg-green-100 text-green-800"
                                 : cert.status === "pending_edit"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : cert.status === "pending_cancel"
-                                ? "bg-orange-100 text-orange-800"
-                                : cert.status === "cancelled"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-gray-100 text-gray-800"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : cert.status === "pending_cancel"
+                                    ? "bg-orange-100 text-orange-800"
+                                    : cert.status === "cancelled"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-gray-100 text-gray-800"
                             }`}>
                             {cert.status === "pending_edit"
                               ? "Pending Edit"
                               : cert.status === "pending_cancel"
-                              ? "Pending Cancellation"
-                              : cert.status?.charAt(0).toUpperCase() +
-                                  cert.status?.slice(1) || "Active"}
+                                ? "Pending Cancellation"
+                                : cert.status?.charAt(0).toUpperCase() +
+                                    cert.status?.slice(1) || "Active"}
                           </span>
                         </td>
                         <td className='px-4 py-3'>
@@ -866,19 +999,19 @@ export default function CertificatesPage() {
                                 cert.status === "active"
                                   ? "bg-green-100 text-green-800"
                                   : cert.status === "pending_edit"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : cert.status === "pending_cancel"
-                                  ? "bg-orange-100 text-orange-800"
-                                  : cert.status === "cancelled"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-gray-100 text-gray-800"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : cert.status === "pending_cancel"
+                                      ? "bg-orange-100 text-orange-800"
+                                      : cert.status === "cancelled"
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-gray-100 text-gray-800"
                               }`}>
                               {cert.status === "pending_edit"
                                 ? "Pending Edit"
                                 : cert.status === "pending_cancel"
-                                ? "Pending Cancellation"
-                                : cert.status?.charAt(0).toUpperCase() +
-                                    cert.status?.slice(1) || "Active"}
+                                  ? "Pending Cancellation"
+                                  : cert.status?.charAt(0).toUpperCase() +
+                                      cert.status?.slice(1) || "Active"}
                             </span>
                           </div>
                           <div className='text-right'>
@@ -1019,8 +1152,8 @@ export default function CertificatesPage() {
 
         {/* View/Edit Certificate Modal */}
         {showModal && selectedCertificate && (
-          <div className='fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto'>
-            <div className='bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden'>
+          <div className='fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto '>
+            <div className='bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-scroll '>
               {/* Modal Header */}
               <div className='p-6 border-b border-gray-200'>
                 <div className='flex items-center justify-between mb-6'>
@@ -1120,12 +1253,12 @@ export default function CertificatesPage() {
                         selectedCertificate.status === "active"
                           ? "bg-green-100 text-green-800"
                           : selectedCertificate.status === "pending_edit"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : selectedCertificate.status === "pending_cancel"
-                          ? "bg-orange-100 text-orange-800"
-                          : selectedCertificate.status === "cancelled"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-800"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : selectedCertificate.status === "pending_cancel"
+                              ? "bg-orange-100 text-orange-800"
+                              : selectedCertificate.status === "cancelled"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
                       }`}>
                       {/* Status:{" "}
                       {selectedCertificate.status
@@ -1135,10 +1268,10 @@ export default function CertificatesPage() {
                       {selectedCertificate.status === "pending_edit"
                         ? "PENDING EDIT"
                         : selectedCertificate.status === "pending_cancel"
-                        ? "PENDING CANCELLATION"
-                        : selectedCertificate.status
-                            ?.replace("_", " ")
-                            .toUpperCase() || "ACTIVE"}
+                          ? "PENDING CANCELLATION"
+                          : selectedCertificate.status
+                              ?.replace("_", " ")
+                              .toUpperCase() || "ACTIVE"}
                     </span>
                   </div>
                 )}
@@ -1201,7 +1334,7 @@ export default function CertificatesPage() {
                 </div>
               )}
               {/* Policy Details */}
-              <div className='p-6 overflow-y-auto max-h-[calc(90vh-200px)]'>
+              <div className='p-6 overflow-y-auto max-h-[calc(90vh-200px)] mb-10'>
                 {/* Contractor Details */}
                 <div className='mb-6'>
                   <h2 className='text-lg font-semibold text-gray-800 mb-3'>
@@ -1216,42 +1349,13 @@ export default function CertificatesPage() {
                         {selectedCertificate.contractorName || "Not provided"}
                       </div>
                     </div>
-                    {/* <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="text-sm text-gray-500">
-                          Contractor Address
-                        </div>
-                        {requestType === "edit" && (
-                          <Edit2 className="w-3 h-3 text-gray-400" />
-                        )}
-                      </div>
-                      {requestType === "edit" ? (
-                        <textarea
-                          value={editableFields.contractorAddress || ""}
-                          onChange={(e) =>
-                            setEditableFields((prev) => ({
-                              ...prev,
-                              contractorAddress: e.target.value,
-                            }))
-                          }
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          rows="2"
-                          placeholder="Enter contractor address"
-                        />
-                      ) : (
-                        <div className="text-base">
-                          {selectedCertificate.contractorAddress ||
-                            "Not provided"}
-                        </div>
-                      )}
-                    </div> */}
 
                     {renderField(
                       "Contractor Address",
                       "contractorAddress",
                       selectedCertificate.contractorAddress || "Not provided",
                       false, // editable = false (not used anyway for contractor)
-                      true // nonEditable = true → no input + no edit icon
+                      true, // nonEditable = true → no input + no edit icon
                     )}
                   </div>
                 </div>
@@ -1267,7 +1371,7 @@ export default function CertificatesPage() {
                       "policyHolderName",
                       editableFields.policyHolderName ||
                         selectedCertificate.holderName ||
-                        "Not provided"
+                        "Not provided",
                     )}
 
                     {renderField(
@@ -1275,7 +1379,7 @@ export default function CertificatesPage() {
                       "address",
                       editableFields.address ||
                         selectedCertificate.rawData?.insurance?.address ||
-                        "Not provided"
+                        "Not provided",
                     )}
 
                     {renderField(
@@ -1283,7 +1387,7 @@ export default function CertificatesPage() {
                       "country",
                       editableFields.country ||
                         selectedCertificate.rawData?.insurance?.country ||
-                        "Not provided"
+                        "Not provided",
                     )}
 
                     {renderField(
@@ -1291,7 +1395,7 @@ export default function CertificatesPage() {
                       "postcode",
                       editableFields.postcode ||
                         selectedCertificate.rawData?.insurance?.postcode ||
-                        "Not provided"
+                        "Not provided",
                     )}
 
                     {renderField(
@@ -1299,7 +1403,7 @@ export default function CertificatesPage() {
                       "email",
                       editableFields.email ||
                         selectedCertificate.rawData?.insurance?.email ||
-                        "Not provided"
+                        "Not provided",
                     )}
 
                     {renderField(
@@ -1307,7 +1411,171 @@ export default function CertificatesPage() {
                       "phone",
                       editableFields.phone ||
                         selectedCertificate.rawData?.insurance?.phone ||
-                        "Not provided"
+                        "Not provided",
+                    )}
+
+                    {/* Retrofit Assessor */}
+                    {requestType === "edit" ? (
+                      <div className='relative dropdown-container'>
+                        <label className='block text-sm font-medium mb-2'>
+                          Retrofit Assessor
+                        </label>
+                        <button
+                          type='button'
+                          onClick={() =>
+                            setShowRetrofitAssessor(!showRetrofitAssessor)
+                          }
+                          className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between'>
+                          <span>
+                            {editableFields.retrofitAssessor || "Select"}
+                          </span>
+                          <ChevronRight size={18} />
+                        </button>
+                        <DropdownMenu
+                          options={[
+                            ...getProvidersForRole("retrofit_assessor"),
+                            "Not Required",
+                          ]}
+                          selected={editableFields.retrofitAssessor}
+                          onSelect={(value) =>
+                            setEditableFields((prev) => ({
+                              ...prev,
+                              retrofitAssessor: value,
+                            }))
+                          }
+                          show={showRetrofitAssessor}
+                          onClose={() => setShowRetrofitAssessor(false)}
+                        />
+                      </div>
+                    ) : (
+                      renderStaticField(
+                        "Retrofit Assessor",
+                        selectedCertificate.rawData?.insurance
+                          ?.retrofitAssessor || "Not provided",
+                      )
+                    )}
+
+                    {/* Retrofit Coordinator */}
+                    {requestType === "edit" ? (
+                      <div className='relative dropdown-container'>
+                        <label className='block text-sm font-medium mb-2'>
+                          Retrofit Coordinator
+                        </label>
+                        <button
+                          type='button'
+                          onClick={() =>
+                            setShowRetrofitCoordinator(!showRetrofitCoordinator)
+                          }
+                          className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between'>
+                          <span>
+                            {editableFields.retrofitCoordinator || "Select"}
+                          </span>
+                          <ChevronRight size={18} />
+                        </button>
+                        <DropdownMenu
+                          options={[
+                            ...getProvidersForRole("retrofit_coordinator"),
+                            "Not Required",
+                          ]}
+                          selected={editableFields.retrofitCoordinator}
+                          onSelect={(value) =>
+                            setEditableFields((prev) => ({
+                              ...prev,
+                              retrofitCoordinator: value,
+                            }))
+                          }
+                          show={showRetrofitCoordinator}
+                          onClose={() => setShowRetrofitCoordinator(false)}
+                        />
+                      </div>
+                    ) : (
+                      renderStaticField(
+                        "Retrofit Coordinator",
+                        selectedCertificate.rawData?.insurance
+                          ?.retrofitCoordinator || "Not provided",
+                      )
+                    )}
+
+                    {/* Funding Partner */}
+                    {requestType === "edit" ? (
+                      <div className='relative dropdown-container'>
+                        <label className='block text-sm font-medium mb-2'>
+                          Funding Partner
+                        </label>
+                        <button
+                          type='button'
+                          onClick={() =>
+                            setShowFundingPartner(!showFundingPartner)
+                          }
+                          className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between'>
+                          <span>
+                            {editableFields.fundingPartner || "Select"}
+                          </span>
+                          <ChevronRight size={18} />
+                        </button>
+                        <DropdownMenu
+                          options={[
+                            ...getProvidersForRole("funding_partner"),
+                            "Not Required",
+                          ]}
+                          selected={editableFields.fundingPartner}
+                          onSelect={(value) =>
+                            setEditableFields((prev) => ({
+                              ...prev,
+                              fundingPartner: value,
+                            }))
+                          }
+                          show={showFundingPartner}
+                          onClose={() => setShowFundingPartner(false)}
+                        />
+                      </div>
+                    ) : (
+                      renderStaticField(
+                        "Funding Partner",
+                        selectedCertificate.rawData?.insurance
+                          ?.fundingPartner || "Not provided",
+                      )
+                    )}
+
+                    {/* Scheme Provider */}
+                    {requestType === "edit" ? (
+                      <div className='relative dropdown-container'>
+                        <label className='block text-sm font-medium mb-2'>
+                          Scheme Provider
+                        </label>
+                        <button
+                          type='button'
+                          onClick={() =>
+                            setShowSchemeProvider(!showSchemeProvider)
+                          }
+                          className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between'>
+                          <span>
+                            {editableFields.schemeProvider || "Select"}
+                          </span>
+                          <ChevronRight size={18} />
+                        </button>
+                        <DropdownMenu
+                          options={[
+                            ...getProvidersForRole("scheme_provider"),
+                            "Not Required",
+                          ]}
+                          selected={editableFields.schemeProvider}
+                          onSelect={(value) =>
+                            setEditableFields((prev) => ({
+                              ...prev,
+                              schemeProvider: value,
+                            }))
+                          }
+                          show={showSchemeProvider}
+                          onClose={() => setShowSchemeProvider(false)}
+                        />
+                      </div>
+                    ) : (
+                      renderStaticField(
+                        "Scheme Provider",
+                        selectedCertificate.rawData?.insurance
+                          ?.schemeProvider || "Not provided",
+                      )
                     )}
                   </div>
                 </div>
@@ -1325,32 +1593,24 @@ export default function CertificatesPage() {
                         selectedCertificate.productType ||
                         "Not provided",
                       true, // editable = true (so it shows dropdown if allowed)
-                      true // nonEditable = true → shows as text only, no dropdown/input, no edit icon
+                      true, // nonEditable = true → shows as text only, no dropdown/input, no edit icon
                     )}
                     {renderField(
                       "Contract Value",
                       "contractValue",
-                      editableFields.contractValue
+                      editableFields.contractValue,
                     )}
+
                     {renderStaticField(
                       "Insurance Coverage",
-                      "Insurance Backed Guarantee"
+                      "Insurance Backed Guarantee",
                     )}
-                    {/* {renderStaticField(
-                      "Inception Date",
-                      selectedCertificate.inceptionDate || "Not available"
-                    )}
-                    {renderStaticField(
-                      "Expiry Date",
-                      selectedCertificate.expiryDate || "Not available"
-                    )} */}
-
                     {renderField(
                       "Inception Date",
                       "inceptionDate",
                       selectedCertificate.inceptionDate || "Not available",
                       true, // editable
-                      { type: "date", calculateExpiry: true } // makes it a date input + triggers calculation
+                      { type: "date", calculateExpiry: true },
                     )}
 
                     {renderField(
@@ -1360,21 +1620,21 @@ export default function CertificatesPage() {
                         selectedCertificate.expiryDate ||
                         "Not available",
                       false, // not editable
-                      { nonEditable: true } // shows as text only
+                      { nonEditable: true }, // shows as text only
                     )}
 
                     {renderStaticField(
                       "IBG Creation Date Stamp",
-                      selectedCertificate.createdAt || "Not available"
+                      selectedCertificate.createdAt || "Not available",
                     )}
 
                     {renderStaticField(
                       "Transaction Type",
-                      "Certificate Generated"
+                      "Certificate Generated",
                     )}
                     {renderStaticField(
                       "Price",
-                      selectedCertificate.price || "€ 0.00"
+                      selectedCertificate.price || "£ 0.00",
                     )}
                   </div>
                 </div>

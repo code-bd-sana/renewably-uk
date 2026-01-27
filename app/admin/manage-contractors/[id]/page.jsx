@@ -54,21 +54,21 @@ export default function ContractorCertificatesPage() {
 
         // Fetch contractor details
         const contractorRes = await fetch(
-          `/api/admin/contractor/${contractorId}`
+          `/api/admin/contractor/${contractorId}`,
         );
 
         console.log("Contractor response status:", contractorRes.status);
 
         if (!contractorRes.ok) {
           throw new Error(
-            `Failed to fetch contractor: ${contractorRes.status}`
+            `Failed to fetch contractor: ${contractorRes.status}`,
           );
         }
 
         const contractorText = await contractorRes.text();
         console.log(
           "Contractor response text (first 500 chars):",
-          contractorText.substring(0, 500)
+          contractorText.substring(0, 500),
         );
 
         if (!contractorText) {
@@ -79,7 +79,7 @@ export default function ContractorCertificatesPage() {
 
         if (!contractorData.success) {
           throw new Error(
-            contractorData.error || "Failed to fetch contractor data"
+            contractorData.error || "Failed to fetch contractor data",
           );
         }
 
@@ -87,7 +87,7 @@ export default function ContractorCertificatesPage() {
 
         // Fetch certificates for this contractor
         const certsRes = await fetch(
-          `/api/admin/certificates?contractorId=${contractorId}`
+          `/api/admin/certificates?contractorId=${contractorId}`,
         );
 
         console.log("Certificates response status:", certsRes.status);
@@ -104,7 +104,7 @@ export default function ContractorCertificatesPage() {
 
         if (!certsText) {
           console.warn(
-            "Empty response from certificates API, using empty array"
+            "Empty response from certificates API, using empty array",
           );
           setCertificates([]);
           return;
@@ -179,7 +179,7 @@ export default function ContractorCertificatesPage() {
       email: certificate.email || "",
       phone: certificate.phone || "",
       productType: certificate.productType,
-      contractValue: certificate.contractValue.replace("€ ", ""),
+      contractValue: certificate.contractValue.replace("£ ", ""),
     });
 
     setShowModal(true);
@@ -202,12 +202,12 @@ export default function ContractorCertificatesPage() {
 
       // FETCH COMPLETE CERTIFICATE DATA
       const completeCertRes = await fetch(
-        `/api/admin/certificates/${insuranceId}`
+        `/api/admin/certificates/${insuranceId}`,
       );
 
       if (!completeCertRes.ok) {
         throw new Error(
-          `Failed to fetch complete certificate: ${completeCertRes.status}`
+          `Failed to fetch complete certificate: ${completeCertRes.status}`,
         );
       }
 
@@ -341,7 +341,7 @@ export default function ContractorCertificatesPage() {
       // Try fallback with basic data
       try {
         const basicCertificate = certificates.find(
-          (c) => c.id === certificateId
+          (c) => c.id === certificateId,
         );
         if (basicCertificate) {
           console.log("Trying fallback with basic data...");
@@ -374,7 +374,7 @@ export default function ContractorCertificatesPage() {
     try {
       setDownloadingAll(true);
       const selectedCerts = certificates.filter((cert) =>
-        selectedRows.includes(cert.id)
+        selectedRows.includes(cert.id),
       );
 
       if (selectedCerts.length === 1) {
@@ -383,7 +383,7 @@ export default function ContractorCertificatesPage() {
         // Ask for confirmation
         if (
           confirm(
-            `Download ${selectedCerts.length} certificates? You will need to save each file separately.`
+            `Download ${selectedCerts.length} certificates? You will need to save each file separately.`,
           )
         ) {
           for (let i = 0; i < selectedCerts.length; i++) {
@@ -391,7 +391,7 @@ export default function ContractorCertificatesPage() {
             console.log(
               `Downloading ${i + 1} of ${selectedCerts.length}: ${
                 cert.policyNo
-              }`
+              }`,
             );
             await handleDownload(cert.id);
             // Add delay between downloads
@@ -400,7 +400,7 @@ export default function ContractorCertificatesPage() {
             }
           }
           alert(
-            `Successfully downloaded ${selectedCerts.length} certificates!`
+            `Successfully downloaded ${selectedCerts.length} certificates!`,
           );
         }
       }
@@ -496,7 +496,7 @@ export default function ContractorCertificatesPage() {
     } catch (error) {
       console.error("Submit request error:", error);
       setModalError(
-        error.message || "Failed to submit request. Please try again."
+        error.message || "Failed to submit request. Please try again.",
       );
     } finally {
       setSubmitting(false);
@@ -528,7 +528,7 @@ export default function ContractorCertificatesPage() {
         `Price: ${certificate.price || "N/A"}`,
         `Contractor: ${contractor?.companyName || "N/A"}`,
         `Generated: ${new Date(
-          certificate.createdAt || Date.now()
+          certificate.createdAt || Date.now(),
         ).toLocaleDateString()}`,
       ];
 
@@ -626,7 +626,7 @@ Renewably UK - Powering Renewables
       searchTerm === "" ||
       cert.holderName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cert.policyNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cert.productType?.toLowerCase().includes(searchTerm.toLowerCase())
+      cert.productType?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Apply month filter
@@ -643,7 +643,7 @@ Renewably UK - Powering Renewables
   const endIndex = startIndex + itemsPerPage;
   const paginatedCertificates = monthFilteredCertificates.slice(
     startIndex,
-    endIndex
+    endIndex,
   );
 
   // Calculate summary
@@ -713,7 +713,7 @@ Renewably UK - Powering Renewables
       </div>
     );
   }
-
+  console.log("jnmfsd", paginatedCertificates);
   return (
     <div className='min-h-screen bg-gray-50 p-2 px-4 py-16 lg:p-8'>
       {/* Main Container */}
@@ -889,13 +889,13 @@ Renewably UK - Powering Renewables
                     Policy Holder
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
+                    Policy Holder Address
+                  </th>
+                  <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
                     Product Type
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
                     Contract Value
-                  </th>
-                  <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
-                    Creation Date
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
                     Inception Date
@@ -905,6 +905,9 @@ Renewably UK - Powering Renewables
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
                     Price
+                  </th>
+                  <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
+                    Creation Date
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
                     Action
@@ -956,6 +959,11 @@ Renewably UK - Powering Renewables
                         </div>
                       </td>
                       <td className='px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm'>
+                        <div className='truncate max-w-37.5'>
+                          {cert.address}
+                        </div>
+                      </td>
+                      <td className='px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm'>
                         <div className='truncate max-w-30'>
                           {cert.productType}
                         </div>
@@ -963,11 +971,7 @@ Renewably UK - Powering Renewables
                       <td className='px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm'>
                         {cert.contractValue}
                       </td>
-                      <td className='px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm'>
-                        <div className='whitespace-nowrap'>
-                          {formatTimestamp(cert.createdAt)}
-                        </div>
-                      </td>
+
                       <td className='px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm'>
                         {cert.inceptionDate}
                       </td>
@@ -976,6 +980,11 @@ Renewably UK - Powering Renewables
                       </td>
                       <td className='px-4 lg:px-6 py-3 font-medium text-gray-900 text-xs sm:text-sm'>
                         {cert.price}
+                      </td>
+                      <td className='px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm'>
+                        <div className='whitespace-nowrap'>
+                          {formatTimestamp(cert.createdAt)}
+                        </div>
                       </td>
                       <td className='px-4 lg:px-6 py-3'>
                         <div className='flex items-center gap-2'>
@@ -1081,14 +1090,14 @@ Renewably UK - Powering Renewables
                         <div className='font-medium'>{cert.expiryDate}</div>
                       </div>
                       <div>
+                        <div className='text-gray-500'>Price</div>
+                        <div className='font-medium'>{cert.price}</div>
+                      </div>
+                      <div>
                         <div className='text-gray-500'>Created</div>
                         <div className='font-medium text-xs'>
                           {formatTimestamp(cert.createdAt)}
                         </div>
-                      </div>
-                      <div>
-                        <div className='text-gray-500'>Price</div>
-                        <div className='font-medium'>{cert.price}</div>
                       </div>
                     </div>
                   </div>
@@ -1232,7 +1241,7 @@ Renewably UK - Powering Renewables
                       Submitted:{" "}
                       {new Date(
                         selectedCertificate.rawData?.insurance?.requestData
-                          ?.requestedAt || selectedCertificate.createdAt
+                          ?.requestedAt || selectedCertificate.createdAt,
                       ).toLocaleDateString()}
                     </p>
                   </div>
@@ -1305,7 +1314,7 @@ Renewably UK - Powering Renewables
                     "policyHolderName",
                     editableFields.policyHolderName ||
                       selectedCertificate.holderName ||
-                      "Not provided"
+                      "Not provided",
                   )}
 
                   {renderField(
@@ -1313,7 +1322,7 @@ Renewably UK - Powering Renewables
                     "address",
                     editableFields.address ||
                       selectedCertificate.rawData?.insurance?.address ||
-                      "Not provided"
+                      "Not provided",
                   )}
 
                   {renderField(
@@ -1321,7 +1330,7 @@ Renewably UK - Powering Renewables
                     "country",
                     editableFields.country ||
                       selectedCertificate.rawData?.insurance?.country ||
-                      "Not provided"
+                      "Not provided",
                   )}
 
                   {renderField(
@@ -1329,7 +1338,7 @@ Renewably UK - Powering Renewables
                     "postcode",
                     editableFields.postcode ||
                       selectedCertificate.rawData?.insurance?.postcode ||
-                      "Not provided"
+                      "Not provided",
                   )}
 
                   {renderField(
@@ -1337,7 +1346,7 @@ Renewably UK - Powering Renewables
                     "email",
                     editableFields.email ||
                       selectedCertificate.rawData?.insurance?.email ||
-                      "Not provided"
+                      "Not provided",
                   )}
 
                   {renderField(
@@ -1345,7 +1354,7 @@ Renewably UK - Powering Renewables
                     "phone",
                     editableFields.phone ||
                       selectedCertificate.rawData?.insurance?.phone ||
-                      "Not provided"
+                      "Not provided",
                   )}
                 </div>
               </div>
@@ -1359,32 +1368,32 @@ Renewably UK - Powering Renewables
                   {renderField(
                     "Product Type",
                     "productType",
-                    editableFields.productType
+                    editableFields.productType,
                   )}
                   {renderStaticField(
                     "Insurance Coverage",
-                    "Insurance Backed Guarantee"
+                    "Insurance Backed Guarantee",
                   )}
                   {renderStaticField(
                     "Inception Date",
-                    selectedCertificate.inceptionDate || "Not available"
+                    selectedCertificate.inceptionDate || "Not available",
                   )}
                   {renderStaticField(
                     "Expiry Date",
-                    selectedCertificate.expiryDate || "Not available"
+                    selectedCertificate.expiryDate || "Not available",
                   )}
                   {renderField(
                     "Contract Value",
                     "contractValue",
-                    editableFields.contractValue
+                    editableFields.contractValue,
                   )}
                   {renderStaticField(
                     "Transaction Type",
-                    "Certificate Generated"
+                    "Certificate Generated",
                   )}
                   {renderStaticField(
                     "Price",
-                    selectedCertificate.price || "€ 0.00"
+                    selectedCertificate.price || "£ 0.00",
                   )}
                 </div>
               </div>
