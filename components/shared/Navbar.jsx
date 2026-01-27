@@ -52,6 +52,7 @@ export default function Navbar() {
       setIsLoading(false);
     }
   };
+
   useEffect(() => {
     // Listen for logout event from ActivityTracker
     const handleUserLoggedOut = () => {
@@ -88,11 +89,11 @@ export default function Navbar() {
 
   if (isLoading) {
     return (
-      <header className="relative z-50 mx-5 mt-4">
-        <div className="bg-transparent pt-6">
-          <div className="max-w-450 mx-auto px-4">
-            <div className="flex items-center h-18 px-6 bg-white rounded-[18px] shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
-              <div className="h-10 w-25 bg-gray-200 rounded animate-pulse"></div>
+      <header className='relative z-50 mx-5 mt-4'>
+        <div className='bg-transparent pt-6'>
+          <div className='max-w-450 mx-auto px-4'>
+            <div className='flex items-center h-18 px-6 bg-white rounded-[18px] shadow-[0_10px_30px_rgba(0,0,0,0.08)]'>
+              <div className='h-10 w-25 bg-gray-200 rounded animate-pulse'></div>
             </div>
           </div>
         </div>
@@ -101,12 +102,12 @@ export default function Navbar() {
   }
 
   return (
-    <header className="relative z-50 mx-5 mt-4">
-      <div className="bg-transparent pt-6">
-        <div className="max-w-450 mx-auto px-4">
+    <header className='relative z-50 mx-5 mt-4'>
+      <div className='bg-transparent pt-6'>
+        <div className='max-w-450 mx-auto px-4'>
           {/* MAIN BAR */}
           <div
-            className="
+            className='
               flex items-center
               h-20
               p-3
@@ -115,21 +116,21 @@ export default function Navbar() {
               bg-white
               rounded-[18px]
               shadow-[0_10px_30px_rgba(0,0,0,0.08)]
-            "
-          >
+            '>
             {/* LOGO */}
-            <Link href="/" className="flex items-center py-2">
+            <Link href='/' className='flex items-center py-2'>
               <Image
-                src="/FullLogo_Transparent.png"
-                alt="Renewably UK"
-                width={130}
-                height={130}
+                src='/FullLogo_Transparent.png'
+                alt='Renewably UK'
+                width={180}
+                height={180}
                 priority
+                className='h-26 w-auto object-contain'
               />
             </Link>
 
             {/* DESKTOP NAV */}
-            <nav className="hidden md:flex items-center gap-8 ml-16">
+            <nav className='hidden md:flex items-center gap-8 ml-16'>
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
 
@@ -144,8 +145,7 @@ export default function Navbar() {
                           ? "font-semibold text-[#0F172A]"
                           : "font-medium text-[#6B7280] hover:text-[#0F172A]"
                       }
-                    `}
-                  >
+                    `}>
                     {item.label}
                   </Link>
                 );
@@ -153,7 +153,7 @@ export default function Navbar() {
             </nav>
 
             {/* DESKTOP ACTIONS */}
-            <div className="ml-auto hidden md:flex items-center gap-4">
+            <div className='ml-auto hidden md:flex items-center gap-4'>
               {isLoggedIn ? (
                 <>
                   <Link
@@ -170,8 +170,7 @@ export default function Navbar() {
             ? "bg-[#0F172A] text-white"
             : "bg-gray-100 text-[#0F172A] hover:bg-gray-200"
         }
-      `}
-                  >
+      `}>
                     {userData?.role === "admin"
                       ? "Admin Dashboard"
                       : "Dashboard"}
@@ -179,7 +178,7 @@ export default function Navbar() {
 
                   <button
                     onClick={handleLogout}
-                    className="
+                    className='
         h-10
         px-5
         flex items-center
@@ -190,27 +189,25 @@ export default function Navbar() {
         font-medium
         hover:bg-[#DC2626]
         transition-colors
-      "
-                  >
+      '>
                     Logout
                   </button>
                 </>
               ) : (
                 <>
                   <Link
-                    href="/login"
+                    href='/login'
                     className={`text-[14px] ${
                       pathname === "/login"
                         ? "font-semibold text-[#0F172A]"
                         : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
-                    }`}
-                  >
+                    }`}>
                     Login
                   </Link>
 
                   <Link
-                    href="/signup"
-                    className="
+                    href='/signup'
+                    className='
                       h-10
                       px-5
                       flex items-center
@@ -221,8 +218,7 @@ export default function Navbar() {
                       font-medium
                       hover:bg-[#0D3E95]
                       transition-colors
-                    "
-                  >
+                    '>
                     Sign up
                   </Link>
                 </>
@@ -232,9 +228,8 @@ export default function Navbar() {
             {/* MOBILE TOGGLE */}
             <button
               onClick={() => setOpen(!open)}
-              className="ml-auto md:hidden text-[#0F172A]"
-              aria-label="Toggle menu"
-            >
+              className='ml-auto md:hidden text-[#0F172A]'
+              aria-label='Toggle menu'>
               {open ? <X size={26} /> : <Menu size={26} />}
             </button>
           </div>
@@ -242,7 +237,7 @@ export default function Navbar() {
           {/* MOBILE MENU */}
           {open && (
             <div
-              className="
+              className='
                 mt-3
                 bg-white
                 rounded-[18px]
@@ -250,9 +245,8 @@ export default function Navbar() {
                 px-6
                 py-6
                 md:hidden
-              "
-            >
-              <nav className="flex flex-col gap-5">
+              '>
+              <nav className='flex flex-col gap-5'>
                 {navItems.map((item) => {
                   const isActive = pathname === item.href;
 
@@ -265,18 +259,17 @@ export default function Navbar() {
                         isActive
                           ? "font-semibold text-[#0F172A]"
                           : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
-                      }`}
-                    >
+                      }`}>
                       {item.label}
                     </Link>
                   );
                 })}
 
-                <div className="pt-4 border-t flex flex-col gap-3">
+                <div className='pt-4 border-t flex flex-col gap-3'>
                   {isLoggedIn ? (
                     <>
                       <Link
-                        href="/dashboard"
+                        href='/dashboard'
                         onClick={() => setOpen(false)}
                         className={`
                           h-11
@@ -289,8 +282,7 @@ export default function Navbar() {
                               ? "bg-[#0F172A] text-white"
                               : "bg-gray-100 text-[#0F172A]"
                           }
-                        `}
-                      >
+                        `}>
                         Dashboard
                       </Link>
 
@@ -299,7 +291,7 @@ export default function Navbar() {
                           setOpen(false);
                           handleLogout();
                         }}
-                        className="
+                        className='
                           h-11
                           flex items-center justify-center
                           rounded-[10px]
@@ -309,29 +301,27 @@ export default function Navbar() {
                           font-medium
                           hover:bg-[#DC2626]
                           transition-colors
-                        "
-                      >
+                        '>
                         Logout
                       </button>
                     </>
                   ) : (
                     <>
                       <Link
-                        href="/login"
+                        href='/login'
                         onClick={() => setOpen(false)}
                         className={`text-[14px] text-center ${
                           pathname === "/login"
                             ? "font-semibold text-[#0F172A]"
                             : "font-medium text-[#0F172A] hover:text-[#0F47A8]"
-                        }`}
-                      >
+                        }`}>
                         Login
                       </Link>
 
                       <Link
-                        href="/signup"
+                        href='/signup'
                         onClick={() => setOpen(false)}
-                        className="
+                        className='
                           h-11
                           flex items-center justify-center
                           rounded-[10px]
@@ -341,8 +331,7 @@ export default function Navbar() {
                           font-medium
                           hover:bg-[#0D3E95]
                           transition-colors
-                        "
-                      >
+                        '>
                         Sign up
                       </Link>
                     </>
