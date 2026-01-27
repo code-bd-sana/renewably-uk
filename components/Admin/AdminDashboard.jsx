@@ -52,7 +52,7 @@ export default function AdminDashboard() {
 
   const downloadContractorCertificates = async (
     contractorId,
-    contractorName
+    contractorName,
   ) => {
     try {
       if (!confirm(`Download all certificates for ${contractorName}?`)) {
@@ -64,7 +64,7 @@ export default function AdminDashboard() {
 
       // 1. Get contractor details
       const contractorRes = await fetch(
-        `/api/admin/contractor/${contractorId}`
+        `/api/admin/contractor/${contractorId}`,
       );
       if (!contractorRes.ok) throw new Error("Failed to fetch contractor");
 
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
 
       // Try to get from a complete endpoint
       const certsRes = await fetch(
-        `/api/admin/certificates?contractorId=${contractorId}&fullData=true`
+        `/api/admin/certificates?contractorId=${contractorId}&fullData=true`,
       );
 
       if (certsRes.ok) {
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
       if (certificates.length === 0) {
         // Try to get insurance policies directly
         const insuranceRes = await fetch(
-          `/api/admin/insurances?userId=${contractorId}`
+          `/api/admin/insurances?userId=${contractorId}`,
         );
         if (insuranceRes.ok) {
           const insuranceData = await insuranceRes.json();
@@ -131,10 +131,10 @@ export default function AdminDashboard() {
                   product.contractValue?.toFixed(2) || "0.00"
                 }`,
                 inceptionDate: new Date(
-                  product.inceptionDate
+                  product.inceptionDate,
                 ).toLocaleDateString("en-GB"),
                 expiryDate: new Date(product.expiryDate).toLocaleDateString(
-                  "en-GB"
+                  "en-GB",
                 ),
                 price: `£ ${product.price?.toFixed(2) || "0.00"}`,
 
@@ -200,7 +200,7 @@ export default function AdminDashboard() {
             const singleCertRes = await fetch(
               `/api/admin/certificates/${
                 certificate._id || certificate.insuranceId || certificate.id
-              }`
+              }`,
             );
             if (singleCertRes.ok) {
               const singleCertData = await singleCertRes.json();
@@ -305,7 +305,7 @@ export default function AdminDashboard() {
 
       toast.dismiss();
       toast.success(
-        `Downloaded ${certificates.length} certificates for ${contractorName}`
+        `Downloaded ${certificates.length} certificates for ${contractorName}`,
       );
     } catch (error) {
       console.error("Download error:", error);
@@ -403,7 +403,7 @@ export default function AdminDashboard() {
                 if (data.success) {
                   // Immediate update
                   setPendingUsers((prev) =>
-                    prev.filter((user) => user.id !== userId)
+                    prev.filter((user) => user.id !== userId),
                   );
 
                   // Update stats immediately
@@ -459,7 +459,7 @@ export default function AdminDashboard() {
                 if (data.success) {
                   // Immediate update
                   setPendingUsers((prev) =>
-                    prev.filter((user) => user.id !== userId)
+                    prev.filter((user) => user.id !== userId),
                   );
 
                   toast.success(`Rejected ${userName}!`, { id: loadingToast });
@@ -499,7 +499,7 @@ export default function AdminDashboard() {
       if (data.success) {
         // Remove from list immediately
         setPendingRequests((prev) =>
-          prev.filter((req) => req.id !== requestId)
+          prev.filter((req) => req.id !== requestId),
         );
 
         // Update stats immediately
@@ -538,7 +538,7 @@ export default function AdminDashboard() {
 
       if (data.success) {
         setPendingRequests((prev) =>
-          prev.filter((req) => req.id !== requestId)
+          prev.filter((req) => req.id !== requestId),
         );
         setStats((prev) => ({
           ...prev,
@@ -566,7 +566,7 @@ export default function AdminDashboard() {
 
     // Find the certificate to get details for confirmation
     const certificateToDelete = pendingRequests.find(
-      (r) => r.id === id || r._id === id
+      (r) => r.id === id || r._id === id,
     );
 
     const certificateName = certificateToDelete
@@ -607,10 +607,10 @@ export default function AdminDashboard() {
             console.log(
               `Checking certificate ${r.id} for deletion: ${
                 match ? "MATCH - removing" : "keeping"
-              }`
+              }`,
             );
             return !match;
-          })
+          }),
         );
 
         // Also remove from selectedRequest if it's the same
@@ -625,7 +625,7 @@ export default function AdminDashboard() {
         }
 
         toast.success(
-          `Certificate ${data.deletedPolicyNumber || id} permanently deleted`
+          `Certificate ${data.deletedPolicyNumber || id} permanently deleted`,
         );
 
         // Refresh the data
@@ -683,12 +683,12 @@ export default function AdminDashboard() {
         inceptionDate:
           data.certificate.inceptionDate ||
           new Date(
-            data.certificate.products?.[0]?.inceptionDate
+            data.certificate.products?.[0]?.inceptionDate,
           ).toLocaleDateString("en-GB"),
         expiryDate:
           data.certificate.expiryDate ||
           new Date(
-            data.certificate.products?.[0]?.expiryDate
+            data.certificate.products?.[0]?.expiryDate,
           ).toLocaleDateString("en-GB"),
         price:
           data.certificate.price ||
@@ -710,7 +710,7 @@ export default function AdminDashboard() {
     try {
       // First try to find the request in the existing array
       const existingRequest = pendingRequests.find(
-        (req) => req.id === requestId
+        (req) => req.id === requestId,
       );
 
       // Also check in pendingUsers for user approval requests
@@ -753,7 +753,7 @@ export default function AdminDashboard() {
       }
       // If not found locally, try to fetch from API
       const response = await fetch(
-        `/api/admin/contractor/${requestId}/details`
+        `/api/admin/contractor/${requestId}/details`,
       );
 
       // Check if response is JSON
@@ -921,9 +921,24 @@ export default function AdminDashboard() {
 
       {/* Desktop Header */}
       <div className='hidden md:block bg-[#0F47A8] text-white p-6 md:p-8 rounded-lg mb-4 md:mb-6 mx-4 md:mx-0'>
-        <h1 className='text-2xl md:text-3xl font-semibold flex items-center gap-2'>
-          Welcome Back, Admin 👋
-        </h1>
+        <div className='flex items-center gap-x-2'>
+          {/* LOGO */}
+          <div>
+            <Image
+              src='/foot-logo.png'
+              alt='Renewably UK'
+              width={180}
+              height={180}
+              priority
+              className='h-12 w-auto object-contain'
+            />
+          </div>
+          <div>
+            <h1 className='text-2xl md:text-3xl font-semibold flex items-center gap-2'>
+              Welcome Back, Admin 👋
+            </h1>
+          </div>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -1202,7 +1217,7 @@ export default function AdminDashboard() {
                     <div className='flex justify-between items-center'>
                       <span className='text-xs text-gray-500'>
                         {new Date(request.requestedAt).toLocaleDateString(
-                          "en-GB"
+                          "en-GB",
                         )}
                       </span>
                       <div className='flex gap-1'>
@@ -1325,7 +1340,7 @@ export default function AdminDashboard() {
                               year: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
-                            }
+                            },
                           )}
                       </td>
 
@@ -1478,7 +1493,7 @@ export default function AdminDashboard() {
                       onClick={() =>
                         downloadContractorCertificates(
                           contractor.userId,
-                          contractor.name
+                          contractor.name,
                         )
                       }
                       className='p-1.5 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded'
@@ -1538,7 +1553,7 @@ export default function AdminDashboard() {
                           onClick={() =>
                             downloadContractorCertificates(
                               contractor.userId,
-                              contractor.name
+                              contractor.name,
                             )
                           }
                           className='p-1.5 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded'
@@ -1582,7 +1597,7 @@ export default function AdminDashboard() {
                       if (selectedRequest.type === "user_request") {
                         handleApproveUser(
                           selectedRequest.id,
-                          selectedRequest.name
+                          selectedRequest.name,
                         );
                       } else {
                         handleApproveRequest(selectedRequest.id);
@@ -1593,7 +1608,7 @@ export default function AdminDashboard() {
                       if (selectedRequest.type === "user_request") {
                         handleRejectUser(
                           selectedRequest.id,
-                          selectedRequest.name
+                          selectedRequest.name,
                         );
                       } else {
                         handleRejectRequest(selectedRequest.id);
@@ -1628,21 +1643,21 @@ export default function AdminDashboard() {
                     selectedRequest.type === "user_request"
                       ? "bg-purple-100 text-purple-800"
                       : selectedRequest.requestType === "edit"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-red-100 text-red-800"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-red-100 text-red-800"
                   }`}>
                   {selectedRequest.type === "user_request"
                     ? "New Contractor"
                     : selectedRequest.requestType === "edit"
-                    ? "Edit Request"
-                    : "Cancel Request"}
+                      ? "Edit Request"
+                      : "Cancel Request"}
                 </span>
                 <span className='px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs'>
                   Pending Review
                 </span>
                 <span className='px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs'>
                   {new Date(
-                    selectedRequest.requestedAt || selectedRequest.createdAt
+                    selectedRequest.requestedAt || selectedRequest.createdAt,
                   ).toLocaleDateString()}
                 </span>
               </div>
@@ -1685,7 +1700,7 @@ export default function AdminDashboard() {
                         </p>
                         <p className='font-medium'>
                           {new Date(
-                            selectedRequest.createdAt
+                            selectedRequest.createdAt,
                           ).toLocaleDateString("en-GB")}
                         </p>
                       </div>
@@ -1877,7 +1892,7 @@ export default function AdminDashboard() {
                             <p className='text-gray-900'>
                               {selectedRequest.formattedRequestedAt ||
                                 new Date(
-                                  selectedRequest.requestedAt
+                                  selectedRequest.requestedAt,
                                 ).toLocaleString("en-GB", {
                                   day: "2-digit",
                                   month: "2-digit",
@@ -1992,7 +2007,7 @@ export default function AdminDashboard() {
                                   </div>
                                 </div>
                               );
-                            }
+                            },
                           )}
 
                           {/* Static fields that don't change often */}
