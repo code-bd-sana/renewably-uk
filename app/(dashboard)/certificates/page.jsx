@@ -57,7 +57,7 @@ export default function CertificatesPage() {
     "postcode",
     "email", // Policy Holder Email
     "phone", // Policy Holder Phone
-    "productType",
+    // "productType",
     "contractValue",
     "inceptionDate",
     "retrofitAssessor",
@@ -835,7 +835,7 @@ export default function CertificatesPage() {
                         />
                       </th>
                       <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
-                        Policy No
+                        Policy Number
                       </th>
                       <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Policy Holder Name
@@ -987,7 +987,7 @@ export default function CertificatesPage() {
                         <div className='flex justify-between items-start mb-2'>
                           <div>
                             <div className='text-xs text-gray-500 mb-1'>
-                              Policy No
+                              Policy Number
                             </div>
                             <div className='text-sm font-medium text-gray-700'>
                               {cert.policyNo}

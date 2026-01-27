@@ -396,7 +396,9 @@ function DashboardPage() {
                 <div key={index} className='p-4 border-b border-gray-200'>
                   <div className='space-y-2'>
                     <div className='flex justify-between'>
-                      <span className='text-xs text-gray-500'>Policy No:</span>
+                      <span className='text-xs text-gray-500'>
+                        Policy Number:
+                      </span>
                       <span className='text-sm font-medium'>
                         {cert.policyNo}
                       </span>
@@ -447,7 +449,7 @@ function DashboardPage() {
                 <thead className='bg-[#FAFAF9] border-b border-gray-200'>
                   <tr>
                     <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
-                      Policy No
+                      Policy Number
                     </th>
                     <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                       Policy Holder Name

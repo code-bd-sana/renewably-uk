@@ -518,7 +518,7 @@ export default function ContractorCertificatesPage() {
       let yPosition = 50;
 
       const details = [
-        `Policy No: ${certificate.policyNo || "N/A"}`,
+        `Policy Number: ${certificate.policyNo || "N/A"}`,
         `Policy Holder: ${certificate.holderName || "N/A"}`,
         `Product Type: ${certificate.productType || "N/A"}`,
         `Contract Value: ${certificate.contractValue || "N/A"}`,
@@ -842,7 +842,7 @@ Renewably UK - Powering Renewables
             <div className='relative'>
               <input
                 type='text'
-                placeholder='Search by policy no...'
+                placeholder='Search by policy number...'
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -883,7 +883,7 @@ Renewably UK - Powering Renewables
                     />
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
-                    Policy No
+                    Policy Number
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
                     Policy Holder
@@ -1223,8 +1223,8 @@ Renewably UK - Powering Renewables
                       <div className='w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded-full'></div>
                       <span className='font-medium text-yellow-800 text-xs sm:text-sm'>
                         {selectedCertificate.status === "pending_edit"
-                          ? "Edit Request Pending"
-                          : "Cancellation Request Pending"}
+                          ? "Pending"
+                          : "Pending"}
                       </span>
                     </div>
                     {selectedCertificate.rawData?.insurance?.requestData

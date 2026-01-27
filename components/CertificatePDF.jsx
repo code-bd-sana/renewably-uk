@@ -90,6 +90,11 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     marginTop: 3,
   },
+  policyMediumText: {
+    fontSize: 7,
+    color: "#6b7280",
+    marginTop: 3,
+  },
   // Two column section
   twoColumns: {
     flexDirection: "row",
@@ -301,18 +306,63 @@ const CertificatePDF = ({ certificate, contractor }) => {
     }
   };
 
+  const calculatePeriodOfCover = (inceptionDate, expiryDate) => {
+    if (!inceptionDate || !expiryDate) return "N/A";
+
+    try {
+      // Helper to parse DD/MM/YYYY format
+      const parseUKDate = (dateStr) => {
+        if (!dateStr) return null;
+        // Try DD/MM/YYYY format first
+        const parts = dateStr.split("/");
+        if (parts.length === 3) {
+          return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        }
+        // Try YYYY-MM-DD format
+        return new Date(dateStr);
+      };
+
+      const inception = parseUKDate(inceptionDate);
+      const expiry = parseUKDate(expiryDate);
+
+      if (
+        !inception ||
+        !expiry ||
+        isNaN(inception.getTime()) ||
+        isNaN(expiry.getTime())
+      ) {
+        return "N/A";
+      }
+
+      const diffMs = expiry.getTime() - inception.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffDays <= 0) return "N/A";
+
+      return `${diffDays} days`;
+    } catch (error) {
+      console.error("Error calculating period:", error);
+      return "N/A";
+    }
+  };
+
+  const periodOfCover = calculatePeriodOfCover(
+    certificate.inceptionDate,
+    certificate.expiryDate,
+  );
+
   return (
     <Document>
       <Page size='A4' style={styles.page}>
         {/* Header */}
-        <View style={styles.headerContainer}>
+        {/* <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>Certificate Template</Text>
           <Image
             src={BLUEDROP_BASE64}
             style={styles.headerLogo}
             alt='Bluedrop Logo'
           />
-        </View>
+        </View> */}
 
         {/* Main Title */}
         <View style={styles.mainTitleContainer}>
@@ -349,7 +399,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
               <Text style={styles.cardTitle}>Agent/Broker</Text>
               <Image
                 src={BLUEDROP_BASE64}
-                style={{ width: 65, height: 12, marginBottom: 3 }}
+                style={{ width: 55, height: 14, marginBottom: 3 }}
                 alt='Bluedrop Logo'
               />
               <View style={styles.addressContainer}>
@@ -431,6 +481,10 @@ const CertificatePDF = ({ certificate, contractor }) => {
               <Text style={styles.detailLabel}>Type of Installation</Text>
               <Text style={styles.detailValue}>
                 {certificate.productType || "Gas-Fired Condensing Boiler"}
+              </Text>
+
+              <Text style={styles.policyMediumText}>
+                Period of Cover: {periodOfCover}
               </Text>
             </View>
             <View style={styles.detailColumn}>

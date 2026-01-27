@@ -1046,8 +1046,8 @@ export default function AdminDashboard() {
             <Image
               src='/foot-logo.png'
               alt='Renewably UK'
-              width={110}
-              height={110}
+              width={90}
+              height={90}
               priority
               className=' object-contain'
             />

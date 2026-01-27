@@ -170,7 +170,7 @@ export default function MonthCertificatesPage() {
     try {
       // Define CSV headers
       const headers = [
-        "Policy No",
+        "Policy Number",
         "Policy Holder",
         "Policy Holder Address",
         "Product Type",
@@ -529,7 +529,7 @@ Renewably UK - Powering Renewables
                     />
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
-                    Policy No
+                    Policy Number
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
                     Policy Holder
