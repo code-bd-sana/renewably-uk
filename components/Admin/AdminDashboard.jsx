@@ -706,41 +706,106 @@ export default function AdminDashboard() {
     }
   };
 
+  // const handleViewRequest = async (requestId) => {
+  //   try {
+  //     // First try to find the request in the existing array
+  //     const existingRequest = pendingRequests.find(
+  //       (req) => req.id === requestId,
+  //     );
+
+  //     // Also check in pendingUsers for user approval requests
+  //     const existingUser = pendingUsers.find((user) => user.id === requestId);
+
+  //     console.log("existing request", existingRequest);
+  //     // If found, use it directly
+  //     if (existingRequest) {
+  //       setSelectedRequest(existingRequest);
+
+  //       setAdminNotes("");
+  //       setShowRequestModal(true);
+  //       return;
+  //     }
+  //     // If it's a policy request
+  //     if (existingRequest) {
+  //       setSelectedRequest({
+  //         ...existingRequest,
+  //         type: "policy_request", // Add type identifier
+  //       });
+  //       setAdminNotes("");
+  //       setShowRequestModal(true);
+  //       return;
+  //     }
+
+  //     // If it's a user request
+  //     if (existingUser) {
+  //       setSelectedRequest({
+  //         ...existingUser,
+  //         type: "user_request", // Add type identifier
+  //         requestType: "user_approval",
+  //         policyNumber: `USER-${existingUser.name}`,
+  //         policyHolderName: existingUser.name,
+  //         reason: "New contractor registration",
+  //         requestedAt: existingUser.createdAt,
+  //       });
+  //       setAdminNotes("");
+  //       setShowRequestModal(true);
+  //       return;
+  //     }
+  //     // If not found locally, try to fetch from API
+  //     const response = await fetch(
+  //       `/api/admin/contractor/${requestId}/details`,
+  //     );
+
+  //     // Check if response is JSON
+  //     const contentType = response.headers.get("content-type");
+  //     if (!contentType || !contentType.includes("application/json")) {
+  //       throw new Error("Server returned non-JSON response");
+  //     }
+
+  //     const data = await response.json();
+
+  //     if (data.success) {
+  //       setSelectedRequest(data.request);
+  //     } else {
+  //       // Create a fallback request object
+  //       setSelectedRequest({
+  //         id: requestId,
+  //         requestType: "unknown",
+  //         policyNumber: "N/A",
+  //         policyHolderName: "Unknown",
+  //         reason: "Details not available",
+  //         requestedAt: new Date().toISOString(),
+  //       });
+  //     }
+
+  //     setAdminNotes("");
+  //     setShowRequestModal(true);
+  //   } catch (error) {
+  //     console.error("Error fetching request details:", error);
+
+  //     // Create a basic request object
+  //     setSelectedRequest({
+  //       id: requestId,
+  //       requestType: "error",
+  //       policyNumber: "ERROR",
+  //       policyHolderName: "Error Loading",
+  //       reason: "Failed to load request details: " + error.message,
+  //       requestedAt: new Date().toISOString(),
+  //     });
+
+  //     setAdminNotes("");
+  //     setShowRequestModal(true);
+  //   }
+  // };
+
   const handleViewRequest = async (requestId) => {
     try {
-      // First try to find the request in the existing array
-      const existingRequest = pendingRequests.find(
-        (req) => req.id === requestId,
-      );
-
-      // Also check in pendingUsers for user approval requests
+      // Quick user request handling (no need for full fetch)
       const existingUser = pendingUsers.find((user) => user.id === requestId);
-
-      console.log("existing request", existingRequest);
-      // If found, use it directly
-      if (existingRequest) {
-        setSelectedRequest(existingRequest);
-
-        setAdminNotes("");
-        setShowRequestModal(true);
-        return;
-      }
-      // If it's a policy request
-      if (existingRequest) {
-        setSelectedRequest({
-          ...existingRequest,
-          type: "policy_request", // Add type identifier
-        });
-        setAdminNotes("");
-        setShowRequestModal(true);
-        return;
-      }
-
-      // If it's a user request
       if (existingUser) {
         setSelectedRequest({
           ...existingUser,
-          type: "user_request", // Add type identifier
+          type: "user_request",
           requestType: "user_approval",
           policyNumber: `USER-${existingUser.name}`,
           policyHolderName: existingUser.name,
@@ -751,23 +816,17 @@ export default function AdminDashboard() {
         setShowRequestModal(true);
         return;
       }
-      // If not found locally, try to fetch from API
-      const response = await fetch(
-        `/api/admin/contractor/${requestId}/details`,
-      );
 
-      // Check if response is JSON
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned non-JSON response");
-      }
+      // For all policy requests — ALWAYS use the FULL certificate endpoint
+      console.log("Fetching FULL certificate data for:", requestId);
+      const response = await fetch(`/api/admin/certificates/${requestId}`);
 
-      const data = await response.json();
-
-      if (data.success) {
-        setSelectedRequest(data.request);
-      } else {
-        // Create a fallback request object
+      if (!response.ok) {
+        console.error(
+          "Certificate fetch failed:",
+          response.status,
+          await response.text(),
+        );
         setSelectedRequest({
           id: requestId,
           requestType: "unknown",
@@ -776,28 +835,89 @@ export default function AdminDashboard() {
           reason: "Details not available",
           requestedAt: new Date().toISOString(),
         });
+      } else {
+        const data = await response.json();
+        if (data.success && data.certificate) {
+          console.log("FULL CERTIFICATE DATA LOADED:", data.certificate);
+
+          setSelectedRequest({
+            ...data.certificate,
+            type: "policy_request",
+            requestType: data.certificate.status?.includes("edit")
+              ? "edit"
+              : data.certificate.status?.includes("cancel")
+                ? "cancel"
+                : "unknown",
+            changes: data.certificate.requestData?.changes || {},
+            reason: data.certificate.requestData?.reason || "No reason",
+            requestedAt:
+              data.certificate.requestData?.requestedAt ||
+              data.certificate.createdAt,
+            contractor: data.contractor || {
+              name: "Unknown",
+              companyName: "N/A",
+              email: "N/A",
+            },
+            retrofitAssessor:
+              data.certificate.retrofitAssessor || "Not Assigned",
+            retrofitCoordinator:
+              data.certificate.retrofitCoordinator || "Not Assigned",
+            fundingPartner: data.certificate.fundingPartner || "Not Assigned",
+            schemeProvider: data.certificate.schemeProvider || "Not Assigned",
+            policyHolderName:
+              data.certificate.policyHolderName ||
+              data.certificate.holderName ||
+              "N/A",
+            address: data.certificate.address || "N/A",
+            postcode: data.certificate.postcode || "N/A",
+            email: data.certificate.email || "N/A",
+            phone: data.certificate.phone || "N/A",
+            // NEW – pull from products[0]
+            productType:
+              data.certificate.productType ||
+              data.certificate.products?.[0]?.productType ||
+              "N/A",
+            contractValue:
+              data.certificate.contractValue ||
+              data.certificate.products?.[0]?.contractValue ||
+              "N/A",
+            inceptionDate:
+              data.certificate.inceptionDate ||
+              data.certificate.products?.[0]?.inceptionDate ||
+              "N/A",
+            expiryDate:
+              data.certificate.expiryDate ||
+              data.certificate.products?.[0]?.expiryDate ||
+              "N/A",
+          });
+        } else {
+          setSelectedRequest({
+            id: requestId,
+            requestType: "unknown",
+            policyNumber: "N/A",
+            policyHolderName: "Unknown",
+            reason: "Details not available",
+            requestedAt: new Date().toISOString(),
+          });
+        }
       }
 
       setAdminNotes("");
       setShowRequestModal(true);
     } catch (error) {
-      console.error("Error fetching request details:", error);
-
-      // Create a basic request object
+      console.error("View request error:", error);
       setSelectedRequest({
         id: requestId,
         requestType: "error",
         policyNumber: "ERROR",
         policyHolderName: "Error Loading",
-        reason: "Failed to load request details: " + error.message,
+        reason: "Failed to load details",
         requestedAt: new Date().toISOString(),
       });
-
       setAdminNotes("");
       setShowRequestModal(true);
     }
   };
-
   const handleRefreshRequests = () => {
     fetchPendingRequests();
     checkAdminAndLoadData();
@@ -885,7 +1005,6 @@ export default function AdminDashboard() {
       </div>
     );
   }
-
   return (
     <div className='min-h-screen bg-gray-50 mt-12 md:mt-0 p-2 md:p-6'>
       <Toaster
@@ -921,16 +1040,16 @@ export default function AdminDashboard() {
 
       {/* Desktop Header */}
       <div className='hidden md:block bg-[#0F47A8] text-white p-6 md:p-8 rounded-lg mb-4 md:mb-6 mx-4 md:mx-0'>
-        <div className='flex items-center gap-x-2'>
+        <div className='flex items-center gap-x-4'>
           {/* LOGO */}
           <div>
             <Image
               src='/foot-logo.png'
               alt='Renewably UK'
-              width={180}
-              height={180}
+              width={110}
+              height={110}
               priority
-              className='h-12 w-auto object-contain'
+              className=' object-contain'
             />
           </div>
           <div>
@@ -1147,10 +1266,10 @@ export default function AdminDashboard() {
             <div className='flex justify-center'>
               <Image
                 src='/bluedrop.png'
-                height='190'
-                width='190'
+                height='200'
+                width='200'
                 alt='Renewably UK'
-                className='h-auto w-auto'
+                className=''
                 onError={(e) => {
                   e.target.style.display = "none";
                   e.target.nextSibling.style.display = "flex";
@@ -1576,6 +1695,13 @@ export default function AdminDashboard() {
           <div className='bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh]  overflow-hidden my-auto'>
             {/* Header */}
             <div className='p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white z-10'>
+              <Image
+                src='/bluedrop.png'
+                height={200}
+                width={200}
+                alt='Renewably UK'
+                className='h-auto w-auto my-2'
+              />
               <div className='flex items-center justify-between mb-3'>
                 <div className='flex-1 min-w-0'>
                   <h1 className='text-lg md:text-2xl font-bold text-gray-900 truncate'>
@@ -1852,7 +1978,7 @@ export default function AdminDashboard() {
                             <p className='text-gray-900'>
                               {selectedRequest.contractValue
                                 ?.toString()
-                                .includes("€")
+                                .includes("£")
                                 ? selectedRequest.contractValue
                                 : `${selectedRequest.contractValue}`}
                             </p>
@@ -1882,6 +2008,44 @@ export default function AdminDashboard() {
                             </p>
                             <p className='text-gray-900'>
                               {selectedRequest.expiryDate}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className='text-sm text-gray-600 mb-1'>
+                              Retrofit Assessor
+                            </p>
+                            <p className='text-gray-900'>
+                              {selectedRequest.retrofitAssessor ||
+                                "Not Assigned"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className='text-sm text-gray-600 mb-1'>
+                              Retrofit Coordinator
+                            </p>
+                            <p className='text-gray-900'>
+                              {selectedRequest.retrofitCoordinator ||
+                                "Not Assigned"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className='text-sm text-gray-600 mb-1'>
+                              Funding Partner
+                            </p>
+                            <p className='text-gray-900'>
+                              {selectedRequest.fundingPartner || "Not Assigned"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className='text-sm text-gray-600 mb-1'>
+                              Scheme Provider
+                            </p>
+                            <p className='text-gray-900'>
+                              {selectedRequest.schemeProvider || "Not Assigned"}
                             </p>
                           </div>
 
@@ -1969,6 +2133,27 @@ export default function AdminDashboard() {
                               changeKey: "expiryDateCalculated",
                               originalKey: "expiryDate",
                               label: "Expiry Date",
+                            },
+
+                            {
+                              changeKey: "retrofitAssessor",
+                              originalKey: "retrofitAssessor",
+                              label: "Retrofit Assessor",
+                            },
+                            {
+                              changeKey: "retrofitCoordinator",
+                              originalKey: "retrofitCoordinator",
+                              label: "Retrofit Coordinator",
+                            },
+                            {
+                              changeKey: "fundingPartner",
+                              originalKey: "fundingPartner",
+                              label: "Funding Partner",
+                            },
+                            {
+                              changeKey: "schemeProvider",
+                              originalKey: "schemeProvider",
+                              label: "Scheme Provider",
                             },
                           ].map(
                             ({

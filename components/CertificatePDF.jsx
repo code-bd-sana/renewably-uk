@@ -526,7 +526,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
 
           <View style={{ alignItems: "center", marginTop: 8 }}>
             <Text style={styles.verifiedBadge}>
-              ✓ Verified & Authenticated Certificate
+              Verified & Authenticated Certificate
             </Text>
           </View>
         </View>
