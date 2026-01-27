@@ -14,12 +14,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import toast from "react-hot-toast";
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
 
   const menuItems = [
@@ -37,78 +37,80 @@ export default function AdminLayout({ children }) {
     },
   ];
 
-  // const handleLogout = async () => {
-  //   if (!confirm("Are you sure you want to logout?")) return;
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
 
-  //   try {
-  //     const res = await fetch("/api/auth/logout", { method: "POST" });
-  //     const data = await res.json();
+  const handleLogoutConfirm = async () => {
+    setIsLoggingOut(true);
 
-  //     if (data.success) {
-  //       window.location.href = "/";
-  //     }
-  //   } catch (error) {
-  //     console.error("Logout error:", error);
-  //     window.location.href = "/";
-  //   }
-  // };
+    try {
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+      const data = await res.json();
 
-  const handleLogout = async () => {
-  // Replace confirm() with toast
-  toast.custom((t) => (
-    <div className="bg-white p-10 rounded-lg shadow-lg border max-w-sm">
-      <p className="font-medium mb-3">Are you sure you want to logout?</p>
-      <div className="flex gap-2">
-        <button
-          onClick={() => {
-            toast.dismiss(t.id);
-            performLogout();
-          }}
-          className="px-4 py-2 bg-[#0F47A8] text-white rounded hover:bg-[#0b3172] text-sm"
-        >
-          Yes, Logout
-        </button>
-        <button
-          onClick={() => toast.dismiss(t.id)}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  ));
-};
-
-const performLogout = async () => {
-  const loadingToast = toast.loading("Logging out...");
-  
-  try {
-    const res = await fetch("/api/auth/logout", { method: "POST" });
-    const data = await res.json();
-
-    if (data.success) {
-      toast.success("Logged out successfully!", { id: loadingToast });
-      setTimeout(() => {
+      if (data.success) {
+        setShowLogoutModal(false);
+        // Redirect to home page
         window.location.href = "/";
-      }, 1000);
-    } else {
-      toast.error("Logout failed", { id: loadingToast });
+      } else {
+        console.error("Logout failed:", data);
+        setShowLogoutModal(false);
+        window.location.href = "/";
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      setShowLogoutModal(false);
       window.location.href = "/";
+    } finally {
+      setIsLoggingOut(false);
     }
-  } catch (error) {
-    console.error("Logout error:", error);
-    toast.error("Logout failed", { id: loadingToast });
-    window.location.href = "/";
-  }
-};
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
+  };
 
   return (
     <div className='min-h-screen bg-gray-50'>
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className='fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4'>
+          <div className='bg-white rounded-lg shadow-xl max-w-md w-full p-6'>
+            <h3 className='text-lg font-semibold text-gray-900 mb-4'>
+              Confirm Logout
+            </h3>
+            <p className='text-gray-600 mb-6'>
+              Are you sure you want to logout?
+            </p>
+            <div className='flex gap-3 justify-end'>
+              <button
+                onClick={handleLogoutCancel}
+                disabled={isLoggingOut}
+                className='px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium disabled:opacity-50'>
+                Cancel
+              </button>
+              <button
+                onClick={handleLogoutConfirm}
+                disabled={isLoggingOut}
+                className='px-4 py-2 bg-[#0F47A8] text-white rounded hover:bg-[#0b3172] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed'>
+                {isLoggingOut ? "Logging out..." : "Yes, Logout"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
         className='md:hidden fixed top-4 left-4 z-50 p-2 bg-blue-700 rounded-md text-white'>
-        {sidebarOpen ? <X size={2} /> : <Menu size={24} />}
+        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
       {/* Overlay for mobile */}
@@ -123,19 +125,19 @@ const performLogout = async () => {
         {/* Sidebar */}
         <aside
           className={`
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0
-          fixed top-0 left-0
-          w-64 min-w-64 h-screen bg-[#E2E8F0] border-r border-gray-200
-          z-40 transition-transform duration-300
-          overflow-y-auto 
-    md:sticky md:top-0 md:h-screen
-        `}>
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+            md:translate-x-0
+            fixed top-0 left-0
+            w-64 min-w-64 h-screen bg-[#E2E8F0] border-r border-gray-200
+            z-40 transition-transform duration-300
+            overflow-y-auto 
+            md:sticky md:top-0 md:h-screen
+            flex flex-col
+          `}>
+          {/* Logo */}
           <div
             className='p-4 border-b-2 border-[#E2E8F0] cursor-pointer'
-            onClick={() => {
-              router.push("/");
-            }}>
+            onClick={() => router.push("/")}>
             <Image
               src='/FullLogo_Transparent_NoBuffer-3.png'
               height={250}
@@ -143,13 +145,18 @@ const performLogout = async () => {
               alt='Renewably UK'
               className='h-auto w-auto'
               onError={(e) => {
-                e.target.style.display = "none";
-                e.target.nextSibling.style.display = "flex";
+                const target = e.target;
+                target.style.display = "none";
+                const nextSibling = target.nextSibling;
+                if (nextSibling && nextSibling.style) {
+                  nextSibling.style.display = "flex";
+                }
               }}
             />
           </div>
 
-          <nav className='p-4'>
+          {/* Navigation Menu */}
+          <nav className='p-4 flex-1'>
             <ul className='space-y-2'>
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -177,38 +184,30 @@ const performLogout = async () => {
             </ul>
           </nav>
 
-          <div className='absolute bottom-0 left-0 right-0 p-4 border-t'>
+          {/* Footer with Logout */}
+          <div className='p-4 border-t border-gray-200 mt-auto'>
             <div className='flex items-center justify-between'>
               <Link
                 href='/'
+                onClick={() => setSidebarOpen(false)}
                 className='flex items-center gap-2 text-gray-600 hover:text-gray-900'>
                 <Home size={18} />
                 <span className='text-sm'>Main Site</span>
               </Link>
-              <div className='absolute bottom-0 left-0 right-0 p-4 border-t'>
-                <div className='flex items-center justify-between'>
-                  <Link
-                    href='/'
-                    className='flex items-center gap-2 text-gray-600 hover:text-gray-900'>
-                    <Home size={18} />
-                    <span className='text-sm'>Main Site</span>
-                  </Link>
 
-                  <button
-                    onClick={handleLogout}
-                    className='flex items-center gap-2 text-red-600 hover:text-red-800'>
-                    <LogOut size={18} />
-                    <span className='text-sm'>Logout</span>
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={handleLogoutClick}
+                className='flex items-center gap-2 text-red-600 hover:text-red-800'>
+                <LogOut size={18} />
+                <span className='text-sm'>Logout</span>
+              </button>
             </div>
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className='flex-1'>
-          <div className=' mx-auto'>{children}</div>
+        <main className='flex-1 '>
+          <div className='mx-auto '>{children}</div>
         </main>
       </div>
     </div>
