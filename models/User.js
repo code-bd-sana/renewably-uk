@@ -70,7 +70,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-
+    allowedProducts: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Product",
+      default: [],
+    },
     policyNoPrefix: {
       type: String,
       default: null,
@@ -92,7 +96,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);
