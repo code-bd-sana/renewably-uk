@@ -24,6 +24,7 @@ import toast, { Toaster } from "react-hot-toast";
 import Image from "next/image";
 import RequestStatusDropdown from "./RequestActionDropdown";
 import CertificateActionsDropdown from "./RequestActionDropdown";
+import ProductAssignmentSection from "./ProductAssignmentSection";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function AdminDashboard() {
   const [downloading, setDownloading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [stats, setStats] = useState({
     totalCertificates: 0,
     totalContractors: 0,
@@ -393,9 +395,12 @@ export default function AdminDashboard() {
                 const res = await fetch("/api/admin/approve-user", {
                   method: "POST",
                   headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Content-Type": "application/json",
                   },
-                  body: new URLSearchParams({ userId }),
+                  body: JSON.stringify({
+                    userId,
+                    allowedProductIds: selectedProductIds,
+                  }),
                 });
 
                 const data = await res.json();
@@ -413,6 +418,8 @@ export default function AdminDashboard() {
                   }));
 
                   toast.success(`Approved ${userName}!`, { id: loadingToast });
+                  setShowRequestModal(false);
+                  setSelectedProductIds([]);
                 } else {
                   toast.error(data.error || "Failed to approve", {
                     id: loadingToast,
@@ -706,98 +713,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // const handleViewRequest = async (requestId) => {
-  //   try {
-  //     // First try to find the request in the existing array
-  //     const existingRequest = pendingRequests.find(
-  //       (req) => req.id === requestId,
-  //     );
-
-  //     // Also check in pendingUsers for user approval requests
-  //     const existingUser = pendingUsers.find((user) => user.id === requestId);
-
-  //     console.log("existing request", existingRequest);
-  //     // If found, use it directly
-  //     if (existingRequest) {
-  //       setSelectedRequest(existingRequest);
-
-  //       setAdminNotes("");
-  //       setShowRequestModal(true);
-  //       return;
-  //     }
-  //     // If it's a policy request
-  //     if (existingRequest) {
-  //       setSelectedRequest({
-  //         ...existingRequest,
-  //         type: "policy_request", // Add type identifier
-  //       });
-  //       setAdminNotes("");
-  //       setShowRequestModal(true);
-  //       return;
-  //     }
-
-  //     // If it's a user request
-  //     if (existingUser) {
-  //       setSelectedRequest({
-  //         ...existingUser,
-  //         type: "user_request", // Add type identifier
-  //         requestType: "user_approval",
-  //         policyNumber: `USER-${existingUser.name}`,
-  //         policyHolderName: existingUser.name,
-  //         reason: "New contractor registration",
-  //         requestedAt: existingUser.createdAt,
-  //       });
-  //       setAdminNotes("");
-  //       setShowRequestModal(true);
-  //       return;
-  //     }
-  //     // If not found locally, try to fetch from API
-  //     const response = await fetch(
-  //       `/api/admin/contractor/${requestId}/details`,
-  //     );
-
-  //     // Check if response is JSON
-  //     const contentType = response.headers.get("content-type");
-  //     if (!contentType || !contentType.includes("application/json")) {
-  //       throw new Error("Server returned non-JSON response");
-  //     }
-
-  //     const data = await response.json();
-
-  //     if (data.success) {
-  //       setSelectedRequest(data.request);
-  //     } else {
-  //       // Create a fallback request object
-  //       setSelectedRequest({
-  //         id: requestId,
-  //         requestType: "unknown",
-  //         policyNumber: "N/A",
-  //         policyHolderName: "Unknown",
-  //         reason: "Details not available",
-  //         requestedAt: new Date().toISOString(),
-  //       });
-  //     }
-
-  //     setAdminNotes("");
-  //     setShowRequestModal(true);
-  //   } catch (error) {
-  //     console.error("Error fetching request details:", error);
-
-  //     // Create a basic request object
-  //     setSelectedRequest({
-  //       id: requestId,
-  //       requestType: "error",
-  //       policyNumber: "ERROR",
-  //       policyHolderName: "Error Loading",
-  //       reason: "Failed to load request details: " + error.message,
-  //       requestedAt: new Date().toISOString(),
-  //     });
-
-  //     setAdminNotes("");
-  //     setShowRequestModal(true);
-  //   }
-  // };
-
   const handleViewRequest = async (requestId) => {
     try {
       // Quick user request handling (no need for full fetch)
@@ -812,6 +727,7 @@ export default function AdminDashboard() {
           reason: "New contractor registration",
           requestedAt: existingUser.createdAt,
         });
+        setSelectedProductIds([]);
         setAdminNotes("");
         setShowRequestModal(true);
         return;
@@ -2250,6 +2166,12 @@ export default function AdminDashboard() {
                   </div>
                 </>
               )}
+              {selectedRequest.type === "user_request" && (
+                <ProductAssignmentSection
+                  selectedProductIds={selectedProductIds}
+                  setSelectedProductIds={setSelectedProductIds}
+                />
+              )}
 
               {/* Admin Notes (Common for both types) */}
               <div className='mb-4'>
@@ -2267,59 +2189,6 @@ export default function AdminDashboard() {
                   These notes will be sent to the contractor along with your
                   decision.
                 </p>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className='p-4 md:p-6 border-t border-gray-200 bg-gray-50'>
-              <div className='flex flex-col sm:flex-row justify-between items-center gap-3'>
-                {/* <p className="text-xs md:text-sm text-gray-600 text-center sm:text-left">
-                  Review and take action
-                </p> */}
-                <div className='flex gap-2 w-full sm:w-auto'>
-                  {/* <button
-                    onClick={() => {
-                      if (
-                        confirm("Are you sure you want to reject this request?")
-                      ) {
-                        if (selectedRequest.type === "user_request") {
-                          handleRejectUser(
-                            selectedRequest.id,
-                            selectedRequest.name
-                          );
-                        } else {
-                          handleRejectRequest(selectedRequest.id);
-                        }
-                        setShowRequestModal(false);
-                      }
-                    }}
-                    className="flex-1 sm:flex-none px-3 py-2 text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 text-sm"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          "Are you sure you want to approve this request?"
-                        )
-                      ) {
-                        if (selectedRequest.type === "user_request") {
-                          handleApproveUser(
-                            selectedRequest.id,
-                            selectedRequest.name
-                          );
-                        } else {
-                          handleApproveRequest(selectedRequest.id);
-                        }
-                        setShowRequestModal(false);
-                      }
-                    }}
-                    className="flex-1 sm:flex-none px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 text-sm"
-                  >
-                    Approve
-                  </button> */}
-                </div>
               </div>
             </div>
           </div>

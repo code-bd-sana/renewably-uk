@@ -1,5 +1,6 @@
 "use client";
 
+import ProductAssignmentSection from "@/components/Admin/ProductAssignmentSection";
 import { downloadPdf } from "@/utils/pdfGenerator";
 import {
   ChevronLeft,
@@ -51,19 +52,21 @@ export default function ManageContractorsPage() {
   const [showRolesModal, setShowRolesModal] = useState(false);
   const [editingContractor, setEditingContractor] = useState(null);
 
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+
   const itemsPerPage = 10;
 
   const openRolesModal = (contractor) => {
     if (!contractor.isApproved) {
       alert(
-        "This user is not yet approved. Roles can only be assigned to approved users."
+        "This user is not yet approved. Roles can only be assigned to approved users.",
       );
       return;
     }
 
     if (contractor.isSuspended) {
       alert(
-        "This user is currently suspended. You cannot edit roles until unsuspend them."
+        "This user is currently suspended. You cannot edit roles until unsuspend them.",
       );
       return;
     }
@@ -146,7 +149,7 @@ export default function ManageContractorsPage() {
 
       // Fetch contractor details
       const contractorRes = await fetch(
-        `/api/admin/contractor/${contractorId}`
+        `/api/admin/contractor/${contractorId}`,
       );
 
       console.log("Contractor response status:", contractorRes.status);
@@ -158,7 +161,7 @@ export default function ManageContractorsPage() {
       const contractorText = await contractorRes.text();
       console.log(
         "Contractor response text (first 500 chars):",
-        contractorText.substring(0, 500)
+        contractorText.substring(0, 500),
       );
 
       if (!contractorText) {
@@ -169,7 +172,7 @@ export default function ManageContractorsPage() {
 
       if (!contractorData.success) {
         throw new Error(
-          contractorData.error || "Failed to fetch contractor data"
+          contractorData.error || "Failed to fetch contractor data",
         );
       }
 
@@ -177,7 +180,7 @@ export default function ManageContractorsPage() {
 
       // Fetch certificates for this contractor
       const certsRes = await fetch(
-        `/api/admin/certificates?contractorId=${contractorId}`
+        `/api/admin/certificates?contractorId=${contractorId}`,
       );
 
       console.log("Certificates response status:", certsRes);
@@ -256,12 +259,71 @@ export default function ManageContractorsPage() {
       setSavingPrefix(false);
     }
   };
+
+  const handleSaveAllowedProducts = async () => {
+    if (!selectedContractor?.id) {
+      toast.error("No contractor selected");
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+
+      const res = await fetch(
+        `/api/admin/contractor/${selectedContractor.id}/products`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            allowedProductIds: selectedProductIds,
+          }),
+        },
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Allowed products updated!");
+
+        // Update modal display
+        setSelectedContractor((prev) => ({
+          ...prev,
+          allowedProducts: selectedProductIds,
+        }));
+
+        // Refresh full list if needed
+        fetchContractors();
+      } else {
+        toast.error(data.error || "Save failed");
+      }
+    } catch (err) {
+      toast.error("Error saving");
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
   // Open contractor details modal and fetch documents
   const openContractorModal = async (contractor) => {
     setSelectedContractor(contractor);
     setShowContractorModal(true);
 
     try {
+      const res = await fetch(`/api/admin/contractor/${contractor.id}`);
+      const data = await res.json();
+
+      if (data.success && data.contractor) {
+        const fresh = data.contractor;
+        setSelectedContractor(fresh);
+
+        // Load existing allowed products into selected state
+        const existingIds = (fresh.allowedProducts || []).map((id) =>
+          id.toString(),
+        );
+
+        console.log("Existing allowed products from DB:", existingIds);
+        setSelectedProductIds(existingIds); // pre-selection
+      }
       // Fetch documents for this contractor
       if (!contractorDocuments[contractor.id]) {
         await fetchContractorDocuments(contractor.id);
@@ -271,7 +333,7 @@ export default function ManageContractorsPage() {
       console.log("Fetching certificates for contractor ID:", contractor.id);
 
       const certsRes = await fetch(
-        `/api/admin/certificates?contractorId=${contractor.id}`
+        `/api/admin/certificates?contractorId=${contractor.id}`,
       );
 
       if (certsRes.ok) {
@@ -283,7 +345,7 @@ export default function ManageContractorsPage() {
           const lastCertificateDate =
             certsData.certificates?.length > 0
               ? certsData.certificates.sort(
-                  (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                  (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
                 )[0].createdAt
               : null;
 
@@ -302,7 +364,7 @@ export default function ManageContractorsPage() {
       // FETCH PENDING REQUESTS
       try {
         const requestsRes = await fetch(
-          `/api/admin/contractor?type=requests&contractorId=${contractor.id}&status=pending`
+          `/api/admin/contractor?type=requests&contractorId=${contractor.id}&status=pending`,
         );
         if (requestsRes.ok) {
           const requestsData = await requestsRes.json();
@@ -365,7 +427,7 @@ export default function ManageContractorsPage() {
     try {
       // 1. Get contractor
       const contractorRes = await fetch(
-        `/api/admin/contractor/${contractorId}`
+        `/api/admin/contractor/${contractorId}`,
       );
       if (!contractorRes.ok) throw new Error("Failed to load contractor");
       const contractorData = await contractorRes.json();
@@ -381,7 +443,7 @@ export default function ManageContractorsPage() {
 
       // 2. Get certificates list (just IDs)
       const certsRes = await fetch(
-        `/api/admin/certificates?contractorId=${contractorId}&brief=true`
+        `/api/admin/certificates?contractorId=${contractorId}&brief=true`,
       );
       if (!certsRes.ok) throw new Error("Failed to load certificates");
       const certsData = await certsRes.json();
@@ -391,16 +453,18 @@ export default function ManageContractorsPage() {
         return;
       }
 
-      const certificateIds = certsData.certificates.map(
-        (cert) => cert.id || cert._id
-      );
+      const certificateIds = certsData.certificates.map((cert) => {
+        const id = cert.id || cert._id;
+        // If ID contains a hyphen, take only the first part
+        return id.split("-")[0];
+      });
 
       // 3. Fetch each certificate individually for complete data
       const certificates = [];
       for (const certId of certificateIds) {
         try {
           const singleCertRes = await fetch(
-            `/api/admin/certificates/${certId}`
+            `/api/admin/certificates/${certId}`,
           );
           if (singleCertRes.ok) {
             const singleCertData = await singleCertRes.json();
@@ -477,7 +541,7 @@ export default function ManageContractorsPage() {
 
     if (
       !confirm(
-        `Are you sure you want to delete ${contractorToDelete.name} (${contractorToDelete.companyName})? This action cannot be undone.`
+        `Are you sure you want to delete ${contractorToDelete.name} (${contractorToDelete.companyName})? This action cannot be undone.`,
       )
     ) {
       return;
@@ -493,7 +557,7 @@ export default function ManageContractorsPage() {
       console.log("Response status:", res.status);
       console.log(
         "Response headers:",
-        Object.fromEntries(res.headers.entries())
+        Object.fromEntries(res.headers.entries()),
       );
 
       const data = await res.json();
@@ -542,7 +606,7 @@ export default function ManageContractorsPage() {
   const handleSuspendAction = async (
     contractorId,
     shouldSuspend,
-    reason = ""
+    reason = "",
   ) => {
     try {
       setActionLoading(true);
@@ -551,7 +615,7 @@ export default function ManageContractorsPage() {
         "Calling suspend API for:",
         contractorId,
         "shouldSuspend:",
-        shouldSuspend
+        shouldSuspend,
       );
 
       const res = await fetch(`/api/admin/contractor/${contractorId}/suspend`, {
@@ -585,8 +649,8 @@ export default function ManageContractorsPage() {
                   suspensionReason: data.user.suspensionReason,
                   suspendedAt: data.user.suspendedAt,
                 }
-              : c
-          )
+              : c,
+          ),
         );
 
         // Update selected contractor if modal is open
@@ -707,7 +771,7 @@ export default function ManageContractorsPage() {
       handleSuspendAction(
         selectedContractorForAction.id,
         actionType === "suspend",
-        localReason
+        localReason,
       );
     };
 
@@ -804,7 +868,7 @@ export default function ManageContractorsPage() {
       {/* Contractor Details Modal */}
       {showContractorModal && selectedContractor && (
         <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
-          <div className='bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto'>
+          <div className='bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'>
             {/* Modal Header */}
             <div className='flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200'>
               <div className='flex items-center gap-3'>
@@ -827,25 +891,9 @@ export default function ManageContractorsPage() {
                   {!selectedContractor.isApproved
                     ? "Not Approved"
                     : selectedContractor.isSuspended
-                    ? "Suspended"
-                    : "Active"}
+                      ? "Suspended"
+                      : "Active"}
                 </span>
-                {/* <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    selectedContractor.isApproved
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {selectedContractor.isApproved ? "Active" : "Inactive"}
-                </span> */}
-                {/* <button
-                  onClick={() => downloadPdf(selectedContractor.id)}
-                  className="text-gray-600 hover:text-gray-900 p-1"
-                  title="Download Data"
-                >
-                  <Download className="w-5 h-5" />
-                </button> */}
               </div>
             </div>
 
@@ -947,13 +995,51 @@ export default function ManageContractorsPage() {
                                 <span>files:{doc.id}</span>
                               </a>
                             </div>
-                          )
+                          ),
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
 
+                {/* ========== Product selection option ==========*/}
+                {selectedContractor?.isApproved && (
+                  <ProductAssignmentSection
+                    selectedProductIds={selectedProductIds}
+                    setSelectedProductIds={setSelectedProductIds}
+                  />
+                )}
+
+                <div className='mt-6 pt-4 border-t border-gray-200'>
+                  <div className='flex justify-end gap-3'>
+                    <button
+                      onClick={() => {
+                        setSelectedProductIds([]); // optional: reset/cancel changes
+                        // or close modal if you want
+                      }}
+                      className='px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition'>
+                      Cancel
+                    </button>
+
+                    <button
+                      onClick={handleSaveAllowedProducts}
+                      disabled={actionLoading}
+                      className={`px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition ${
+                        actionLoading
+                          ? "bg-gray-400 cursor-wait"
+                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                      }`}>
+                      {actionLoading ? (
+                        <>
+                          <Loader2 className='w-5 h-5 animate-spin' />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Allowed Products"
+                      )}
+                    </button>
+                  </div>
+                </div>
                 {/* ========== PREFIX SETTING SECTION ========== */}
                 <div className='pt-6 border-t border-gray-100'>
                   <h3 className='text-lg font-semibold text-gray-900 mb-4'>
@@ -995,14 +1081,14 @@ export default function ManageContractorsPage() {
                         onClick={async () => {
                           if (!prefixInput || prefixInput.length < 3) {
                             alert(
-                              "Prefix must be at least 3 uppercase letters"
+                              "Prefix must be at least 3 uppercase letters",
                             );
                             return;
                           }
 
                           if (
                             window.confirm(
-                              `Set prefix to ${prefixInput.toUpperCase()}?`
+                              `Set prefix to ${prefixInput.toUpperCase()}?`,
                             )
                           ) {
                             try {
@@ -1017,7 +1103,7 @@ export default function ManageContractorsPage() {
                                     contractorId: selectedContractor.id,
                                     prefix: prefixInput,
                                   }),
-                                }
+                                },
                               );
 
                               const data = await res.json();
@@ -1145,7 +1231,7 @@ export default function ManageContractorsPage() {
                                 </button>
                               </div>
                             </div>
-                          )
+                          ),
                         )
                       ) : (
                         <div className='text-center py-6'>
@@ -1324,7 +1410,7 @@ export default function ManageContractorsPage() {
                     <button
                       onClick={() =>
                         router.push(
-                          `/admin/manage-contractors/${contractor.id}`
+                          `/admin/manage-contractors/${contractor.id}`,
                         )
                       }
                       className='text-blue-600 hover:text-blue-800 hover:underline transition-colors'>
@@ -1347,8 +1433,8 @@ export default function ManageContractorsPage() {
                   {!contractor.isApproved
                     ? "Not Approved"
                     : contractor.isSuspended
-                    ? "Suspended"
-                    : "Active"}
+                      ? "Suspended"
+                      : "Active"}
                 </span>
               </div>
 
@@ -1525,7 +1611,7 @@ export default function ManageContractorsPage() {
                                 e.stopPropagation();
                                 const newPrefix = prompt(
                                   `Update prefix (current: ${contractor.policyNoPrefix}):`,
-                                  contractor.policyNoPrefix
+                                  contractor.policyNoPrefix,
                                 );
                                 if (newPrefix) {
                                   const upper = newPrefix.trim().toUpperCase();
@@ -1533,7 +1619,7 @@ export default function ManageContractorsPage() {
                                     savePrefix(contractor.id, upper);
                                   } else {
                                     alert(
-                                      "Invalid prefix — 3–10 uppercase letters only"
+                                      "Invalid prefix — 3–10 uppercase letters only",
                                     );
                                   }
                                 }
@@ -1548,7 +1634,7 @@ export default function ManageContractorsPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             const newPrefix = prompt(
-                              `Set prefix for ${contractor.name} (3-10 uppercase letters):`
+                              `Set prefix for ${contractor.name} (3-10 uppercase letters):`,
                             );
                             if (newPrefix) {
                               const upper = newPrefix.trim().toUpperCase();
@@ -1556,7 +1642,7 @@ export default function ManageContractorsPage() {
                                 savePrefix(contractor.id, upper);
                               } else {
                                 alert(
-                                  "Prefix must be 3–10 uppercase letters (A-Z)"
+                                  "Prefix must be 3–10 uppercase letters (A-Z)",
                                 );
                               }
                             }
@@ -1570,7 +1656,7 @@ export default function ManageContractorsPage() {
                       <button
                         onClick={() =>
                           router.push(
-                            `/admin/manage-contractors/${contractor.id}`
+                            `/admin/manage-contractors/${contractor.id}`,
                           )
                         }
                         className='text-blue-700 hover:text-blue-800 hover:underline transition-colors'>
@@ -1600,8 +1686,8 @@ export default function ManageContractorsPage() {
                           {!contractor.isApproved
                             ? "Not Approved"
                             : contractor.isSuspended
-                            ? "Suspended"
-                            : "Active"}
+                              ? "Suspended"
+                              : "Active"}
                         </span>
                       </div>
                     </td>
@@ -1641,7 +1727,7 @@ export default function ManageContractorsPage() {
                               alert(
                                 contractor.isSuspended
                                   ? "This user is currently suspended. You cannot edit roles until unsuspended."
-                                  : "This user is not yet approved. Roles can only be assigned to approved users."
+                                  : "This user is not yet approved. Roles can only be assigned to approved users.",
                               );
                             }}
                             className='opacity-50 cursor-not-allowed p-1 rounded'
@@ -1786,7 +1872,7 @@ export default function ManageContractorsPage() {
                                 ]),
                               ]
                             : (editingContractor.roles || []).filter(
-                                (r) => r !== role.value
+                                (r) => r !== role.value,
                               );
 
                           setEditingContractor((prev) => ({
@@ -1820,7 +1906,7 @@ export default function ManageContractorsPage() {
                             body: JSON.stringify({
                               roles: editingContractor.roles,
                             }),
-                          }
+                          },
                         );
 
                         const result = await res.json();

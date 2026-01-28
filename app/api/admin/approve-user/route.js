@@ -11,7 +11,7 @@ export async function POST(request) {
     if (!auth.success) {
       return Response.json(
         { success: false, error: auth.error },
-        { status: auth.status || 401 }
+        { status: auth.status || 401 },
       );
     }
 
@@ -19,7 +19,7 @@ export async function POST(request) {
     if (auth.userRole !== "admin") {
       return Response.json(
         { success: false, error: "Admin access required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -27,13 +27,23 @@ export async function POST(request) {
     await connectDB();
 
     // Get form data
-    const formData = await request.formData();
-    const userId = formData.get("userId");
+    // const formData = await request.formData();
+    // const userId = formData.get("userId");
+    const body = await request.json();
+    const { userId, allowedProductIds = [] } = body;
 
     if (!userId) {
       return new Response(
         JSON.stringify({ success: false, error: "User ID required" }),
-        { status: 400 }
+        { status: 400 },
+      );
+    }
+
+    // Validate allowedProductIds
+    if (!Array.isArray(allowedProductIds)) {
+      return Response.json(
+        { success: false, error: "allowedProductIds must be an array" },
+        { status: 400 },
       );
     }
 
@@ -42,15 +52,16 @@ export async function POST(request) {
       userId,
       {
         isApproved: true,
+        allowedProducts: allowedProductIds,
         updatedAt: new Date(),
       },
-      { new: true }
+      { new: true },
     );
 
     if (!user) {
       return new Response(
         JSON.stringify({ success: false, error: "User not found" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -73,15 +84,16 @@ export async function POST(request) {
           companyName: user.companyName,
           name: user.name,
           isApproved: user.isApproved,
+          allowedProducts: user.allowedProducts,
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Approve error:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }
