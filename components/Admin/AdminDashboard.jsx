@@ -1007,7 +1007,7 @@ export default function AdminDashboard() {
   }
   return (
     <div className='min-h-screen bg-gray-50 mt-12 md:mt-0 p-2 md:p-6'>
-      <Toaster
+      {/* <Toaster
         position='top-right'
         toastOptions={{
           duration: 4000,
@@ -1022,7 +1022,7 @@ export default function AdminDashboard() {
             duration: 4000,
           },
         }}
-      />
+      /> */}
       {/* Mobile Header */}
       <div className='md:hidden bg-[#0F47A8] text-white p-4 sticky top-0 z-10'>
         <div className='flex items-center justify-between'>
