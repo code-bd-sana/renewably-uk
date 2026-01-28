@@ -145,6 +145,9 @@ export default function CertificateTemplate() {
                 <p className='text-sm text-gray-600 bg-white p-2 rounded border border-gray-200'>
                   Gas-Fired Condensing Boiler
                 </p>
+                <span className='block text-xs text-gray-500 mt-1'>
+                  Period of Cover: 24 months
+                </span>
               </div>
               <div>
                 <label className='text-sm font-semibold text-gray-800 block mb-2'>

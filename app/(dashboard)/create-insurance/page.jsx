@@ -60,7 +60,6 @@ export default function CreateInsuranceForm() {
         inceptionDate: "",
         expiryDate: "",
         contractValue: "",
-        totalProjectCost: "",
       },
     ],
     retrofitAssessor: "",
@@ -69,6 +68,58 @@ export default function CreateInsuranceForm() {
     schemeProvider: "",
     abs: "",
   });
+
+  // Function to calculate expiry date based on inception date and product period
+  const calculateExpiryDate = (inceptionDate, product) => {
+    if (!inceptionDate || !product) return "";
+
+    try {
+      const inception = new Date(inceptionDate);
+      const productData = products.find(
+        (p) => p.Measures === product.measureType,
+      );
+
+      if (!productData) return "";
+
+      // Get period values from product
+      const years = productData.Year || 0;
+      const months = productData.Month || 0;
+      const days = productData.Days || 0;
+
+      // Calculate expiry date
+      const expiry = new Date(inception);
+      expiry.setFullYear(expiry.getFullYear() + years);
+      expiry.setMonth(expiry.getMonth() + months);
+      expiry.setDate(expiry.getDate() + days - 1); // Subtract 1 day to get the day before same date next period
+
+      // Format as YYYY-MM-DD
+      const year = expiry.getFullYear();
+      const month = String(expiry.getMonth() + 1).padStart(2, "0");
+      const day = String(expiry.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error("Error calculating expiry date:", error);
+      return "";
+    }
+  };
+
+  // Function to format date for display
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return "";
+
+    try {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -85,18 +136,6 @@ export default function CreateInsuranceForm() {
       setLoading(false);
     }
   };
-
-  // const fetchSchemeProviders = async () => {
-  //   try {
-  //     const response = await fetch("/api/admin/scheme-providers");
-  //     const data = await response.json();
-  //     if (data.success) {
-  //       setSchemeProviders(data.providers);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching scheme providers:", error);
-  //   }
-  // };
 
   useEffect(() => {
     const loadProviders = async () => {
@@ -151,19 +190,18 @@ export default function CreateInsuranceForm() {
           clearInterval(progressInterval);
           setTimeout(() => {
             setShowConnectingMessage(false);
-          }, 500);
+          }, 2000);
           return 100;
         }
         return prev + 10;
       });
-    }, 150);
+    }, 550);
 
     // Fetch data after showing connecting message
     const timer = setTimeout(() => {
       fetchProducts();
       fetchContractorData();
-      // fetchSchemeProviders();
-    }, 3000);
+    }, 8000);
 
     return () => {
       clearTimeout(timer);
@@ -188,31 +226,11 @@ export default function CreateInsuranceForm() {
 
     const query = debouncedSearchQuery.toLowerCase();
     return products.filter((product) =>
-      product.Measures.toLowerCase().includes(query)
+      product.Measures.toLowerCase().includes(query),
     );
   }, [products, debouncedSearchQuery]);
 
-  // Filter scheme providers by type
-  const getFilteredSchemeProviders = (type) => {
-    return schemeProviders
-      .filter(
-        (provider) =>
-          provider.providerType?.includes(type) && provider.status === "active"
-      )
-      .map((provider) => ({
-        name: provider.companyName,
-        address: provider.address,
-        phone: provider.phone,
-        email: provider.contactEmail,
-      }));
-  };
-
-  const dropdownOptions = [
-    "Not Required",
-    // "Assigned",
-    // "Pending Assignment",
-    // "External Provider",
-  ];
+  const dropdownOptions = ["Not Required"];
 
   const fetchContractorData = async () => {
     try {
@@ -237,14 +255,6 @@ export default function CreateInsuranceForm() {
     }
   };
 
-  // Calculate total project cost
-  const calculateTotalProjectCost = () => {
-    return formData.products.reduce((total, product) => {
-      const cost = parseFloat(product.totalProjectCost) || 0;
-      return total + cost;
-    }, 0);
-  };
-
   // for adding product
   const addProduct = () => {
     setFormData((prev) => ({
@@ -258,7 +268,6 @@ export default function CreateInsuranceForm() {
           inceptionDate: "",
           expiryDate: "",
           contractValue: "",
-          totalProjectCost: "",
         },
       ],
     }));
@@ -276,9 +285,26 @@ export default function CreateInsuranceForm() {
   const updateProduct = (id, field, value) => {
     setFormData((prev) => ({
       ...prev,
-      products: prev.products.map((product) =>
-        product.id === id ? { ...product, [field]: value } : product
-      ),
+      products: prev.products.map((product) => {
+        const updatedProduct =
+          product.id === id ? { ...product, [field]: value } : product;
+
+        // If inception date or measure type changed, recalculate expiry date
+        if (
+          (field === "inceptionDate" || field === "measureType") &&
+          product.id === id
+        ) {
+          if (updatedProduct.inceptionDate && updatedProduct.measureType) {
+            const expiryDate = calculateExpiryDate(
+              updatedProduct.inceptionDate,
+              updatedProduct,
+            );
+            updatedProduct.expiryDate = expiryDate;
+          }
+        }
+
+        return updatedProduct;
+      }),
     }));
   };
 
@@ -305,6 +331,19 @@ export default function CreateInsuranceForm() {
       [productId]: false,
     }));
     setSearchQuery("");
+
+    // If inception date is already set, calculate expiry date
+    const product = formData.products.find((p) => p.id === productId);
+    if (product && product.inceptionDate) {
+      const productData = products.find((p) => p.Measures === measure);
+      if (productData) {
+        const expiryDate = calculateExpiryDate(product.inceptionDate, {
+          ...product,
+          measureType: measure,
+        });
+        updateProduct(productId, "expiryDate", expiryDate);
+      }
+    }
   };
 
   // drop down
@@ -372,67 +411,13 @@ export default function CreateInsuranceForm() {
     "December",
   ];
 
-  const MonthPicker = ({ onSelect }) => (
-    <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-6 w-80'>
-      <div className='flex items-center justify-between mb-4'>
-        <button
-          onClick={() =>
-            setCurrentMonth(
-              new Date(currentMonth.getFullYear() - 1, currentMonth.getMonth())
-            )
-          }
-          className='p-2 hover:bg-gray-100 rounded'>
-          <ChevronLeft size={20} />
-        </button>
-        <span className='font-semibold'>{currentMonth.getFullYear()}</span>
-        <button
-          onClick={() =>
-            setCurrentMonth(
-              new Date(currentMonth.getFullYear() + 1, currentMonth.getMonth())
-            )
-          }
-          className='p-2 hover:bg-gray-100 rounded'>
-          <ChevronRight size={20} />
-        </button>
-      </div>
-      <div className='grid grid-cols-3 gap-3'>
-        {monthNames.map((month, index) => (
-          <button
-            key={month}
-            onClick={() => {
-              const monthIndex = index + 1;
-              const year = currentMonth.getFullYear();
-
-              const expiryDate = new Date(year, monthIndex, 0);
-              const apiDate = `${year}-${String(monthIndex).padStart(
-                2,
-                "0"
-              )}-${String(expiryDate.getDate()).padStart(2, "0")}`;
-              const displayDate = `${month} ${year}`;
-
-              setSelectedMonth(displayDate);
-              onSelect(apiDate);
-              setShowMonthPicker(false);
-            }}
-            className={`p-3 rounded-lg text-sm font-medium transition-colors ${
-              selectedMonth === `${month} ${currentMonth.getFullYear()}`
-                ? "bg-blue-600 text-white"
-                : "hover:bg-gray-100"
-            }`}>
-            {month}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
   const DatePicker = ({ onSelect }) => (
     <div className='absolute z-50 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-4 w-80'>
       <div className='flex items-center justify-between mb-4'>
         <button
           onClick={() =>
             setCurrentMonth(
-              new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
+              new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1),
             )
           }
           className='p-2 hover:bg-gray-100 rounded'>
@@ -444,7 +429,7 @@ export default function CreateInsuranceForm() {
         <button
           onClick={() =>
             setCurrentMonth(
-              new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+              new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1),
             )
           }
           className='p-2 hover:bg-gray-100 rounded'>
@@ -469,7 +454,7 @@ export default function CreateInsuranceForm() {
                 const year = currentMonth.getFullYear();
                 const month = String(currentMonth.getMonth() + 1).padStart(
                   2,
-                  "0"
+                  "0",
                 );
                 const day = String(dayObj.day).padStart(2, "0");
 
@@ -485,11 +470,11 @@ export default function CreateInsuranceForm() {
               !dayObj.isCurrentMonth
                 ? "text-gray-300"
                 : selectedDate ===
-                  `${dayObj.day}/${
-                    currentMonth.getMonth() + 1
-                  }/${currentMonth.getFullYear()}`
-                ? "bg-blue-600 text-white"
-                : "hover:bg-gray-100"
+                    `${dayObj.day}/${
+                      currentMonth.getMonth() + 1
+                    }/${currentMonth.getFullYear()}`
+                  ? "bg-blue-600 text-white"
+                  : "hover:bg-gray-100"
             }`}>
             {dayObj.day}
           </button>
@@ -658,24 +643,24 @@ export default function CreateInsuranceForm() {
           validationErrors.push(
             `Product ${
               index + 1
-            }: Please enter a valid contract value (must be a number greater than 0)`
+            }: Please enter a valid contract value (must be a number greater than 0)`,
           );
         }
 
         if (!product.measureType) {
           validationErrors.push(
-            `Product ${index + 1}: Measure Type is required`
+            `Product ${index + 1}: Measure Type is required`,
           );
         }
 
         if (!product.inceptionDate) {
           validationErrors.push(
-            `Product ${index + 1}: Inception date is required`
+            `Product ${index + 1}: Inception date is required`,
           );
         }
         if (!product.expiryDate) {
           validationErrors.push(
-            `Product ${index + 1}: Expiry date is required`
+            `Product ${index + 1}: Expiry date is required`,
           );
         }
       });
@@ -699,14 +684,9 @@ export default function CreateInsuranceForm() {
       // 2. Prepare products data with proper formatting
       const processedProducts = formData.products.map((product) => {
         const contractValue = parseFloat(product.contractValue);
-        const totalProjectCost =
-          product.totalProjectCost && product.totalProjectCost.trim() !== ""
-            ? parseFloat(product.totalProjectCost)
-            : 0;
 
-        const price = product.price
-          ? parseFloat(product.price)
-          : contractValue * 0.05;
+        // Calculate price as 5% of contract value
+        const price = contractValue * 0.05;
 
         return {
           productType: product.productType,
@@ -715,7 +695,6 @@ export default function CreateInsuranceForm() {
           inceptionDate: product.inceptionDate,
           expiryDate: product.expiryDate,
           contractValue: contractValue,
-          totalProjectCost: totalProjectCost,
           price: price,
         };
       });
@@ -776,7 +755,7 @@ export default function CreateInsuranceForm() {
         {
           duration: 5000,
           position: "top-right",
-        }
+        },
       );
 
       setTimeout(() => {
@@ -983,16 +962,9 @@ export default function CreateInsuranceForm() {
               <label className='block text-sm font-medium mb-2'>
                 Country *
               </label>
-              <select
-                className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
-                value={formData.country}
-                onChange={(e) =>
-                  setFormData({ ...formData, country: e.target.value })
-                }
-                disabled
-                required>
-                <option value='United Kingdom'>United Kingdom</option>
-              </select>
+              <div className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-700'>
+                United Kingdom
+              </div>
             </div>
             <div>
               <label className='block text-sm font-medium mb-2'>Postcode</label>
@@ -1015,176 +987,140 @@ export default function CreateInsuranceForm() {
         <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6'>
           <h2 className='text-lg font-semibold mb-4'>Product Details</h2>
 
-          {formData.products.map((product, index) => (
-            <div key={product.id} className='mb-6 py-4 rounded-lg'>
-              <div className='flex justify-between items-center mb-4'>
-                <h3 className='font-medium'>Product {index + 1}</h3>
-                {formData.products.length > 1 && (
-                  <button
-                    type='button'
-                    onClick={() => removeProduct(product.id)}
-                    className='text-red-500 hover:text-red-700 text-sm'>
-                    Remove Product
-                  </button>
-                )}
-              </div>
+          {formData.products.map((product, index) => {
+            // Find the selected product to get period information
+            const selectedProductData = products.find(
+              (p) => p.Measures === product.measureType,
+            );
+            const guaranteePeriod = selectedProductData
+              ? `${selectedProductData.Year || 0} years${selectedProductData.Month ? `, ${selectedProductData.Month} months` : ""}${selectedProductData.Days ? `, ${selectedProductData.Days} days` : ""}`
+              : "";
 
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                <div className='relative dropdown-container'>
-                  <label className='block text-sm font-medium mb-2'>
-                    Measure Type *
-                  </label>
-                  <button
-                    type='button'
-                    onClick={() => toggleProductDropdown(product.id)}
-                    className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between hover:border-blue-400 transition-colors'>
-                    <span
-                      className={
-                        product.measureType ? "text-gray-900" : "text-gray-400"
-                      }>
-                      {product.measureType || "Select measure type"}
-                    </span>
-                    <ChevronRight
-                      size={18}
-                      className={`transition-transform ${
-                        showProductDropdown[product.id] ? "rotate-90" : ""
-                      }`}
-                    />
-                  </button>
-                  <ProductDropdown
-                    productId={product.id}
-                    show={showProductDropdown[product.id]}
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm font-medium mb-2'>
-                    Cover Option
-                  </label>
-                  <input
-                    type='text'
-                    value='Insurance Backed Guarantee'
-                    className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
-                    readOnly
-                  />
-                </div>
-                <div className='relative'>
-                  <label className='block text-sm font-medium mb-2'>
-                    Inception Date *
-                  </label>
-                  <input
-                    type='text'
-                    required
-                    placeholder='Click to select date'
-                    value={
-                      product.inceptionDate
-                        ? `${new Date(product.inceptionDate).getDate()}/${
-                            new Date(product.inceptionDate).getMonth() + 1
-                          }/${new Date(product.inceptionDate).getFullYear()}`
-                        : ""
-                    }
-                    onClick={() => {
-                      setActiveProductId(product.id);
-                      setShowDatePicker(true);
-                    }}
-                    className='w-full border border-gray-200 rounded-lg px-3 py-2 cursor-pointer'
-                    readOnly
-                  />
-                  {showDatePicker && activeProductId === product.id && (
-                    <DatePicker
-                      onSelect={(date) => {
-                        updateProduct(product.id, "inceptionDate", date);
-                        setShowDatePicker(false);
-                      }}
-                    />
+            return (
+              <div key={product.id} className='mb-6 py-4 rounded-lg'>
+                <div className='flex justify-between items-center mb-4'>
+                  <h3 className='font-medium'>Product {index + 1}</h3>
+                  {formData.products.length > 1 && (
+                    <button
+                      type='button'
+                      onClick={() => removeProduct(product.id)}
+                      className='text-red-500 hover:text-red-700 text-sm'>
+                      Remove Product
+                    </button>
                   )}
                 </div>
-                <div className='relative'>
-                  <label className='block text-sm font-medium mb-2'>
-                    Expiry Date *
-                  </label>
-                  <input
-                    type='text'
-                    placeholder='Click to select month'
-                    value={
-                      product.expiryDate
-                        ? `${new Date(product.expiryDate).toLocaleDateString(
-                            "en-GB"
-                          )}`
-                        : ""
-                    }
-                    onClick={() => {
-                      setActiveProductId(product.id);
-                      setShowMonthPicker(true);
-                    }}
-                    className='w-full border border-gray-200 rounded-lg px-3 py-2 cursor-pointer'
-                    readOnly
-                  />
-                  {showMonthPicker && activeProductId === product.id && (
-                    <MonthPicker
-                      onSelect={(date) => {
-                        updateProduct(product.id, "expiryDate", date);
-                        setShowMonthPicker(false);
-                      }}
-                    />
-                  )}
-                </div>
-                <div>
-                  <label className='block text-sm font-medium mb-2'>
-                    Contract Value *
-                  </label>
-                  <input
-                    type='number'
-                    step='0.01'
-                    min='0'
-                    placeholder='Enter contract value (e.g., 600.50)'
-                    className='w-full border border-gray-200 rounded-lg px-3 py-2'
-                    value={product.contractValue}
-                    onChange={(e) =>
-                      updateProduct(product.id, "contractValue", e.target.value)
-                    }
-                    required
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm font-medium mb-2'>
-                    Project Cost
-                  </label>
-                  <input
-                    type='number'
-                    step='0.01'
-                    min='0'
-                    placeholder='Enter project cost (optional)'
-                    className='w-full border border-gray-200 rounded-lg px-3 py-2'
-                    value={product.totalProjectCost}
-                    onChange={(e) =>
-                      updateProduct(
-                        product.id,
-                        "totalProjectCost",
-                        e.target.value
-                      )
-                    }
-                  />
-                </div>
 
-                {/* Show Total Project Cost only on last product */}
-                {index === formData.products.length - 1 && (
-                  <div className='md:col-span-2 pt-4 border-t border-gray-200'>
-                    <div className='flex justify-between items-center'>
-                      <span className='font-medium text-gray-700'>
-                        Total Project Cost:
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                  <div className='relative dropdown-container'>
+                    <label className='block text-sm font-medium mb-2'>
+                      Measure Type *
+                    </label>
+                    <button
+                      type='button'
+                      onClick={() => toggleProductDropdown(product.id)}
+                      className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between hover:border-blue-400 transition-colors'>
+                      <span
+                        className={
+                          product.measureType
+                            ? "text-gray-900"
+                            : "text-gray-400"
+                        }>
+                        {product.measureType || "Select measure type"}
                       </span>
-                      <span className='text-lg font-bold text-blue-600'>
-                        £{calculateTotalProjectCost().toFixed(2)}
-                      </span>
-                    </div>
-                    <p className='text-sm text-gray-500 mt-1'>
-                      Total of all selected products
-                    </p>
+                      <ChevronRight
+                        size={18}
+                        className={`transition-transform ${
+                          showProductDropdown[product.id] ? "rotate-90" : ""
+                        }`}
+                      />
+                    </button>
+                    <ProductDropdown
+                      productId={product.id}
+                      show={showProductDropdown[product.id]}
+                    />
+                    {guaranteePeriod && (
+                      <p className='text-xs text-gray-500 mt-1'>
+                        Guarantee Period: {guaranteePeriod}
+                      </p>
+                    )}
                   </div>
-                )}
+                  <div>
+                    <label className='block text-sm font-medium mb-2'>
+                      Cover Option
+                    </label>
+                    <input
+                      type='text'
+                      value='Insurance Backed Guarantee'
+                      className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
+                      readOnly
+                    />
+                  </div>
+                  <div className='relative'>
+                    <label className='block text-sm font-medium mb-2'>
+                      Inception Date *
+                    </label>
+                    <input
+                      type='text'
+                      required
+                      placeholder='Click to select date'
+                      value={formatDateForDisplay(product.inceptionDate)}
+                      onClick={() => {
+                        setActiveProductId(product.id);
+                        setShowDatePicker(true);
+                      }}
+                      className='w-full border border-gray-200 rounded-lg px-3 py-2 cursor-pointer'
+                      readOnly
+                    />
+                    {showDatePicker && activeProductId === product.id && (
+                      <DatePicker
+                        onSelect={(date) => {
+                          updateProduct(product.id, "inceptionDate", date);
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <label className='block text-sm font-medium mb-2'>
+                      Expiry Date *
+                    </label>
+                    <input
+                      type='text'
+                      value={formatDateForDisplay(product.expiryDate)}
+                      className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
+                      readOnly
+                    />
+                    {product.expiryDate && (
+                      <p className='text-xs text-gray-500 mt-1'>
+                        Automatically calculated from Inception Date + Guarantee
+                        Period
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className='block text-sm font-medium mb-2'>
+                      Contract Value *
+                    </label>
+                    <input
+                      type='number'
+                      step='0.01'
+                      min='0'
+                      placeholder='Enter contract value (e.g., 600.50)'
+                      className='w-full border border-gray-200 rounded-lg px-3 py-2'
+                      value={product.contractValue}
+                      onChange={(e) =>
+                        updateProduct(
+                          product.id,
+                          "contractValue",
+                          e.target.value,
+                        )
+                      }
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           <button
             type='button'
