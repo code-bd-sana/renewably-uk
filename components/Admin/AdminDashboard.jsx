@@ -17,8 +17,6 @@ import BarChartSection from "./AdminDashboard/BarChartSection";
 import TopContractorsTable from "./AdminDashboard/TopContractorsTable";
 import RequestModal from "./AdminDashboard/RequestModal";
 
-// Import the new components
-
 export default function AdminDashboard() {
   const router = useRouter();
   const [pendingUsers, setPendingUsers] = useState([]);
