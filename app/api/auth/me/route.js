@@ -190,6 +190,7 @@ export async function GET(request) {
         isApproved: user.isApproved,
         isSuspended: user.isSuspended,
         createdAt: user.createdAt,
+        allowedProducts: user.allowedProducts || [],
       },
     });
   } catch (error) {
@@ -201,7 +202,7 @@ export async function GET(request) {
         user: null,
         error: "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

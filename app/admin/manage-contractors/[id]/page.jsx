@@ -1179,7 +1179,7 @@ Renewably UK - Powering Renewables
       {/* View/Edit Certificate Modal - Made Responsive */}
       {showModal && selectedCertificate && (
         <div className='fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto'>
-          <div className='bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden m-2 sm:m-4'>
+          <div className='bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-scroll sm:max-h-[90vh]  m-2 sm:m-4'>
             {/* Modal Header */}
             <div className='p-4 sm:p-6 border-b border-gray-200'>
               <div className='flex items-center justify-between mb-4 sm:mb-6'>

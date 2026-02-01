@@ -41,6 +41,8 @@ export default function CreateInsuranceForm() {
   const [absValue, setAbsValue] = useState("");
   const [allProviders, setAllProviders] = useState([]);
 
+  const [allowedProductIds, setAllowedProductIds] = useState([]);
+
   const searchInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -219,16 +221,37 @@ export default function CreateInsuranceForm() {
   }, [searchQuery]);
 
   // Filter products based on search query
+  // const filteredProducts = useMemo(() => {
+  //   if (!debouncedSearchQuery.trim()) {
+  //     return products;
+  //   }
+
+  //   const query = debouncedSearchQuery.toLowerCase();
+  //   return products.filter((product) =>
+  //     product.Measures.toLowerCase().includes(query),
+  //   );
+  // }, [products, debouncedSearchQuery]);
+
+  // Filter products: only those allowed by admin
+  const allowedProducts = useMemo(() => {
+    if (allowedProductIds.length === 0) return [];
+
+    return products.filter((product) =>
+      allowedProductIds.includes(product._id.toString()),
+    );
+  }, [products, allowedProductIds]);
+
+  // Then apply search on the already allowed products
   const filteredProducts = useMemo(() => {
     if (!debouncedSearchQuery.trim()) {
-      return products;
+      return allowedProducts;
     }
 
     const query = debouncedSearchQuery.toLowerCase();
-    return products.filter((product) =>
-      product.Measures.toLowerCase().includes(query),
+    return allowedProducts.filter((product) =>
+      product.Measures?.toLowerCase().includes(query),
     );
-  }, [products, debouncedSearchQuery]);
+  }, [allowedProducts, debouncedSearchQuery]);
 
   const dropdownOptions = ["Not Required"];
 
@@ -247,6 +270,14 @@ export default function CreateInsuranceForm() {
             contractorName: data.user.companyName || data.user.name,
             contractorAddress: data.user.officeAddress || "",
           }));
+          if (data.user.allowedProducts) {
+            const ids = data.user.allowedProducts.map((id) =>
+              typeof id === "string" ? id : id.toString(),
+            );
+            setAllowedProductIds(ids);
+          } else {
+            setAllowedProductIds([]);
+          }
         }
       }
     } catch (error) {
@@ -987,148 +1018,166 @@ export default function CreateInsuranceForm() {
         <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6'>
           <h2 className='text-lg font-semibold mb-4'>Product Details</h2>
 
-          {formData.products.map((product, index) => {
-            // Find the selected product to get period information
-            const selectedProductData = products.find(
-              (p) => p.Measures === product.measureType,
-            );
-            const guaranteePeriod = selectedProductData
-              ? `${selectedProductData.Year || 0} years${selectedProductData.Month ? `, ${selectedProductData.Month} months` : ""}${selectedProductData.Days ? `, ${selectedProductData.Days} days` : ""}`
-              : "";
+          {allowedProductIds.length === 0 && products.length > 0 ? (
+            <div className='p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-center'>
+              <p className='text-yellow-800 font-medium mb-2'>
+                No insurance products assigned yet
+              </p>
+              <p className='text-sm text-yellow-700'>
+                Your account does not have access to any measures yet. Please
+                contact the admin to assign products.
+              </p>
+            </div>
+          ) : allowedProducts.length === 0 && products.length === 0 ? (
+            <div className='p-6 text-center text-gray-500'>
+              Loading available products...
+            </div>
+          ) : (
+            <>
+              {formData.products.map((product, index) => {
+                // Find the selected product to get period information
+                const selectedProductData = products.find(
+                  (p) => p.Measures === product.measureType,
+                );
+                const guaranteePeriod = selectedProductData
+                  ? `${selectedProductData.Year || 0} years${selectedProductData.Month ? `, ${selectedProductData.Month} months` : ""}${selectedProductData.Days ? `, ${selectedProductData.Days} days` : ""}`
+                  : "";
 
-            return (
-              <div key={product.id} className='mb-6 py-4 rounded-lg'>
-                <div className='flex justify-between items-center mb-4'>
-                  <h3 className='font-medium'>Product {index + 1}</h3>
-                  {formData.products.length > 1 && (
-                    <button
-                      type='button'
-                      onClick={() => removeProduct(product.id)}
-                      className='text-red-500 hover:text-red-700 text-sm'>
-                      Remove Product
-                    </button>
-                  )}
-                </div>
+                return (
+                  <div key={product.id} className='mb-6 py-4 rounded-lg'>
+                    <div className='flex justify-between items-center mb-4'>
+                      <h3 className='font-medium'>Product {index + 1}</h3>
+                      {formData.products.length > 1 && (
+                        <button
+                          type='button'
+                          onClick={() => removeProduct(product.id)}
+                          className='text-red-500 hover:text-red-700 text-sm'>
+                          Remove Product
+                        </button>
+                      )}
+                    </div>
 
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                  <div className='relative dropdown-container'>
-                    <label className='block text-sm font-medium mb-2'>
-                      Measure Type *
-                    </label>
-                    <button
-                      type='button'
-                      onClick={() => toggleProductDropdown(product.id)}
-                      className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between hover:border-blue-400 transition-colors'>
-                      <span
-                        className={
-                          product.measureType
-                            ? "text-gray-900"
-                            : "text-gray-400"
-                        }>
-                        {product.measureType || "Select measure type"}
-                      </span>
-                      <ChevronRight
-                        size={18}
-                        className={`transition-transform ${
-                          showProductDropdown[product.id] ? "rotate-90" : ""
-                        }`}
-                      />
-                    </button>
-                    <ProductDropdown
-                      productId={product.id}
-                      show={showProductDropdown[product.id]}
-                    />
-                    {guaranteePeriod && (
-                      <p className='text-xs text-gray-500 mt-1'>
-                        Guarantee Period: {guaranteePeriod}
-                      </p>
-                    )}
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                      <div className='relative dropdown-container'>
+                        <label className='block text-sm font-medium mb-2'>
+                          Measure Type *
+                        </label>
+                        <button
+                          type='button'
+                          onClick={() => toggleProductDropdown(product.id)}
+                          className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between hover:border-blue-400 transition-colors'>
+                          <span
+                            className={
+                              product.measureType
+                                ? "text-gray-900"
+                                : "text-gray-400"
+                            }>
+                            {product.measureType || "Select measure type"}
+                          </span>
+                          <ChevronRight
+                            size={18}
+                            className={`transition-transform ${
+                              showProductDropdown[product.id] ? "rotate-90" : ""
+                            }`}
+                          />
+                        </button>
+                        <ProductDropdown
+                          productId={product.id}
+                          show={showProductDropdown[product.id]}
+                        />
+                        {guaranteePeriod && (
+                          <p className='text-xs text-gray-500 mt-1'>
+                            Guarantee Period: {guaranteePeriod}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className='block text-sm font-medium mb-2'>
+                          Cover Option
+                        </label>
+                        <input
+                          type='text'
+                          value='Insurance Backed Guarantee'
+                          className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
+                          readOnly
+                        />
+                      </div>
+                      <div className='relative'>
+                        <label className='block text-sm font-medium mb-2'>
+                          Inception Date *
+                        </label>
+                        <input
+                          type='text'
+                          required
+                          placeholder='Click to select date'
+                          value={formatDateForDisplay(product.inceptionDate)}
+                          onClick={() => {
+                            setActiveProductId(product.id);
+                            setShowDatePicker(true);
+                          }}
+                          className='w-full border border-gray-200 rounded-lg px-3 py-2 cursor-pointer'
+                          readOnly
+                        />
+                        {showDatePicker && activeProductId === product.id && (
+                          <DatePicker
+                            onSelect={(date) => {
+                              updateProduct(product.id, "inceptionDate", date);
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <label className='block text-sm font-medium mb-2'>
+                          Expiry Date *
+                        </label>
+                        <input
+                          type='text'
+                          value={formatDateForDisplay(product.expiryDate)}
+                          className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
+                          readOnly
+                        />
+                        {product.expiryDate && (
+                          <p className='text-xs text-gray-500 mt-1'>
+                            Automatically calculated from Inception Date +
+                            Guarantee Period
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className='block text-sm font-medium mb-2'>
+                          Contract Value *
+                        </label>
+                        <input
+                          type='number'
+                          step='0.01'
+                          min='0'
+                          placeholder='Enter contract value (e.g., 600.50)'
+                          className='w-full border border-gray-200 rounded-lg px-3 py-2'
+                          value={product.contractValue}
+                          onChange={(e) =>
+                            updateProduct(
+                              product.id,
+                              "contractValue",
+                              e.target.value,
+                            )
+                          }
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className='block text-sm font-medium mb-2'>
-                      Cover Option
-                    </label>
-                    <input
-                      type='text'
-                      value='Insurance Backed Guarantee'
-                      className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
-                      readOnly
-                    />
-                  </div>
-                  <div className='relative'>
-                    <label className='block text-sm font-medium mb-2'>
-                      Inception Date *
-                    </label>
-                    <input
-                      type='text'
-                      required
-                      placeholder='Click to select date'
-                      value={formatDateForDisplay(product.inceptionDate)}
-                      onClick={() => {
-                        setActiveProductId(product.id);
-                        setShowDatePicker(true);
-                      }}
-                      className='w-full border border-gray-200 rounded-lg px-3 py-2 cursor-pointer'
-                      readOnly
-                    />
-                    {showDatePicker && activeProductId === product.id && (
-                      <DatePicker
-                        onSelect={(date) => {
-                          updateProduct(product.id, "inceptionDate", date);
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <label className='block text-sm font-medium mb-2'>
-                      Expiry Date *
-                    </label>
-                    <input
-                      type='text'
-                      value={formatDateForDisplay(product.expiryDate)}
-                      className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50'
-                      readOnly
-                    />
-                    {product.expiryDate && (
-                      <p className='text-xs text-gray-500 mt-1'>
-                        Automatically calculated from Inception Date + Guarantee
-                        Period
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className='block text-sm font-medium mb-2'>
-                      Contract Value *
-                    </label>
-                    <input
-                      type='number'
-                      step='0.01'
-                      min='0'
-                      placeholder='Enter contract value (e.g., 600.50)'
-                      className='w-full border border-gray-200 rounded-lg px-3 py-2'
-                      value={product.contractValue}
-                      onChange={(e) =>
-                        updateProduct(
-                          product.id,
-                          "contractValue",
-                          e.target.value,
-                        )
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
 
-          <button
-            type='button'
-            onClick={addProduct}
-            className='text-[#0F47A8] ml-auto flex items-center gap-2 text-sm font-medium hover:text-blue-700 mt-4'>
-            <Plus size={18} />
-            Add Product
-          </button>
+              <button
+                type='button'
+                onClick={addProduct}
+                className='text-[#0F47A8] ml-auto flex items-center gap-2 text-sm font-medium hover:text-blue-700 mt-4'>
+                <Plus size={18} />
+                Add Product
+              </button>
+            </>
+          )}
         </div>
 
         {/* Compliance and Submission */}
