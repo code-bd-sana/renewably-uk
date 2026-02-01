@@ -1,9 +1,28 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
+import { authenticate } from "@/middleware/auth";
 
-export async function GET() {
+export async function GET(request) {
   try {
+    // AUTH CHECK
+    const auth = await authenticate(request);
+
+    if (!auth.success) {
+      return Response.json(
+        { success: false, error: auth.error },
+        { status: auth.status || 401 },
+      );
+    }
+
+    // ADMIN CHECK
+    if (auth.userRole !== "admin") {
+      return Response.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 },
+      );
+    }
+
     await connectDB();
 
     const pipeline = [
