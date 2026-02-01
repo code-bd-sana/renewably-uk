@@ -8,14 +8,13 @@ import {
   PlayCircle,
   Trash2,
   Edit2,
-  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export default function ContractorTable({
   contractors,
-  products,
+  products, // still passed but not used for lookup anymore
   openContractorModal,
   downloadHandler,
   handleDelete,
@@ -29,62 +28,51 @@ export default function ContractorTable({
   openProductEditModal,
 }) {
   const router = useRouter();
-  const [detailedData, setDetailedData] = useState({});
-  const [loading, setLoading] = useState({});
+  const [measuresMap, setMeasuresMap] = useState({}); // id → allowedProducts array with Measures
 
-  // Fetch detailed data (allowedProducts, roles, etc.)
+  // Fetch measures once for all visible contractors
   useEffect(() => {
-    const fetchDetails = async () => {
-      const updates = {};
-      for (const contractor of contractors) {
-        const id = contractor.id;
-        if (!detailedData[id]) {
-          setLoading((prev) => ({ ...prev, [id]: true }));
-          try {
-            const res = await fetch(`/api/admin/contractor/${id}`);
-            const data = await res.json();
-            if (data.success && data.contractor) {
-              updates[id] = data.contractor;
+    if (!contractors?.length) return;
+
+    const fetchMeasuresOnce = async () => {
+      try {
+        const res = await fetch("/api/admin/contractor/all");
+        const data = await res.json();
+
+        if (data.success && data.contractors) {
+          const newMap = {};
+          data.contractors.forEach((c) => {
+            if (c.id && c.allowedProducts) {
+              newMap[c.id] = c.allowedProducts; // array of { _id, Measures }
             }
-          } catch (error) {
-            console.error(`Error fetching details for ${id}:`, error);
-          } finally {
-            setLoading((prev) => ({ ...prev, [id]: false }));
-          }
+          });
+          setMeasuresMap(newMap);
         }
-      }
-      if (Object.keys(updates).length > 0) {
-        setDetailedData((prev) => ({ ...prev, ...updates }));
+      } catch (error) {
+        console.error("Failed to load measures:", error);
       }
     };
 
-    if (contractors?.length > 0) {
-      fetchDetails();
-    }
-  }, [contractors, detailedData]);
+    fetchMeasuresOnce();
+  }, [contractors]);
 
-  // Merge logic: protect prefix from being overwritten
-  const getMergedContractor = (contractor) => {
-    const detail = detailedData[contractor.id] || {};
-    return {
-      ...contractor, // list data first (has prefix)
-      ...detail, // detail data for other fields
-      // Protect prefix fields — always prefer list value if available
-      policyNoPrefix: contractor.policyNoPrefix ?? detail.policyNoPrefix,
-      isPrefixLocked: contractor.isPrefixLocked ?? detail.isPrefixLocked,
-    };
+  // Get measures for this contractor (from the single batch fetch)
+  const getContractorMeasures = (contractor) => {
+    return measuresMap[contractor.id] || [];
   };
 
-  // Product name lookup
-  const getProductName = (id) => {
-    if (!id || !products?.length) return `Product ${id || "?"}`;
-    const idStr = String(id);
-    const product = products.find((p) => String(p._id) === idStr);
-    return product?.Measures || product?.name || `Product ${idStr.slice(-6)}`;
+  // Use Measures directly from backend object
+  const getProductName = (item) => {
+    if (!item) return "None";
+    if (item.Measures) return item.Measures;
+
+    // Fallback
+    const idStr = String(item._id || "?");
+    return `Product ${idStr.slice(-6)}`;
   };
 
-  const getProductShortName = (id) => {
-    const name = getProductName(id);
+  const getProductShortName = (item) => {
+    const name = getProductName(item);
     const abbreviations = {
       "External Wall Insulation": "EWI",
       "Cavity Wall Insulation": "Cavity",
@@ -103,26 +91,22 @@ export default function ContractorTable({
     );
   };
 
-  const getProductNames = (productIds = []) => {
-    if (!productIds?.length) return "None";
-    const ids = Array.isArray(productIds) ? productIds : [productIds];
-    const names = ids.map(getProductName).filter(Boolean);
+  const getProductNames = (items = []) => {
+    if (!items.length) return "None";
+    const names = items.map(getProductName).filter(Boolean);
     return names.length ? names.join(", ") : "None";
   };
 
-  const getDisplayProducts = (productIds = []) => {
-    if (!productIds?.length) {
-      return { display: [], count: 0, hasMore: false, fullList: [] };
+  const getDisplayProducts = (items = []) => {
+    if (!items.length) {
+      return { display: [], count: 0, hasMore: false };
     }
-    const ids = Array.isArray(productIds) ? productIds : [productIds];
-    const firstThree = ids.slice(0, 3);
+    const firstThree = items.slice(0, 3);
     const shortNames = firstThree.map(getProductShortName);
-    const fullNames = ids.map(getProductName);
     return {
       display: shortNames,
-      count: fullNames.length,
-      hasMore: fullNames.length > 3,
-      fullList: fullNames,
+      count: items.length,
+      hasMore: items.length > 3,
     };
   };
 
@@ -132,15 +116,6 @@ export default function ContractorTable({
       ? text
       : text.substring(0, maxLength) + "...";
   };
-
-  if (!products) {
-    return (
-      <div className='hidden md:block bg-white border border-gray-200 rounded-lg p-8 text-center'>
-        <Loader2 className='w-8 h-8 animate-spin text-blue-600 mx-auto mb-4' />
-        <p className='text-gray-600'>Loading products data...</p>
-      </div>
-    );
-  }
 
   return (
     <div className='hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden'>
@@ -194,35 +169,33 @@ export default function ContractorTable({
               </tr>
             ) : (
               contractors.map((contractor) => {
-                const merged = getMergedContractor(contractor);
-                const productsInfo = getDisplayProducts(
-                  merged.allowedProducts || [],
-                );
-                const isLoading = loading[contractor.id];
+                // Get pre-fetched measures (one call for all rows)
+                const allowedProducts = getContractorMeasures(contractor);
+                const productsInfo = getDisplayProducts(allowedProducts);
 
                 return (
                   <tr
                     key={contractor.id}
                     className='hover:bg-gray-50 transition-colors'>
-                    {/* Prefix - protected */}
+                    {/* Prefix */}
                     <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
-                      {merged.policyNoPrefix ? (
+                      {contractor.policyNoPrefix ? (
                         <div className='flex items-center gap-2'>
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              merged.isPrefixLocked
+                              contractor.isPrefixLocked
                                 ? "bg-green-100 text-green-800"
                                 : "bg-blue-100 text-blue-800"
                             }`}>
-                            {merged.policyNoPrefix}
+                            {contractor.policyNoPrefix}
                           </span>
-                          {!merged.isPrefixLocked && (
+                          {!contractor.isPrefixLocked && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const newPrefix = prompt(
-                                  `Update prefix (current: ${merged.policyNoPrefix}):`,
-                                  merged.policyNoPrefix,
+                                  `Update prefix (current: ${contractor.policyNoPrefix}):`,
+                                  contractor.policyNoPrefix,
                                 );
                                 if (newPrefix) {
                                   const upper = newPrefix.trim().toUpperCase();
@@ -245,7 +218,7 @@ export default function ContractorTable({
                           onClick={(e) => {
                             e.stopPropagation();
                             const newPrefix = prompt(
-                              `Set prefix for ${merged.name} (3-10 uppercase letters):`,
+                              `Set prefix for ${contractor.name} (3-10 uppercase letters):`,
                             );
                             if (newPrefix) {
                               const upper = newPrefix.trim().toUpperCase();
@@ -272,34 +245,34 @@ export default function ContractorTable({
                           )
                         }
                         className='text-blue-700 hover:text-blue-800 hover:underline transition-colors'>
-                        {merged.name}
+                        {contractor.name}
                       </button>
                     </td>
 
                     <td className='px-6 py-4 text-sm text-gray-600'>
-                      {merged.companyName || "N/A"}
+                      {contractor.companyName || "N/A"}
                     </td>
 
                     <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
-                      {merged.email}
+                      {contractor.email}
                     </td>
 
                     <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
-                      {merged.phoneNumber || "N/A"}
+                      {contractor.phoneNumber || "N/A"}
                     </td>
 
                     <td className='px-6 py-4 whitespace-nowrap text-center'>
                       <span
                         className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                          merged.isApproved
-                            ? merged.isSuspended
+                          contractor.isApproved
+                            ? contractor.isSuspended
                               ? "bg-yellow-100 text-yellow-700"
                               : "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-700"
                         }`}>
-                        {!merged.isApproved
+                        {!contractor.isApproved
                           ? "Not Approved"
-                          : merged.isSuspended
+                          : contractor.isSuspended
                             ? "Suspended"
                             : "Active"}
                       </span>
@@ -308,8 +281,8 @@ export default function ContractorTable({
                     <td className='px-6 py-4 whitespace-nowrap'>
                       <div className='flex items-center gap-x-1 group'>
                         <div className='flex flex-wrap gap-1.5'>
-                          {merged.roles?.length > 0 ? (
-                            merged.roles.map((role) => (
+                          {contractor.roles?.length > 0 ? (
+                            contractor.roles.map((role) => (
                               <span
                                 key={role}
                                 className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-800 capitalize'>
@@ -322,11 +295,11 @@ export default function ContractorTable({
                             </span>
                           )}
                         </div>
-                        {!merged.isSuspended && merged.isApproved ? (
+                        {!contractor.isSuspended && contractor.isApproved ? (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              openRolesModal(merged);
+                              openRolesModal(contractor);
                             }}
                             className='opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-100'
                             title='Edit roles'>
@@ -337,14 +310,14 @@ export default function ContractorTable({
                             onClick={(e) => {
                               e.stopPropagation();
                               alert(
-                                merged.isSuspended
+                                contractor.isSuspended
                                   ? "This user is currently suspended. You cannot edit roles until unsuspended."
                                   : "This user is not yet approved. Roles can only be assigned to approved users.",
                               );
                             }}
                             className='opacity-50 cursor-not-allowed p-1 rounded'
                             title={
-                              merged.isSuspended
+                              contractor.isSuspended
                                 ? "Suspended - cannot edit"
                                 : "Not approved - cannot edit"
                             }>
@@ -354,95 +327,85 @@ export default function ContractorTable({
                       </div>
                     </td>
 
-                    <td className='px-6 py-4 whitespace-nowrap'>
+                    {/* Approved Measures */}
+                    <td className='px-3 py-4 whitespace-nowrap'>
                       <div className='flex items-center gap-x-1 group'>
-                        {isLoading ? (
-                          <div className='flex items-center gap-2'>
-                            <Loader2 className='w-3 h-3 animate-spin text-gray-400' />
-                            <span className='text-xs text-gray-500'>
-                              Loading...
-                            </span>
-                          </div>
-                        ) : (
-                          <>
-                            <div className='max-w-xs'>
-                              <div className='flex flex-col gap-1'>
-                                <div className='flex flex-wrap gap-1'>
-                                  {productsInfo.count > 0 ? (
-                                    <>
-                                      {productsInfo.display.map(
-                                        (product, index) => (
-                                          <span
-                                            key={index}
-                                            className='inline-block px-2 py-1 text-xs font-medium bg-green-50 text-green-800 rounded-full'
-                                            title={
-                                              productsInfo.fullList[index]
-                                            }>
-                                            {product}
-                                          </span>
-                                        ),
-                                      )}
-                                      {productsInfo.hasMore && (
-                                        <span className='inline-block px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full'>
-                                          +{productsInfo.count - 3} more
-                                        </span>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <span className='text-gray-500 text-sm italic'>
-                                      None
+                        <div className='max-w-xs'>
+                          <div className='flex flex-col gap-1'>
+                            <div className='flex flex-wrap gap-1'>
+                              {productsInfo.count > 0 ? (
+                                <>
+                                  {productsInfo.display.map(
+                                    (product, index) => (
+                                      <span
+                                        key={index}
+                                        className='inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-800 rounded-full'
+                                        title={getProductNames(
+                                          getContractorMeasures(contractor),
+                                        )}>
+                                        {product}
+                                      </span>
+                                    ),
+                                  )}
+                                  {productsInfo.hasMore && (
+                                    <span className='inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full'>
+                                      +{productsInfo.count - 3} more
                                     </span>
                                   )}
-                                </div>
-                              </div>
+                                </>
+                              ) : (
+                                <span className='text-gray-500 text-sm italic'>
+                                  None
+                                </span>
+                              )}
                             </div>
+                          </div>
+                        </div>
 
-                            {!merged.isSuspended && merged.isApproved ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openProductEditModal(merged);
-                                }}
-                                className='opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-100 ml-1'
-                                title='Edit approved measures'>
-                                <Edit2 size={14} className='text-gray-500' />
-                              </button>
-                            ) : (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  alert(
-                                    merged.isSuspended
-                                      ? "This user is currently suspended. You cannot edit measures until unsuspend."
-                                      : "This user is not yet approved. Measures can only be assigned to approved users.",
-                                  );
-                                }}
-                                className='opacity-50 cursor-not-allowed p-1 rounded ml-1'
-                                title={
-                                  merged.isSuspended
-                                    ? "Suspended - cannot edit"
-                                    : "Not approved - cannot edit"
-                                }>
-                                <Edit2 size={14} className='text-gray-400' />
-                              </button>
-                            )}
-                          </>
+                        {!contractor.isSuspended && contractor.isApproved ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openProductEditModal(contractor);
+                            }}
+                            className='opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-100 ml-1'
+                            title='Edit approved measures'>
+                            <Edit2 size={14} className='text-gray-500' />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              alert(
+                                contractor.isSuspended
+                                  ? "This user is currently suspended. You cannot edit measures until unsuspended."
+                                  : "This user is not yet approved. Measures can only be assigned to approved users.",
+                              );
+                            }}
+                            className='opacity-50 cursor-not-allowed p-1 rounded ml-1'
+                            title={
+                              contractor.isSuspended
+                                ? "Suspended - cannot edit"
+                                : "Not approved - cannot edit"
+                            }>
+                            <Edit2 size={14} className='text-gray-400' />
+                          </button>
                         )}
                       </div>
                     </td>
 
                     <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                      {formatDate(merged.createdAt)}
+                      {formatDate(contractor.createdAt)}
                     </td>
 
                     <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                      {merged.certificateCount || 0}
+                      {contractor.certificateCount || 0}
                     </td>
 
                     <td className='px-6 py-4 whitespace-nowrap'>
                       <div className='flex items-center justify-center gap-2 action-dropdown-container'>
                         <button
-                          onClick={() => openContractorModal(merged)}
+                          onClick={() => openContractorModal(contractor)}
                           className='text-blue-700 hover:text-blue-800 transition-colors p-1'
                           title='View Details'>
                           <Eye className='w-5 h-5' />
@@ -468,20 +431,21 @@ export default function ContractorTable({
                           {showActionMenu === contractor.id && (
                             <div className='absolute right-0 top-full mt-1 w-48 bg-white rounded-lg border border-gray-200 z-50 shadow-xl'>
                               <div className='py-1'>
-                                {merged.isApproved && !merged.isSuspended && (
+                                {contractor.isApproved &&
+                                  !contractor.isSuspended && (
+                                    <button
+                                      onClick={() =>
+                                        openSuspendModal(contractor, "suspend")
+                                      }
+                                      className='w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2'>
+                                      <PauseCircle className='w-4 h-4' />
+                                      Suspend User
+                                    </button>
+                                  )}
+                                {contractor.isSuspended && (
                                   <button
                                     onClick={() =>
-                                      openSuspendModal(merged, "suspend")
-                                    }
-                                    className='w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2'>
-                                    <PauseCircle className='w-4 h-4' />
-                                    Suspend User
-                                  </button>
-                                )}
-                                {merged.isSuspended && (
-                                  <button
-                                    onClick={() =>
-                                      openSuspendModal(merged, "unsuspend")
+                                      openSuspendModal(contractor, "unsuspend")
                                     }
                                     className='w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50 flex items-center gap-2'>
                                     <PlayCircle className='w-4 h-4' />

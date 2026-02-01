@@ -277,6 +277,8 @@ export async function GET(request) {
         policyNoPrefix: contractor.policyNoPrefix || null,
         lastCertificateSequence: contractor.lastCertificateSequence || 0,
         isPrefixLocked: contractor.isPrefixLocked || false,
+
+        allowedProducts: contractor.allowedProducts || [],
       })),
       pagination: {
         page,
