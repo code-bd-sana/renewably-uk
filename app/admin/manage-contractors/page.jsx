@@ -1,27 +1,20 @@
 "use client";
 
-import ProductAssignmentSection from "@/components/Admin/ProductAssignmentSection";
-import { downloadPdf } from "@/utils/pdfGenerator";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Eye,
-  FileText,
-  Loader2,
-  Menu,
-  Search,
-  Trash2,
-  X,
-  MoreVertical,
-  PauseCircle,
-  PlayCircle,
-  Edit2,
-} from "lucide-react";
-import Link from "next/link";
+import ContractorCards from "@/components/Admin/ManageContractor/ContractorCards";
+import ContractorModal from "@/components/Admin/ManageContractor/ContractorModal";
+import ContractorTable from "@/components/Admin/ManageContractor/ContractorTable";
+import HeaderSection from "@/components/Admin/ManageContractor/HeaderSection";
+import Pagination from "@/components/Admin/ManageContractor/Pagination";
+import ProductEditModal from "@/components/Admin/ManageContractor/ProductEditModal";
+import RolesModal from "@/components/Admin/ManageContractor/RolesModal";
+import StatsGrid from "@/components/Admin/ManageContractor/StatsGrid";
+import SuspendModal from "@/components/Admin/ManageContractor/SuspendModal";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+
+// Import components
 
 export default function ManageContractorsPage() {
   const router = useRouter();
@@ -34,11 +27,9 @@ export default function ManageContractorsPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedContractor, setSelectedContractor] = useState(null);
   const [showContractorModal, setShowContractorModal] = useState(false);
-  const [contractor, setContractor] = useState(null);
-  const [certificates, setCertificates] = useState(null);
   const [loader2, setLoader2] = useState(false);
 
-  // NEW STATES FOR SUSPEND FUNCTIONALITY
+  // Action menu states
   const [showActionMenu, setShowActionMenu] = useState(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [showSuspendModal, setShowSuspendModal] = useState(false);
@@ -49,54 +40,24 @@ export default function ManageContractorsPage() {
   const [prefixInput, setPrefixInput] = useState("");
   const [savingPrefix, setSavingPrefix] = useState(false);
 
+  // Roles modal states
   const [showRolesModal, setShowRolesModal] = useState(false);
   const [editingContractor, setEditingContractor] = useState(null);
 
+  // Product Edit Modal
+  const [products, setProducts] = useState([]);
+  const [showProductEditModal, setShowProductEditModal] = useState(false);
+  const [
+    selectedContractorForProductEdit,
+    setSelectedContractorForProductEdit,
+  ] = useState(null);
+
+  // Product assignment
   const [selectedProductIds, setSelectedProductIds] = useState([]);
 
   const itemsPerPage = 10;
 
-  const openRolesModal = (contractor) => {
-    if (!contractor.isApproved) {
-      alert(
-        "This user is not yet approved. Roles can only be assigned to approved users.",
-      );
-      return;
-    }
-
-    if (contractor.isSuspended) {
-      alert(
-        "This user is currently suspended. You cannot edit roles until unsuspend them.",
-      );
-      return;
-    }
-
-    setEditingContractor(contractor);
-    setShowRolesModal(true);
-  };
-
-  const closeRolesModal = () => {
-    setShowRolesModal(false);
-    setEditingContractor(null);
-  };
   // Fetch contractors
-  // const fetchContractors = useCallback(async () => {
-  //   try {
-  //     setLoading(true);
-  //     const res = await fetch("/api/admin/contractor");
-  //     const data = await res.json();
-  //     console.log("Fetched contractors data:", data); // Add this line
-  //     console.log("Full response:", data.users);
-  //     if (data.success) {
-  //       setContractors(data.users);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching contractors:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }, []);
-
   const fetchContractors = useCallback(async () => {
     try {
       console.log("Fetching contractors...");
@@ -105,10 +66,6 @@ export default function ManageContractorsPage() {
       console.log("Fetched contractors:", data.users);
 
       if (data.success) {
-        // Log one contractor to check roles
-        if (data.users && data.users.length > 0) {
-          console.log("First contractor roles:", data.users[0].roles);
-        }
         setContractors(data.users);
       }
     } catch (error) {
@@ -141,86 +98,28 @@ export default function ManageContractorsPage() {
     }
   };
 
-  const fetchData = async (contractorId) => {
-    try {
-      setLoading(true);
-
-      console.log("Fetching data for contractor ID:", contractorId);
-
-      // Fetch contractor details
-      const contractorRes = await fetch(
-        `/api/admin/contractor/${contractorId}`,
-      );
-
-      console.log("Contractor response status:", contractorRes.status);
-
-      if (!contractorRes.ok) {
-        throw new Error(`Failed to fetch contractor: ${contractorRes.status}`);
-      }
-
-      const contractorText = await contractorRes.text();
-      console.log(
-        "Contractor response text (first 500 chars):",
-        contractorText.substring(0, 500),
-      );
-
-      if (!contractorText) {
-        throw new Error("Empty response from contractor API");
-      }
-
-      const contractorData = JSON.parse(contractorText);
-
-      if (!contractorData.success) {
-        throw new Error(
-          contractorData.error || "Failed to fetch contractor data",
-        );
-      }
-
-      setContractor(contractorData.contractor);
-
-      // Fetch certificates for this contractor
-      const certsRes = await fetch(
-        `/api/admin/certificates?contractorId=${contractorId}`,
-      );
-
-      console.log("Certificates response status:", certsRes);
-
-      if (!certsRes.ok) {
-        throw new Error(`Failed to fetch certificates: ${certsRes.status}`);
-      }
-
-      const certsText = await certsRes.text();
-      // console.log(
-      //   "Certificates response text (first 500 chars):",
-      //   certsText.substring(0, 500)
-      // );
-
-      if (!certsText) {
-        console.warn("Empty response from certificates API, using empty array");
-        setCertificates([]);
-        return;
-      }
-
-      const certsData = JSON.parse(certsText);
-
-      if (certsData.success) {
-        setCertificates(certsData.certificates || []);
-      } else {
-        console.error("Certificates API error:", certsData.error);
-        setCertificates([]);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      alert(`Error: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchContractors();
   }, [fetchContractors]);
 
+  // to fetch products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("/api/admin/products");
+        const data = await res.json();
+        if (data.success) {
+          setProducts(data.products || []);
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Save prefix
   const savePrefix = async (contractorId, prefix) => {
     try {
       setSavingPrefix(true);
@@ -235,11 +134,8 @@ export default function ManageContractorsPage() {
 
       if (data.success) {
         alert(`Prefix set to ${prefix}`);
-
-        // Refresh the contractors list
         await fetchContractors();
 
-        // Also update local selected contractor if in modal
         if (selectedContractor?.id === contractorId) {
           setSelectedContractor((prev) => ({
             ...prev,
@@ -248,7 +144,7 @@ export default function ManageContractorsPage() {
           }));
         }
 
-        setPrefixInput(""); // optional: clear input
+        setPrefixInput("");
       } else {
         alert(data.error || "Failed to set prefix");
       }
@@ -260,6 +156,18 @@ export default function ManageContractorsPage() {
     }
   };
 
+  // To open the product edit modal
+  const openProductEditModal = (contractor) => {
+    setSelectedContractorForProductEdit(contractor);
+    setShowProductEditModal(true);
+  };
+
+  //To close the product edit modal
+  const closeProductEditModal = () => {
+    setShowProductEditModal(false);
+    setSelectedContractorForProductEdit(null);
+  };
+  // Save allowed products
   const handleSaveAllowedProducts = async () => {
     if (!selectedContractor?.id) {
       toast.error("No contractor selected");
@@ -285,13 +193,11 @@ export default function ManageContractorsPage() {
       if (data.success) {
         toast.success("Allowed products updated!");
 
-        // Update modal display
         setSelectedContractor((prev) => ({
           ...prev,
           allowedProducts: selectedProductIds,
         }));
 
-        // Refresh full list if needed
         fetchContractors();
       } else {
         toast.error(data.error || "Save failed");
@@ -303,7 +209,8 @@ export default function ManageContractorsPage() {
       setActionLoading(false);
     }
   };
-  // Open contractor details modal and fetch documents
+
+  // Open contractor modal
   const openContractorModal = async (contractor) => {
     setSelectedContractor(contractor);
     setShowContractorModal(true);
@@ -316,30 +223,24 @@ export default function ManageContractorsPage() {
         const fresh = data.contractor;
         setSelectedContractor(fresh);
 
-        // Load existing allowed products into selected state
         const existingIds = (fresh.allowedProducts || []).map((id) =>
           id.toString(),
         );
-
         console.log("Existing allowed products from DB:", existingIds);
-        setSelectedProductIds(existingIds); // pre-selection
+        setSelectedProductIds(existingIds);
       }
-      // Fetch documents for this contractor
+
       if (!contractorDocuments[contractor.id]) {
         await fetchContractorDocuments(contractor.id);
       }
 
-      // FETCH CERTIFICATES USING THE SAME ENDPOINT AS ContractorCertificatesPage
-      console.log("Fetching certificates for contractor ID:", contractor.id);
-
+      // Fetch certificates
       const certsRes = await fetch(
         `/api/admin/certificates?contractorId=${contractor.id}`,
       );
 
       if (certsRes.ok) {
         const certsData = await certsRes.json();
-        console.log("Certificates data:", certsData);
-
         if (certsData.success) {
           const certificateCount = certsData.certificates?.length || 0;
           const lastCertificateDate =
@@ -349,10 +250,6 @@ export default function ManageContractorsPage() {
                 )[0].createdAt
               : null;
 
-          console.log("Actual certificate count:", certificateCount);
-          console.log("Last certificate date:", lastCertificateDate);
-
-          // Update contractor with REAL data
           setSelectedContractor((prev) => ({
             ...prev,
             certificateCount: certificateCount,
@@ -361,7 +258,7 @@ export default function ManageContractorsPage() {
         }
       }
 
-      // FETCH PENDING REQUESTS
+      // Fetch pending requests
       try {
         const requestsRes = await fetch(
           `/api/admin/contractor?type=requests&contractorId=${contractor.id}&status=pending`,
@@ -371,8 +268,6 @@ export default function ManageContractorsPage() {
 
           if (requestsData.success) {
             const pendingCount = requestsData.requests?.length || 0;
-            console.log("Pending requests count:", pendingCount);
-
             setSelectedContractor((prev) => ({
               ...prev,
               pendingRequests: pendingCount,
@@ -386,6 +281,7 @@ export default function ManageContractorsPage() {
       console.error("Error in openContractorModal:", error);
     }
   };
+
   // Close contractor modal
   const closeContractorModal = () => {
     setShowContractorModal(false);
@@ -404,7 +300,6 @@ export default function ManageContractorsPage() {
   };
 
   // Filter contractors by search
-  console.log("contractor", contractors);
   const filteredContractors = contractors.filter((contractor) => {
     return (
       searchTerm === "" ||
@@ -422,10 +317,10 @@ export default function ManageContractorsPage() {
   const endIndex = startIndex + itemsPerPage;
   const currentContractors = filteredContractors.slice(startIndex, endIndex);
 
+  // Download handler
   const downloadHandler = async (contractorId) => {
     setLoader2(true);
     try {
-      // 1. Get contractor
       const contractorRes = await fetch(
         `/api/admin/contractor/${contractorId}`,
       );
@@ -441,7 +336,6 @@ export default function ManageContractorsPage() {
         address: "N/A",
       };
 
-      // 2. Get certificates list (just IDs)
       const certsRes = await fetch(
         `/api/admin/certificates?contractorId=${contractorId}&brief=true`,
       );
@@ -455,12 +349,12 @@ export default function ManageContractorsPage() {
 
       const certificateIds = certsData.certificates.map((cert) => {
         const id = cert.id || cert._id;
-        // If ID contains a hyphen, take only the first part
         return id.split("-")[0];
       });
 
-      // 3. Fetch each certificate individually for complete data
-      const certificates = [];
+      // Import downloadPdf function (make sure it's available)
+      const { downloadPdf } = await import("@/utils/pdfGenerator");
+
       for (const certId of certificateIds) {
         try {
           const singleCertRes = await fetch(
@@ -469,7 +363,41 @@ export default function ManageContractorsPage() {
           if (singleCertRes.ok) {
             const singleCertData = await singleCertRes.json();
             if (singleCertData.success && singleCertData.certificate) {
-              certificates.push(singleCertData.certificate);
+              const completeCertificate = {
+                ...singleCertData.certificate,
+                policyNo:
+                  singleCertData.certificate.policyNo ||
+                  singleCertData.certificate.policyNumber,
+                policyNumber:
+                  singleCertData.certificate.policyNumber ||
+                  singleCertData.certificate.policyNo,
+                holderName:
+                  singleCertData.certificate.holderName ||
+                  singleCertData.certificate.policyHolderName,
+                rawData: singleCertData.certificate.rawData || {
+                  insurance: {
+                    contractorName:
+                      singleCertData.certificate.contractorName ||
+                      contractor.name,
+                    contractorAddress: contractor.address || "",
+                    policyHolderName:
+                      singleCertData.certificate.holderName ||
+                      singleCertData.certificate.policyHolderName,
+                    email: singleCertData.certificate.email || contractor.email,
+                    phone: singleCertData.certificate.phone || contractor.phone,
+                    address: singleCertData.certificate.address || "",
+                    country: singleCertData.certificate.country || "",
+                    postcode: singleCertData.certificate.postcode || "",
+                  },
+                  product: {
+                    productType: singleCertData.certificate.productType,
+                    coverOption: "Insurance Backed Guarantee",
+                  },
+                },
+              };
+
+              await downloadPdf(completeCertificate, contractor);
+              await new Promise((r) => setTimeout(r, 400));
             }
           }
         } catch (error) {
@@ -477,43 +405,7 @@ export default function ManageContractorsPage() {
         }
       }
 
-      if (certificates.length === 0) {
-        alert("Could not fetch certificate details");
-        return;
-      }
-
-      // 4. Download certificates
-      for (const cert of certificates) {
-        // Prepare complete data
-        const completeCertificate = {
-          ...cert,
-          policyNo: cert.policyNo || cert.policyNumber,
-          policyNumber: cert.policyNumber || cert.policyNo,
-          holderName: cert.holderName || cert.policyHolderName,
-          // Ensure rawData exists
-          rawData: cert.rawData || {
-            insurance: {
-              contractorName: cert.contractorName || contractor.name,
-              contractorAddress: contractor.address || "",
-              policyHolderName: cert.holderName || cert.policyHolderName,
-              email: cert.email || contractor.email,
-              phone: cert.phone || contractor.phone,
-              address: cert.address || "",
-              country: cert.country || "",
-              postcode: cert.postcode || "",
-            },
-            product: {
-              productType: cert.productType,
-              coverOption: "Insurance Backed Guarantee",
-            },
-          },
-        };
-
-        await downloadPdf(completeCertificate, contractor);
-        await new Promise((r) => setTimeout(r, 400));
-      }
-
-      alert(`Successfully downloaded ${certificates.length} certificate(s)`);
+      alert(`Successfully downloaded certificates`);
     } catch (error) {
       console.error("Download handler error:", error);
       alert("Error generating certificates: " + error.message);
@@ -524,17 +416,9 @@ export default function ManageContractorsPage() {
 
   // Handle delete contractor
   const handleDelete = async (contractorId) => {
-    console.log("DELETE clicked");
-    console.log("Contractor ID to delete:", contractorId);
-    console.log("Contractor ID type:", typeof contractorId);
-    console.log("Contractor ID length:", contractorId?.length);
-
-    // Find the contractor in current state to verify
     const contractorToDelete = contractors.find((c) => c.id === contractorId);
-    console.log("Contractor to delete from state:", contractorToDelete);
 
     if (!contractorToDelete) {
-      console.error("Contractor not found in state!");
       alert("Contractor not found in current list");
       return;
     }
@@ -548,28 +432,16 @@ export default function ManageContractorsPage() {
     }
 
     try {
-      console.log(`Calling DELETE /api/admin/contractor/${contractorId}`);
-
       const res = await fetch(`/api/admin/contractor/${contractorId}`, {
         method: "DELETE",
       });
 
-      console.log("Response status:", res.status);
-      console.log(
-        "Response headers:",
-        Object.fromEntries(res.headers.entries()),
-      );
-
       const data = await res.json();
-      console.log("Response data:", data);
 
       if (data.success) {
-        console.log("Delete successful, updating state...");
-        // Remove contractor from list
         setContractors((prev) => prev.filter((c) => c.id !== contractorId));
         alert("Contractor deleted successfully");
       } else {
-        console.error("Delete failed:", data.error);
         alert(`Failed to delete contractor: ${data.error}`);
       }
     } catch (error) {
@@ -589,14 +461,11 @@ export default function ManageContractorsPage() {
     });
   };
 
-  // ========== SUSPEND FUNCTIONS START ==========
-
-  // Close all dropdown menus
+  // Action menu handlers
   const closeAllMenus = () => {
     setShowActionMenu(null);
   };
 
-  // Open action menu dropdown
   const handleOpenActionMenu = (contractorId, e) => {
     e.stopPropagation();
     setShowActionMenu(showActionMenu === contractorId ? null : contractorId);
@@ -611,13 +480,6 @@ export default function ManageContractorsPage() {
     try {
       setActionLoading(true);
 
-      console.log(
-        "Calling suspend API for:",
-        contractorId,
-        "shouldSuspend:",
-        shouldSuspend,
-      );
-
       const res = await fetch(`/api/admin/contractor/${contractorId}/suspend`, {
         method: "POST",
         headers: {
@@ -629,17 +491,13 @@ export default function ManageContractorsPage() {
         }),
       });
 
-      console.log("API Response status:", res.status);
-
       const data = await res.json();
-      console.log("API Response data:", data);
 
       if (!res.ok) {
         throw new Error(data.error || `HTTP error! status: ${res.status}`);
       }
 
       if (data.success) {
-        // Update local state - FIXED: Use the returned data from API
         setContractors((prev) =>
           prev.map((c) =>
             c.id === contractorId
@@ -653,7 +511,6 @@ export default function ManageContractorsPage() {
           ),
         );
 
-        // Update selected contractor if modal is open
         if (selectedContractor?.id === contractorId) {
           setSelectedContractor((prev) => ({
             ...prev,
@@ -678,6 +535,7 @@ export default function ManageContractorsPage() {
       setSelectedContractorForAction(null);
     }
   };
+
   // Open suspend modal
   const openSuspendModal = (contractor, type) => {
     setSelectedContractorForAction(contractor);
@@ -685,6 +543,32 @@ export default function ManageContractorsPage() {
     setSuspendReason(contractor.suspensionReason || "");
     setShowSuspendModal(true);
     setShowActionMenu(null);
+  };
+
+  // Open roles modal
+  const openRolesModal = (contractor) => {
+    if (!contractor.isApproved) {
+      alert(
+        "This user is not yet approved. Roles can only be assigned to approved users.",
+      );
+      return;
+    }
+
+    if (contractor.isSuspended) {
+      alert(
+        "This user is currently suspended. You cannot edit roles until unsuspend them.",
+      );
+      return;
+    }
+
+    setEditingContractor(contractor);
+    setShowRolesModal(true);
+  };
+
+  // Close roles modal
+  const closeRolesModal = () => {
+    setShowRolesModal(false);
+    setEditingContractor(null);
   };
 
   // Close click outside handler
@@ -712,17 +596,12 @@ export default function ManageContractorsPage() {
       <div className='fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center'>
         <div className='bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4'>
           <div className='text-center'>
-            {/* Simple Spinner */}
             <div className='relative w-20 h-20 mx-auto mb-6'>
               <Loader2 className='w-20 h-20 text-blue-600 animate-spin' />
             </div>
-
-            {/* Simple Text */}
             <h3 className='text-xl font-bold text-gray-800 mb-3'>
               Downloading Certificates
             </h3>
-
-            {/* Simple Progress Steps */}
             <div className='space-y-4 mb-6'>
               <div className='flex items-center gap-3'>
                 <div className='w-2 h-2 bg-blue-600 rounded-full'></div>
@@ -737,10 +616,6 @@ export default function ManageContractorsPage() {
                 <span className='text-gray-700'>Scanning for errors...</span>
               </div>
             </div>
-
-            {/* Simple Progress Bar */}
-
-            {/* Simple Message */}
             <p className='text-gray-500 text-sm'>
               Please wait while we prepare your certificates. This will take a
               few seconds.
@@ -751,1296 +626,112 @@ export default function ManageContractorsPage() {
     );
   }
 
-  // Suspend Modal Component
-  const SuspendModal = () => {
-    // Create a local state for the reason
-    const [localReason, setLocalReason] = useState(suspendReason);
-
-    // Update local reason when modal opens
-    useEffect(() => {
-      setLocalReason(suspendReason);
-    }, []);
-
-    const handleReasonChange = (e) => {
-      setLocalReason(e.target.value);
-    };
-
-    const handleSubmit = () => {
-      // Update the main state with the local value
-      setSuspendReason(localReason);
-      handleSuspendAction(
-        selectedContractorForAction.id,
-        actionType === "suspend",
-        localReason,
-      );
-    };
-
-    return (
-      <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
-        <div className='bg-white rounded-lg shadow-xl max-w-md w-full'>
-          <div className='p-6'>
-            <div className='flex items-center gap-3 mb-4'>
-              <div
-                className={`p-2 rounded-full ${
-                  actionType === "suspend"
-                    ? "bg-yellow-100 text-yellow-600"
-                    : "bg-green-100 text-green-600"
-                }`}>
-                {actionType === "suspend" ? (
-                  <PauseCircle className='w-6 h-6' />
-                ) : (
-                  <PlayCircle className='w-6 h-6' />
-                )}
-              </div>
-              <div>
-                <h3 className='text-lg font-semibold text-gray-900'>
-                  {actionType === "suspend" ? "Suspend User" : "Unsuspend User"}
-                </h3>
-                <p className='text-sm text-gray-600'>
-                  {selectedContractorForAction?.name} •{" "}
-                  {selectedContractorForAction?.companyName}
-                </p>
-              </div>
-            </div>
-
-            <p className='text-gray-600 mb-4'>
-              {actionType === "suspend"
-                ? `User will be blocked from logging in until unsuspended.`
-                : `User will regain access to their account immediately.`}
-            </p>
-
-            {actionType === "suspend" && (
-              <div className='mb-4'>
-                <label className='block text-sm font-medium text-gray-700 mb-2'>
-                  Reason for suspension (optional):
-                </label>
-                <textarea
-                  value={localReason}
-                  onChange={handleReasonChange}
-                  onInput={handleReasonChange}
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none'
-                  rows='3'
-                  placeholder='Enter reason for suspension...'
-                />
-                <p className='text-xs text-gray-500 mt-1'>
-                  This message will be shown to the user when they try to log
-                  in.
-                </p>
-              </div>
-            )}
-
-            <div className='flex justify-end gap-3 mt-6'>
-              <button
-                onClick={() => {
-                  setShowSuspendModal(false);
-                  setSuspendReason("");
-                  setSelectedContractorForAction(null);
-                }}
-                className='px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium'
-                disabled={actionLoading}>
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                  actionType === "suspend"
-                    ? "bg-yellow-600 hover:bg-yellow-700 text-white"
-                    : "bg-green-600 hover:bg-green-700 text-white"
-                }`}
-                disabled={actionLoading}>
-                {actionLoading ? (
-                  <Loader2 className='w-5 h-5 animate-spin mx-auto' />
-                ) : actionType === "suspend" ? (
-                  "Suspend User"
-                ) : (
-                  "Unsuspend User"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className='min-h-screen bg-white p-4 md:p-8'>
+      {/* Header Section */}
+      <HeaderSection
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+      />
+
+      {/* Stats Grid */}
+      <StatsGrid contractors={contractors} />
+
+      {/* Contractor Cards (Mobile) */}
+      <ContractorCards
+        contractors={currentContractors}
+        openContractorModal={openContractorModal}
+        downloadHandler={downloadHandler}
+        handleDelete={handleDelete}
+        openSuspendModal={openSuspendModal}
+        formatDate={formatDate}
+        showActionMenu={showActionMenu}
+        handleOpenActionMenu={handleOpenActionMenu}
+        setShowActionMenu={setShowActionMenu}
+      />
+
+      {/* Contractor Table (Desktop) */}
+      <ContractorTable
+        contractors={currentContractors}
+        products={products}
+        openContractorModal={openContractorModal}
+        downloadHandler={downloadHandler}
+        handleDelete={handleDelete}
+        openSuspendModal={openSuspendModal}
+        savePrefix={savePrefix}
+        openRolesModal={openRolesModal}
+        openProductEditModal={openProductEditModal}
+        showActionMenu={showActionMenu}
+        handleOpenActionMenu={handleOpenActionMenu}
+        formatDate={formatDate}
+        setShowActionMenu={setShowActionMenu}
+      />
+
+      {/* Pagination */}
+      <Pagination
+        totalPages={totalPages}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        startIndex={startIndex}
+        endIndex={endIndex}
+        totalItems={filteredContractors.length}
+        itemsPerPage={itemsPerPage}
+      />
+
       {/* Contractor Details Modal */}
-      {showContractorModal && selectedContractor && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
-          <div className='bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'>
-            {/* Modal Header */}
-            <div className='flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200'>
-              <div className='flex items-center gap-3'>
-                <button
-                  onClick={closeContractorModal}
-                  className='text-gray-600 hover:text-gray-900 text-2xl p-1'
-                  title='Back'>
-                  ≫
-                </button>
-              </div>
-              <div className='flex items-center gap-3'>
-                <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedContractor.isApproved
-                      ? selectedContractor.isSuspended
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}>
-                  {!selectedContractor.isApproved
-                    ? "Not Approved"
-                    : selectedContractor.isSuspended
-                      ? "Suspended"
-                      : "Active"}
-                </span>
-              </div>
-            </div>
+      <ContractorModal
+        showContractorModal={showContractorModal}
+        selectedContractor={selectedContractor}
+        documentsLoading={documentsLoading}
+        getContractorDocuments={getContractorDocuments}
+        handleViewDocument={handleViewDocument}
+        closeContractorModal={closeContractorModal}
+        handleDelete={handleDelete}
+        selectedProductIds={selectedProductIds}
+        setSelectedProductIds={setSelectedProductIds}
+        actionLoading={actionLoading}
+        handleSaveAllowedProducts={handleSaveAllowedProducts}
+        prefixInput={prefixInput}
+        setPrefixInput={setPrefixInput}
+        savePrefix={savePrefix}
+        formatDate={formatDate}
+      />
 
-            {/* Modal Content */}
-            <div className='p-6'>
-              {/* Details Grid */}
-              <div className='space-y-4'>
-                <div className='space-y-4'>
-                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
-                    <div className='text-sm font-medium text-gray-700'>
-                      Create Account Date
-                    </div>
-                    <div className='text-sm text-gray-900 text-right'>
-                      {formatDate(selectedContractor.createdAt)}
-                    </div>
-                  </div>
-
-                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
-                    <div className='text-sm font-medium text-gray-700'>
-                      Contractor Name
-                    </div>
-                    <div className='text-sm text-gray-900 text-right'>
-                      <Link
-                        href={`/admin/manage-contractors/${selectedContractor.id}`}
-                        className='text-blue-600 hover:text-blue-800 hover:underline transition-colors'
-                        target='_blank'>
-                        {selectedContractor.name || "N/A"}
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
-                    <div className='text-sm font-medium text-gray-700'>
-                      Company Name
-                    </div>
-                    <div className='text-sm text-gray-900 text-right'>
-                      {selectedContractor.companyName || "N/A"}
-                    </div>
-                  </div>
-
-                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
-                    <div className='text-sm font-medium text-gray-700'>
-                      Company Address
-                    </div>
-                    <div className='text-sm text-gray-900 text-right'>
-                      {selectedContractor.address || "N/A"}
-                    </div>
-                  </div>
-
-                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
-                    <div className='text-sm font-medium text-gray-700'>
-                      Phone Number
-                    </div>
-                    <div className='text-sm text-gray-900 text-right'>
-                      {selectedContractor.phone || "N/A"}
-                    </div>
-                  </div>
-
-                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
-                    <div className='text-sm font-medium text-gray-700'>
-                      Email Address
-                    </div>
-                    <div className='text-sm text-gray-900 text-right'>
-                      <a
-                        href={`mailto:${selectedContractor.email}`}
-                        className='text-blue-600 hover:text-blue-800 hover:underline'>
-                        {selectedContractor.email}
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Additional Stats - Replace with real API data */}
-                  <div className='flex justify-between items-start py-3 border-b border-gray-100'>
-                    <div className='text-sm font-medium text-gray-700'>
-                      Total Certificate
-                    </div>
-                    <div className='text-sm text-gray-900 text-right'>
-                      {selectedContractor.certificateCount || 0}
-                    </div>
-                  </div>
-
-                  <div className='flex justify-between items-start py-3'>
-                    <div className='text-sm font-medium text-gray-700'>
-                      Documents
-                    </div>
-                    <div className='text-sm text-gray-900 text-right'>
-                      <div className='space-y-1'>
-                        {getContractorDocuments(selectedContractor).map(
-                          (doc, index) => (
-                            <div
-                              key={index}
-                              className='flex items-center justify-end gap-1'>
-                              <a
-                                href={`/api/admin/documents/${doc.id}`}
-                                target='_blank'
-                                rel='noopener noreferrer'
-                                className='text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1'>
-                                <FileText className='w-3 h-3' />
-                                <span>files:{doc.id}</span>
-                              </a>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ========== Product selection option ==========*/}
-                {selectedContractor?.isApproved && (
-                  <ProductAssignmentSection
-                    selectedProductIds={selectedProductIds}
-                    setSelectedProductIds={setSelectedProductIds}
-                  />
-                )}
-
-                <div className='mt-6 pt-4 border-t border-gray-200'>
-                  <div className='flex justify-end gap-3'>
-                    <button
-                      onClick={() => {
-                        setSelectedProductIds([]); // optional: reset/cancel changes
-                        // or close modal if you want
-                      }}
-                      className='px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition'>
-                      Cancel
-                    </button>
-
-                    <button
-                      onClick={handleSaveAllowedProducts}
-                      disabled={actionLoading}
-                      className={`px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition ${
-                        actionLoading
-                          ? "bg-gray-400 cursor-wait"
-                          : "bg-blue-600 hover:bg-blue-700 text-white"
-                      }`}>
-                      {actionLoading ? (
-                        <>
-                          <Loader2 className='w-5 h-5 animate-spin' />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Allowed Products"
-                      )}
-                    </button>
-                  </div>
-                </div>
-                {/* ========== PREFIX SETTING SECTION ========== */}
-                <div className='pt-6 border-t border-gray-100'>
-                  <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-                    Certificate Prefix Settings
-                  </h3>
-
-                  <div className='bg-gray-50 p-5 rounded-lg border border-gray-200'>
-                    <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6'>
-                      <div className='flex-1'>
-                        <label className='block text-sm font-medium text-gray-700 mb-2'>
-                          Policy Number Prefix (for future certificates)
-                        </label>
-                        <input
-                          type='text'
-                          value={
-                            prefixInput ||
-                            selectedContractor?.policyNoPrefix ||
-                            ""
-                          }
-                          onChange={(e) =>
-                            setPrefixInput(e.target.value.toUpperCase())
-                          }
-                          placeholder='e.g. GFT'
-                          disabled={selectedContractor?.isPrefixLocked}
-                          maxLength={10}
-                          className={`w-full px-4 py-3 border rounded-lg text-lg font-medium uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            selectedContractor?.isPrefixLocked
-                              ? "bg-gray-100 cursor-not-allowed"
-                              : ""
-                          }`}
-                        />
-                        <p className='mt-2 text-xs text-gray-500'>
-                          3–10 uppercase letters (A–Z). Cannot be changed after
-                          first certificate.
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={async () => {
-                          if (!prefixInput || prefixInput.length < 3) {
-                            alert(
-                              "Prefix must be at least 3 uppercase letters",
-                            );
-                            return;
-                          }
-
-                          if (
-                            window.confirm(
-                              `Set prefix to ${prefixInput.toUpperCase()}?`,
-                            )
-                          ) {
-                            try {
-                              const res = await fetch(
-                                "/api/admin/contractor/prefix",
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                  body: JSON.stringify({
-                                    contractorId: selectedContractor.id,
-                                    prefix: prefixInput,
-                                  }),
-                                },
-                              );
-
-                              const data = await res.json();
-
-                              if (data.success) {
-                                alert(`Prefix set to ${data.prefix}`);
-                                // Update local state
-                                setSelectedContractor((prev) => ({
-                                  ...prev,
-                                  policyNoPrefix: data.prefix,
-                                  isPrefixLocked: false,
-                                }));
-                                setPrefixInput("");
-                              } else {
-                                alert(data.error || "Failed to set prefix");
-                              }
-                            } catch (err) {
-                              alert("Error saving prefix");
-                            }
-                          }
-                        }}
-                        disabled={
-                          !prefixInput ||
-                          prefixInput.length < 3 ||
-                          prefixInput === selectedContractor?.policyNoPrefix ||
-                          selectedContractor?.isPrefixLocked
-                        }
-                        className='px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors whitespace-nowrap'>
-                        {selectedContractor?.policyNoPrefix
-                          ? "Update Prefix"
-                          : "Set Prefix"}
-                      </button>
-                    </div>
-
-                    {/* Preview */}
-                    {prefixInput && prefixInput.length >= 3 && (
-                      <div className='mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg'>
-                        <p className='text-sm font-medium text-blue-800 mb-2'>
-                          Preview of next certificates:
-                        </p>
-                        {[1, 2, 3].map((offset) => (
-                          <div
-                            key={offset}
-                            className='flex items-center gap-3 mb-1'>
-                            <div className='w-2 h-2 bg-blue-500 rounded-full'></div>
-                            <code className='bg-white px-3 py-1 rounded border font-mono'>
-                              {prefixInput.toUpperCase()}
-                              {(
-                                (selectedContractor?.lastCertificateSequence ||
-                                  0) + offset
-                              )
-                                .toString()
-                                .padStart(5, "0")}
-                            </code>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {selectedContractor?.isPrefixLocked && (
-                      <p className='mt-4 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg'>
-                        This prefix is locked because the contractor has already
-                        issued at least one certificate.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Documents Section */}
-                <div className='pt-4 border-t border-gray-100'>
-                  <div className='flex justify-between items-start mb-3'>
-                    <div>
-                      <h4 className='text-sm font-medium text-gray-700'>
-                        Documents
-                      </h4>
-                      <p className='text-xs text-gray-500 mt-1'>
-                        Contractor uploaded documents
-                      </p>
-                    </div>
-                    {documentsLoading && (
-                      <Loader2 className='w-4 h-4 animate-spin text-blue-600' />
-                    )}
-                  </div>
-
-                  {documentsLoading ? (
-                    <div className='text-center py-4'>
-                      <Loader2 className='w-6 h-6 animate-spin text-gray-400 mx-auto' />
-                      <p className='text-sm text-gray-500 mt-2'>
-                        Loading documents...
-                      </p>
-                    </div>
-                  ) : (
-                    <div className='space-y-2'>
-                      {getContractorDocuments(selectedContractor.id).length >
-                      0 ? (
-                        getContractorDocuments(selectedContractor.id).map(
-                          (doc, index) => (
-                            <div
-                              key={doc._id || index}
-                              className='flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200'>
-                              <div className='flex-1'>
-                                <div className='flex items-center gap-2 mb-1'>
-                                  <FileText className='w-4 h-4 text-gray-500' />
-                                  <span className='text-sm font-medium text-gray-700'>
-                                    {doc.title || `Document ${index + 1}`}
-                                  </span>
-                                </div>
-                                <div className='text-xs text-gray-500'>
-                                  <span className='inline-block px-2 py-0.5 bg-gray-100 rounded mr-2'>
-                                    {doc.category || "Other"}
-                                  </span>
-                                  {doc.description && (
-                                    <span className='truncate'>
-                                      {doc.description}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className='flex items-center gap-2 ml-4'>
-                                <button
-                                  onClick={() => handleViewDocument(doc)}
-                                  className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors'
-                                  title='View Document'>
-                                  <Eye className='w-4 h-4' />
-                                </button>
-                              </div>
-                            </div>
-                          ),
-                        )
-                      ) : (
-                        <div className='text-center py-6'>
-                          <FileText className='w-12 h-12 text-gray-300 mx-auto mb-2' />
-                          <p className='text-sm text-gray-500'>
-                            No documents found
-                          </p>
-                          <p className='text-xs text-gray-400 mt-1'>
-                            This contractor has not uploaded any documents yet
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className='flex justify-between items-center mt-8 pt-6 border-t border-gray-200'>
-                <button
-                  onClick={() => {
-                    closeContractorModal();
-                    handleDelete(selectedContractor.id);
-                  }}
-                  className='px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium'>
-                  Delete Contractor
-                </button>
-                <button
-                  onClick={closeContractorModal}
-                  className='px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium'>
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Suspend Modal */}
-      {showSuspendModal && <SuspendModal />}
+      <SuspendModal
+        showSuspendModal={showSuspendModal}
+        selectedContractorForAction={selectedContractorForAction}
+        actionType={actionType}
+        suspendReason={suspendReason}
+        setSuspendReason={setSuspendReason}
+        handleSuspendAction={handleSuspendAction}
+        setShowSuspendModal={setShowSuspendModal}
+        setSelectedContractorForAction={setSelectedContractorForAction}
+        actionLoading={actionLoading}
+      />
 
-      {/* Mobile Header */}
-      <div className='md:hidden mb-4'>
-        <div className='flex items-center justify-between mb-4'>
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className='p-2'>
-            {isMobileMenuOpen ? (
-              <X className='w-6 h-6' />
-            ) : (
-              <Menu className='w-6 h-6' />
-            )}
-          </button>
-          <h1 className='text-xl font-semibold text-gray-900'>Contractors</h1>
-          <div className='w-10'></div>
-        </div>
+      {/* Roles Modal */}
+      <RolesModal
+        showRolesModal={showRolesModal}
+        editingContractor={editingContractor}
+        setEditingContractor={setEditingContractor}
+        closeRolesModal={closeRolesModal}
+        fetchContractors={fetchContractors}
+      />
 
-        {/* Mobile Search */}
-        <div className='relative mb-4'>
-          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
-          <input
-            type='text'
-            placeholder='Search contractors...'
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className='pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base'
-          />
-        </div>
-      </div>
-
-      {/* Desktop Header */}
-      <div className='hidden md:flex justify-between items-center mb-8'>
-        <div>
-          <h1 className='text-2xl font-semibold text-gray-900'>Contractors</h1>
-        </div>
-
-        <div className='relative w-96'>
-          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
-          <input
-            type='text'
-            placeholder='Search by name, company, or email...'
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className='pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-sm'
-          />
-        </div>
-      </div>
-
-      {/* Mobile Stats Grid */}
-      <div className='md:hidden grid grid-cols-2 gap-3 mb-6'>
-        <div className='bg-white border border-gray-200 rounded-lg p-3'>
-          <p className='text-xs text-gray-600'>Total</p>
-          <p className='text-xl font-bold text-gray-900'>
-            {contractors.length}
-          </p>
-        </div>
-        <div className='bg-white border border-gray-200 rounded-lg p-3'>
-          <p className='text-xs text-gray-600'>This Month</p>
-          <p className='text-xl font-bold text-blue-600'>
-            {
-              contractors.filter((c) => {
-                const created = new Date(c.createdAt);
-                const now = new Date();
-                return (
-                  created.getMonth() === now.getMonth() &&
-                  created.getFullYear() === now.getFullYear()
-                );
-              }).length
-            }
-          </p>
-        </div>
-        <div className='bg-white border border-gray-200 rounded-lg p-3'>
-          <p className='text-xs text-gray-600'>Active</p>
-          <p className='text-xl font-bold text-green-600'>
-            {contractors.filter((c) => c.isApproved).length}
-          </p>
-        </div>
-        <div className='bg-white border border-gray-200 rounded-lg p-3'>
-          <p className='text-xs text-gray-600'>Inactive</p>
-          <p className='text-xl font-bold text-red-600'>
-            {contractors.filter((c) => !c.isApproved).length}
-          </p>
-        </div>
-      </div>
-
-      {/* Desktop Stats Grid */}
-      <div className='hidden md:grid grid-cols-4 gap-4 mb-6'>
-        <div className='bg-white border border-gray-200 rounded-lg p-4'>
-          <p className='text-sm text-gray-600'>Total Contractors</p>
-          <p className='text-2xl font-bold text-gray-900'>
-            {contractors.length}
-          </p>
-        </div>
-        <div className='bg-white border border-gray-200 rounded-lg p-4'>
-          <p className='text-sm text-gray-600'>This Month</p>
-          <p className='text-2xl font-bold text-blue-600'>
-            {
-              contractors.filter((c) => {
-                const created = new Date(c.createdAt);
-                const now = new Date();
-                return (
-                  created.getMonth() === now.getMonth() &&
-                  created.getFullYear() === now.getFullYear()
-                );
-              }).length
-            }
-          </p>
-        </div>
-        <div className='bg-white border border-gray-200 rounded-lg p-4'>
-          <p className='text-sm text-gray-600'>Active</p>
-          <p className='text-2xl font-bold text-green-600'>
-            {contractors.filter((c) => c.isApproved).length}
-          </p>
-        </div>
-        <div className='bg-white border border-gray-200 rounded-lg p-4'>
-          <p className='text-sm text-gray-600'>Inactive</p>
-          <p className='text-2xl font-bold text-red-600'>
-            {contractors.filter((c) => !c.isApproved).length}
-          </p>
-        </div>
-      </div>
-
-      {/* Mobile Contractor Cards */}
-      <div className='md:hidden space-y-4 mb-6'>
-        {currentContractors.length === 0 ? (
-          <div className='text-center py-12 text-gray-500'>
-            No contractors found
-          </div>
-        ) : (
-          currentContractors.map((contractor) => (
-            <div
-              key={contractor.id}
-              className='bg-white border border-gray-200 rounded-lg p-4'>
-              <div className='flex justify-between items-start mb-3'>
-                <div>
-                  <h3 className='font-medium text-gray-900'>
-                    <button
-                      onClick={() =>
-                        router.push(
-                          `/admin/manage-contractors/${contractor.id}`,
-                        )
-                      }
-                      className='text-blue-600 hover:text-blue-800 hover:underline transition-colors'>
-                      {contractor.name}
-                    </button>
-                  </h3>
-
-                  <p className='text-sm text-gray-600'>
-                    {contractor.companyName || "N/A"}
-                  </p>
-                </div>
-                <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                    contractor.isApproved
-                      ? contractor.isSuspended
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}>
-                  {!contractor.isApproved
-                    ? "Not Approved"
-                    : contractor.isSuspended
-                      ? "Suspended"
-                      : "Active"}
-                </span>
-              </div>
-
-              <div className='space-y-2 text-sm text-gray-600 mb-4'>
-                <div className='flex items-center'>
-                  <span className='w-24 font-medium'>Email:</span>
-                  <span className='truncate'>{contractor.email}</span>
-                </div>
-                <div className='flex items-center'>
-                  <span className='w-24 font-medium'>Phone:</span>
-                  <span>{contractor.phoneNumber || "N/A"}</span>
-                </div>
-                <div className='flex items-center'>
-                  <span className='w-24 font-medium'>Total Certificates:</span>
-                  <span>{contractor.certificateCount || 0}</span>
-                </div>
-                <div className='flex items-center'>
-                  <span className='w-24 font-medium'>Registered:</span>
-                  <span>{formatDate(contractor.createdAt)}</span>
-                </div>
-              </div>
-              <div className='flex flex-wrap gap-1.5 mt-2'>
-                <span className='text-xs font-medium text-gray-600'>
-                  Roles:
-                </span>
-                {contractor.roles?.length > 0 ? (
-                  contractor.roles.map((role) => (
-                    <span
-                      key={role}
-                      className='px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full'>
-                      {role.replace(/_/g, " ")}
-                    </span>
-                  ))
-                ) : (
-                  <span className='text-xs text-gray-500'>None</span>
-                )}
-              </div>
-              <div className='flex justify-between border-t border-gray-100 pt-3 action-dropdown-container'>
-                <button
-                  onClick={() => openContractorModal(contractor)}
-                  className='text-blue-600 hover:text-blue-800 transition-colors p-2'
-                  title='View Details'>
-                  <Eye className='w-5 h-5' />
-                </button>
-                <button
-                  onClick={() => downloadHandler(contractor.id)}
-                  className='text-green-600 hover:text-green-800 transition-colors p-2'
-                  title='Download Data'>
-                  <Download className='w-5 h-5' />
-                </button>
-
-                {/* Mobile Dropdown */}
-                <div className='relative'>
-                  <button
-                    onClick={(e) => handleOpenActionMenu(contractor.id, e)}
-                    className='text-gray-600 hover:text-gray-800 transition-colors p-2'
-                    title='More Actions'>
-                    <MoreVertical className='w-5 h-5' />
-                  </button>
-
-                  {showActionMenu === contractor.id && (
-                    <div className='absolute right-0 top-full mt-1 w-48 bg-white rounded-lg border border-gray-200 z-50 shadow-xl'>
-                      <div className='py-1'>
-                        {contractor.isApproved && !contractor.isSuspended && (
-                          <button
-                            onClick={() =>
-                              openSuspendModal(contractor, "suspend")
-                            }
-                            className='w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2'>
-                            <PauseCircle className='w-4 h-4' />
-                            Suspend User
-                          </button>
-                        )}
-
-                        {contractor.isSuspended && (
-                          <button
-                            onClick={() =>
-                              openSuspendModal(contractor, "unsuspend")
-                            }
-                            className='w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50 flex items-center gap-2'>
-                            <PlayCircle className='w-4 h-4' />
-                            Unsuspend User
-                          </button>
-                        )}
-
-                        <div className='border-t border-gray-200 my-1'></div>
-
-                        <button
-                          onClick={() => {
-                            setShowActionMenu(null);
-                            handleDelete(contractor.id);
-                          }}
-                          className='w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center gap-2'>
-                          <Trash2 className='w-4 h-4' />
-                          Delete Contractor
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Desktop Table */}
-      <div className='hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden'>
-        <div className='overflow-x-auto'>
-          <table className='w-full'>
-            <thead className='bg-gray-50 border-b border-gray-200'>
-              <tr>
-                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  Prefix
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  Contractor Name
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  Company Name
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  Email Address
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  Phone Number
-                </th>
-                <th className='px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  Status
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  User Type
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  Registered Date
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  Total Certificates
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider'>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className='bg-white divide-y divide-gray-100'>
-              {currentContractors.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan='7'
-                    className='px-6 py-12 text-center text-gray-500'>
-                    No contractors found
-                  </td>
-                </tr>
-              ) : (
-                currentContractors.map((contractor) => (
-                  <tr
-                    key={contractor.id}
-                    className='hover:bg-gray-50 transition-colors'>
-                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
-                      {contractor.policyNoPrefix ? (
-                        <div className='flex items-center gap-2'>
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              contractor.isPrefixLocked
-                                ? "bg-green-100 text-green-800"
-                                : "bg-blue-100 text-blue-800"
-                            }`}>
-                            {contractor.policyNoPrefix}
-                          </span>
-
-                          {!contractor.isPrefixLocked && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const newPrefix = prompt(
-                                  `Update prefix (current: ${contractor.policyNoPrefix}):`,
-                                  contractor.policyNoPrefix,
-                                );
-                                if (newPrefix) {
-                                  const upper = newPrefix.trim().toUpperCase();
-                                  if (/^[A-Z]{3,10}$/.test(upper)) {
-                                    savePrefix(contractor.id, upper);
-                                  } else {
-                                    alert(
-                                      "Invalid prefix — 3–10 uppercase letters only",
-                                    );
-                                  }
-                                }
-                              }}
-                              className='text-blue-700 hover:text-blue-800 text-xs'>
-                              Edit
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const newPrefix = prompt(
-                              `Set prefix for ${contractor.name} (3-10 uppercase letters):`,
-                            );
-                            if (newPrefix) {
-                              const upper = newPrefix.trim().toUpperCase();
-                              if (/^[A-Z]{3,10}$/.test(upper)) {
-                                savePrefix(contractor.id, upper);
-                              } else {
-                                alert(
-                                  "Prefix must be 3–10 uppercase letters (A-Z)",
-                                );
-                              }
-                            }
-                          }}
-                          className='text-blue-700 hover:text-blue-800 text-xs underline'>
-                          Set Prefix
-                        </button>
-                      )}
-                    </td>
-                    <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
-                      <button
-                        onClick={() =>
-                          router.push(
-                            `/admin/manage-contractors/${contractor.id}`,
-                          )
-                        }
-                        className='text-blue-700 hover:text-blue-800 hover:underline transition-colors'>
-                        {contractor.name}
-                      </button>
-                    </td>
-
-                    <td className='px-6 py-4 text-sm text-gray-600'>
-                      {contractor.companyName || "N/A"}
-                    </td>
-                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
-                      {contractor.email}
-                    </td>
-                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
-                      {contractor.phoneNumber || "N/A"}
-                    </td>
-                    <td className='px-6 py-4 whitespace-nowrap'>
-                      <div className='flex flex-col gap-1'>
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full mx-auto text-xs font-medium ${
-                            contractor.isApproved
-                              ? contractor.isSuspended
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}>
-                          {!contractor.isApproved
-                            ? "Not Approved"
-                            : contractor.isSuspended
-                              ? "Suspended"
-                              : "Active"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className='px-6 py-4 whitespace-nowrap'>
-                      <div className='flex items-center gap-x-1 group'>
-                        <div className='flex flex-wrap gap-1.5'>
-                          {contractor.roles?.length > 0 ? (
-                            contractor.roles.map((role) => (
-                              <span
-                                key={role}
-                                className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-800 capitalize'>
-                                {role.replace(/_/g, " ")}
-                              </span>
-                            ))
-                          ) : (
-                            <span className='text-gray-500 text-sm italic'>
-                              None
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Edit button - only visible & clickable if allowed */}
-                        {!contractor.isSuspended && contractor.isApproved ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openRolesModal(contractor);
-                            }}
-                            className='opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-100'
-                            title='Edit roles'>
-                            <Edit2 size={16} className='text-gray-500' />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              alert(
-                                contractor.isSuspended
-                                  ? "This user is currently suspended. You cannot edit roles until unsuspended."
-                                  : "This user is not yet approved. Roles can only be assigned to approved users.",
-                              );
-                            }}
-                            className='opacity-50 cursor-not-allowed p-1 rounded'
-                            title={
-                              contractor.isSuspended
-                                ? "Suspended - cannot edit"
-                                : "Not approved - cannot edit"
-                            }>
-                            <Edit2 size={16} className='text-gray-400' />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                      {formatDate(contractor.createdAt)}
-                    </td>
-                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                      {contractor.certificateCount}
-                    </td>
-                    <td className='px-6 py-4 whitespace-nowrap '>
-                      <div className='flex items-center justify-center gap-2 action-dropdown-container'>
-                        <button
-                          onClick={() => openContractorModal(contractor)}
-                          className='text-blue-700 hover:text-blue-800 transition-colors p-1'
-                          title='View Details'>
-                          <Eye className='w-5 h-5' />
-                        </button>
-
-                        <button
-                          onClick={() => downloadHandler(contractor.id)}
-                          className='text-gray-600 hover:text-gray-800 transition-colors p-1'
-                          title='Download Data'>
-                          <Download className='w-5 h-5' />
-                        </button>
-
-                        {/* Action Dropdown */}
-                        <div className='relative'>
-                          <button
-                            onClick={(e) =>
-                              handleOpenActionMenu(contractor.id, e)
-                            }
-                            className='text-gray-600 hover:text-gray-800 transition-colors p-1'
-                            title='More Actions'>
-                            <MoreVertical className='w-5 h-5' />
-                          </button>
-
-                          {/* Dropdown Menu */}
-                          {showActionMenu === contractor.id && (
-                            <div className='absolute right-0 top-full mt-1 w-48 bg-white rounded-lg border border-gray-200 z-50 shadow-xl'>
-                              <div className='py-1'>
-                                {/* Suspend/Unsuspend option */}
-                                {contractor.isApproved &&
-                                  !contractor.isSuspended && (
-                                    <button
-                                      onClick={() =>
-                                        openSuspendModal(contractor, "suspend")
-                                      }
-                                      className='w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 flex items-center gap-2'>
-                                      <PauseCircle className='w-4 h-4' />
-                                      Suspend User
-                                    </button>
-                                  )}
-
-                                {contractor.isSuspended && (
-                                  <button
-                                    onClick={() =>
-                                      openSuspendModal(contractor, "unsuspend")
-                                    }
-                                    className='w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50 flex items-center gap-2'>
-                                    <PlayCircle className='w-4 h-4' />
-                                    Unsuspend User
-                                  </button>
-                                )}
-
-                                <div className='border-t border-gray-200 my-1'></div>
-
-                                <button
-                                  onClick={() => {
-                                    setShowActionMenu(null);
-                                    handleDelete(contractor.id);
-                                  }}
-                                  className='w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center gap-2'>
-                                  <Trash2 className='w-4 h-4' />
-                                  Delete Contractor
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          {showRolesModal && editingContractor && (
-            <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
-              <div className='bg-white rounded-xl shadow-2xl max-w-md w-full p-6'>
-                <div className='flex justify-between items-center mb-6'>
-                  <h3 className='text-xl font-bold text-gray-900'>
-                    Edit Roles – {editingContractor.name}
-                  </h3>
-                  <button
-                    onClick={closeRolesModal}
-                    className='text-gray-500 hover:text-gray-700'>
-                    <X size={24} />
-                  </button>
-                </div>
-
-                <div className='space-y-4'>
-                  {[
-                    {
-                      value: "retrofit_assessor",
-                      label: "Retrofit Assessor",
-                    },
-                    {
-                      value: "retrofit_coordinator",
-                      label: "Retrofit Coordinator",
-                    },
-                    {
-                      value: "funding_partner",
-                      label: "Funding Partner",
-                    },
-                    {
-                      value: "scheme_provider",
-                      label: "Scheme Provider",
-                    },
-                  ].map((role) => (
-                    <label key={role.value} className='flex items-center gap-3'>
-                      <input
-                        type='checkbox'
-                        checked={
-                          editingContractor.roles?.includes(role.value) || false
-                        }
-                        onChange={(e) => {
-                          const newRoles = e.target.checked
-                            ? [
-                                ...new Set([
-                                  ...(editingContractor.roles || []),
-                                  role.value,
-                                ]),
-                              ]
-                            : (editingContractor.roles || []).filter(
-                                (r) => r !== role.value,
-                              );
-
-                          setEditingContractor((prev) => ({
-                            ...prev,
-                            roles: newRoles,
-                          }));
-                        }}
-                        className='h-5 w-5 text-blue-600 rounded'
-                      />
-                      <span>{role.label}</span>
-                    </label>
-                  ))}
-                </div>
-
-                <div className='flex justify-end gap-4 mt-8'>
-                  <button
-                    onClick={closeRolesModal}
-                    className='px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors'>
-                    Cancel
-                  </button>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(
-                          `/api/admin/contractor/${editingContractor.id}`,
-                          {
-                            method: "PATCH",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                              roles: editingContractor.roles,
-                            }),
-                          },
-                        );
-
-                        const result = await res.json();
-
-                        if (result.success) {
-                          // 1. Refresh the main list
-                          await fetchContractors();
-
-                          // 2. Also update the current modal's contractor
-                          setEditingContractor((prev) => ({
-                            ...prev,
-                            roles: editingContractor.roles,
-                          }));
-
-                          toast.success("Roles updated successfully");
-                          closeRolesModal();
-                        }
-                      } catch (err) {
-                        alert("Error: " + err.message);
-                      }
-                    }}>
-                    Save Changes
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className='px-6 py-4 border-t border-gray-200'>
-            <div className='flex flex-col sm:flex-row items-center justify-between gap-4'>
-              <div className='text-sm text-gray-600'>
-                Showing {startIndex + 1} to{" "}
-                {Math.min(endIndex, filteredContractors.length)} of{" "}
-                {filteredContractors.length} contractors
-              </div>
-              <div className='flex items-center gap-2'>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
-                  disabled={currentPage === 1}
-                  className='px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
-                  <ChevronLeft className='w-4 h-4 mr-1' />
-                  Previous
-                </button>
-
-                <div className='flex items-center gap-1'>
-                  {[...Array(totalPages)].map((_, index) => {
-                    const pageNumber = index + 1;
-                    if (
-                      pageNumber === 1 ||
-                      pageNumber === totalPages ||
-                      (pageNumber >= currentPage - 1 &&
-                        pageNumber <= currentPage + 1)
-                    ) {
-                      return (
-                        <button
-                          key={pageNumber}
-                          onClick={() => setCurrentPage(pageNumber)}
-                          className={`px-3 py-1 text-sm rounded ${
-                            currentPage === pageNumber
-                              ? "bg-blue-600 text-white"
-                              : "text-gray-600 hover:text-gray-900"
-                          }`}>
-                          {pageNumber}
-                        </button>
-                      );
-                    } else if (
-                      pageNumber === currentPage - 2 ||
-                      pageNumber === currentPage + 2
-                    ) {
-                      return (
-                        <span key={pageNumber} className='px-2 text-gray-400'>
-                          ...
-                        </span>
-                      );
-                    }
-                    return null;
-                  })}
-                </div>
-
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className='px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
-                  Next
-                  <ChevronRight className='w-4 h-4 ml-1' />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile Pagination */}
-      {totalPages > 1 && (
-        <div className='md:hidden bg-white border border-gray-200 rounded-lg p-4 mt-4'>
-          <div className='flex flex-col items-center gap-4'>
-            <div className='text-sm text-gray-600 text-center'>
-              Showing {startIndex + 1} to{" "}
-              {Math.min(endIndex, filteredContractors.length)} of{" "}
-              {filteredContractors.length} contractors
-            </div>
-            <div className='flex items-center justify-between w-full'>
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className='px-4 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
-                <ChevronLeft className='w-4 h-4 mr-1' />
-                Prev
-              </button>
-
-              <div className='text-sm text-gray-700'>
-                Page {currentPage} of {totalPages}
-              </div>
-
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-                className='px-4 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
-                Next
-                <ChevronRight className='w-4 h-4 ml-1' />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Product Edit Modal */}
+      <ProductEditModal
+        products={products}
+        showProductEditModal={showProductEditModal}
+        selectedContractorForProductEdit={selectedContractorForProductEdit}
+        setSelectedContractorForProductEdit={
+          setSelectedContractorForProductEdit
+        }
+        closeProductEditModal={closeProductEditModal}
+        fetchContractors={fetchContractors}
+      />
     </div>
   );
 }
