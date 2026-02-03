@@ -12,12 +12,14 @@ import {
   Eye,
   FileText,
   Loader2,
+  Mail,
   Search,
   X,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function CertificatesPage() {
   const router = useRouter();
@@ -46,6 +48,10 @@ export default function CertificatesPage() {
   const [showFundingPartner, setShowFundingPartner] = useState(false);
   const [showSchemeProvider, setShowSchemeProvider] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState("");
+
+  const [showIssueModal, setShowIssueModal] = useState(false);
+  const [certificateToIssue, setCertificateToIssue] = useState(null);
+  const [issuing, setIssuing] = useState(false);
 
   const [allProviders, setAllProviders] = useState([]);
 
@@ -238,6 +244,39 @@ export default function CertificatesPage() {
     setShowModal(true);
     setRequestType("");
     setModalError("");
+  };
+
+  const handleSendEmail = async () => {
+    if (!certificateToIssue) return;
+
+    setIssuing(true);
+
+    try {
+      const res = await fetch(
+        `/api/certificates/${certificateToIssue.insuranceId}/send-email`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to send");
+      }
+
+      toast.success("Email sent successfully!");
+
+      // Refresh the list
+      await fetchCertificates();
+
+      setShowIssueModal(false);
+      setCertificateToIssue(null);
+    } catch (err) {
+      toast.error(err.message || "Could not send email");
+    } finally {
+      setIssuing(false);
+    }
   };
 
   const handleDownload = async (cert) => {
@@ -868,6 +907,9 @@ export default function CertificatesPage() {
                         Status
                       </th>
                       <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
+                        Issued Status
+                      </th>
+                      <th className='px-4 py-3 text-left text-xs font-semibold text-[#030712]'>
                         Action
                       </th>
                     </tr>
@@ -917,6 +959,7 @@ export default function CertificatesPage() {
                         <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
                           {cert.createdAt}
                         </td>
+
                         <td className='px-4 py-3'>
                           <span
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -939,12 +982,31 @@ export default function CertificatesPage() {
                           </span>
                         </td>
                         <td className='px-4 py-3'>
+                          <span
+                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                              cert.emailGenerated
+                                ? "bg-green-100 text-green-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}>
+                            {cert.emailGenerated ? "Issued" : "Not Issued"}
+                          </span>
+                        </td>
+                        <td className='px-4 py-3'>
                           <div className='flex items-center gap-2'>
                             <button
                               onClick={() => handleViewCertificate(cert)}
                               className='p-2 hover:bg-gray-100 cursor-pointer rounded'
                               title='View Certificate'>
                               <Eye size={18} className='text-[#0284C7]' />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setCertificateToIssue(cert);
+                                setShowIssueModal(true);
+                              }}
+                              className='p-2 hover:bg-gray-100 rounded'
+                              title='Send by Email'>
+                              <Mail size={18} className='text-green-600' />
                             </button>
                             <button
                               onClick={() => handleDownload(cert)}
@@ -1645,6 +1707,46 @@ export default function CertificatesPage() {
           </div>
         )}
       </main>
+      {showIssueModal && certificateToIssue && (
+        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
+          <div className='bg-white rounded-xl p-6 max-w-md w-full'>
+            <h2 className='text-xl font-bold mb-4'>Issue Certificate</h2>
+
+            <p className='mb-4'>
+              You are about to email the Insurance Backed Guarantee to:
+            </p>
+
+            <div className='bg-gray-50 p-4 rounded mb-6 space-y-2'>
+              <p>
+                <strong>Name:</strong> {certificateToIssue.holderName}
+              </p>
+              <p>
+                <strong>Email:</strong>{" "}
+                {certificateToIssue.rawData?.insurance?.email}
+              </p>
+              <p>
+                <strong>Product:</strong> {certificateToIssue.productType}
+              </p>
+            </div>
+
+            <div className='flex justify-end gap-3'>
+              <button
+                onClick={() => setShowIssueModal(false)}
+                className='px-4 py-2 border rounded hover:bg-gray-50'
+                disabled={issuing}>
+                Cancel
+              </button>
+              <button
+                onClick={handleSendEmail}
+                disabled={issuing}
+                className='px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 flex items-center gap-2'>
+                {issuing && <Loader2 className='w-4 h-4 animate-spin' />}
+                Confirm & Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
