@@ -36,6 +36,7 @@ export default function CreateInsuranceForm() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showProductDropdown, setShowProductDropdown] = useState({});
   const [showConnectingMessage, setShowConnectingMessage] = useState(false);
+  const [showGeneratingMessage, setShowGeneratingMessage] = useState(false);
   const [progress, setProgress] = useState(0);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [absValue, setAbsValue] = useState("");
@@ -44,6 +45,36 @@ export default function CreateInsuranceForm() {
   const [allowedProductIds, setAllowedProductIds] = useState([]);
 
   const searchInputRef = useRef(null);
+
+  const getPriceFromTier = (product, contractValue) => {
+    if (!product || !contractValue || isNaN(contractValue)) {
+      return 0;
+    }
+
+    // Remove £ and any commas, then convert to number
+    const cleanPrice = (priceStr) => {
+      if (!priceStr) return 0;
+      return parseFloat(priceStr.replace(/[£,]/g, "")) || 0;
+    };
+
+    const cv = Number(contractValue);
+
+    if (cv < 10000) {
+      return cleanPrice(product["Price Contract Value <£10,000"]);
+    }
+    if (cv < 15000) {
+      return cleanPrice(product["Price Contract Value <£15,000"]);
+    }
+    if (cv < 30000) {
+      return cleanPrice(product["Price Contract Value <£30,000"]);
+    }
+    if (cv < 50000) {
+      return cleanPrice(product["Price Contract Value <£50,000"]);
+    }
+
+    // For ≥ 50,000 → most common decision = use the highest tier you have
+    return cleanPrice(product["Price Contract Value <£50,000"]);
+  };
 
   const [formData, setFormData] = useState({
     contractorName: "",
@@ -161,6 +192,38 @@ export default function CreateInsuranceForm() {
     fetchContractorData();
   }, []);
 
+  useEffect(() => {
+    // Show connecting message for 3 seconds on page load
+    setShowGeneratingMessage(true);
+    setProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          setTimeout(() => {
+            setShowGeneratingMessage(false);
+          }, 2000);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 550);
+
+    // Fetch data after showing connecting message
+    const timer = setTimeout(() => {
+      fetchProducts();
+      fetchContractorData();
+    }, 8000);
+
+    // CLEANUP FUNCTION
+    return () => {
+      clearTimeout(timer);
+      clearInterval(progressInterval);
+      setShowGeneratingMessage(false); // Reset on unmount
+    };
+  }, []);
+
   // Helper function
   const getProvidersForRole = (role) => {
     const roleProvider = allProviders
@@ -219,18 +282,6 @@ export default function CreateInsuranceForm() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  // Filter products based on search query
-  // const filteredProducts = useMemo(() => {
-  //   if (!debouncedSearchQuery.trim()) {
-  //     return products;
-  //   }
-
-  //   const query = debouncedSearchQuery.toLowerCase();
-  //   return products.filter((product) =>
-  //     product.Measures.toLowerCase().includes(query),
-  //   );
-  // }, [products, debouncedSearchQuery]);
 
   // Filter products: only those allowed by admin
   const allowedProducts = useMemo(() => {
@@ -662,62 +713,82 @@ export default function CreateInsuranceForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+
+    // ========== VALIDATE BEFORE SHOWING POPUP ==========
+    let validationErrors = [];
+
+    // 1. Validate all products before showing popup
+    formData.products.forEach((product, index) => {
+      const contractValue = parseFloat(product.contractValue);
+      if (isNaN(contractValue) || contractValue <= 0) {
+        validationErrors.push(
+          `Product ${
+            index + 1
+          }: Please enter a valid contract value (must be a number greater than 0)`,
+        );
+      }
+
+      if (!product.measureType) {
+        validationErrors.push(`Product ${index + 1}: Measure Type is required`);
+      }
+
+      if (!product.inceptionDate) {
+        validationErrors.push(
+          `Product ${index + 1}: Inception date is required`,
+        );
+      }
+    });
+
+    // Validate ABS field
+    if (absValue && isNaN(parseFloat(absValue))) {
+      validationErrors.push("ABS must be a valid number");
+    }
+
+    // ========== SHOW ERRORS IMMEDIATELY (NO POPUP) ==========
+    if (validationErrors.length > 0) {
+      const errorMessage = validationErrors.join("\n");
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: "top-right",
+      });
+      setError(errorMessage);
+      return; // STOP HERE, don't show popup
+    }
+
+    // ========== ONLY SHOW POPUP IF VALIDATION PASSES ==========
+    setShowGeneratingMessage(true);
+    setProgress(0);
+
+    // Start progress animation
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          return 100;
+        }
+        return prev + 20; // Will complete in 5 steps (0, 20, 40, 60, 80, 100)
+      });
+    }, 300);
 
     try {
-      // 1. Validate all products before submission
-      let validationErrors = [];
-
-      formData.products.forEach((product, index) => {
-        const contractValue = parseFloat(product.contractValue);
-        if (isNaN(contractValue) || contractValue <= 0) {
-          validationErrors.push(
-            `Product ${
-              index + 1
-            }: Please enter a valid contract value (must be a number greater than 0)`,
-          );
-        }
-
-        if (!product.measureType) {
-          validationErrors.push(
-            `Product ${index + 1}: Measure Type is required`,
-          );
-        }
-
-        if (!product.inceptionDate) {
-          validationErrors.push(
-            `Product ${index + 1}: Inception date is required`,
-          );
-        }
-        if (!product.expiryDate) {
-          validationErrors.push(
-            `Product ${index + 1}: Expiry date is required`,
-          );
-        }
-      });
-
-      // Validate ABS field
-      if (absValue && isNaN(parseFloat(absValue))) {
-        validationErrors.push("ABS must be a valid number");
-      }
-
-      if (validationErrors.length > 0) {
-        const errorMessage = validationErrors.join("\n");
-        toast.error(errorMessage, {
-          duration: 5000,
-          position: "top-right",
-        });
-        setError(errorMessage);
-        setLoading(false);
-        return;
-      }
-
       // 2. Prepare products data with proper formatting
       const processedProducts = formData.products.map((product) => {
-        const contractValue = parseFloat(product.contractValue);
+        const contractValueNum = parseFloat(product.contractValue) || 0;
 
-        // Calculate price as 5% of contract value
-        const price = contractValue * 0.05;
+        // Find the full product object from backend data
+        const selectedProduct = products.find(
+          (p) => p.Measures === product.measureType,
+        );
+
+        let price = 0;
+
+        if (selectedProduct) {
+          price = getPriceFromTier(selectedProduct, contractValueNum);
+        } else {
+          console.warn(
+            `Could not find product data for: ${product.measureType}`,
+          );
+        }
 
         return {
           productType: product.productType,
@@ -725,8 +796,8 @@ export default function CreateInsuranceForm() {
           coverOption: product.coverOption || "Insurance Backed Guarantee",
           inceptionDate: product.inceptionDate,
           expiryDate: product.expiryDate,
-          contractValue: contractValue,
-          price: price,
+          contractValue: contractValueNum,
+          price,
         };
       });
 
@@ -749,6 +820,9 @@ export default function CreateInsuranceForm() {
       };
 
       console.log("Submitting form data:", submissionData);
+
+      // Wait for 8 seconds to show the complete popup
+      await new Promise((resolve) => setTimeout(resolve, 8000));
 
       // 4. Submit to API
       const response = await fetch("/api/insurance", {
@@ -851,6 +925,88 @@ export default function CreateInsuranceForm() {
           <div className='flex items-center justify-center gap-2 text-sm text-gray-500'>
             <Loader2 size={16} className='animate-spin' />
             <span>Establishing secure connection</span>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (showGeneratingMessage) {
+    const steps = [
+      "Reviewing Policy Holder Details",
+      "Reviewing Product Details",
+      "Reviewing Compliance and Submission",
+      "Securely Storing Insurance Backed Guarantee Data",
+      "Generating Insurance Backed Guarantees",
+      "Sending Certificate to Policy Holder",
+    ];
+
+    // Calculate which steps are completed based on progress
+    const completedSteps = Math.floor(progress / 16.67); // 6 steps total (100/6 = 16.67)
+
+    return (
+      <main className='min-h-screen bg-gray-50 flex items-center justify-center p-4'>
+        <div className='bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center relative'>
+          {/* Add close button for emergencies */}
+          <button
+            onClick={() => {
+              setShowGeneratingMessage(false);
+              setProgress(0);
+            }}
+            className='absolute top-4 right-4 text-gray-400 hover:text-gray-600'
+            title='Close (emergency)'>
+            ✕
+          </button>
+
+          <div className='mb-6'>
+            <Image
+              src={bluedrop}
+              height={150}
+              width={192}
+              alt='logo'
+              className='mx-auto flex justify-center'
+            />
+            <h1 className='text-2xl font-bold text-gray-800 mb-2'>
+              {progress < 100 ? "Generating Certificates..." : "Complete!"}
+            </h1>
+            <p className='text-gray-600'>
+              {progress < 100
+                ? "Please wait while we generate and email your certificates..."
+                : "Certificates generated successfully!"}
+            </p>
+          </div>
+
+          {/* Steps List */}
+          <div className='mb-6 text-left'>
+            {steps.map((step, index) => (
+              <div key={index} className='flex items-center gap-3 mb-3'>
+                <span
+                  className={`${index < completedSteps ? "text-green-600 font-medium" : "text-gray-600"}`}>
+                  {step}:{" "}
+                  {index < completedSteps ? "Completed" : "In Progress..."}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress Bar */}
+          <div className='mb-4'>
+            <div className='w-full bg-gray-200 rounded-full h-2.5 mb-2'>
+              <div
+                className='bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out'
+                style={{ width: `${progress}%` }}></div>
+            </div>
+            <div className='flex justify-between text-sm text-gray-500'>
+              <span>Processing...</span>
+              <span>{progress}%</span>
+            </div>
+          </div>
+
+          <div className='flex items-center justify-center gap-2 text-sm text-gray-500'>
+            <Loader2 size={16} className='animate-spin' />
+            <span>
+              {progress < 80 ? "Creating certificates..." : "Sending email..."}
+            </span>
           </div>
         </div>
       </main>
@@ -1313,16 +1469,8 @@ export default function CreateInsuranceForm() {
           </button>
           <button
             type='submit'
-            className='px-6 py-2 bg-[#DCFCE7] text-[#16A34A]  rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2'
-            disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 size={18} className='animate-spin' />
-                Generating...
-              </>
-            ) : (
-              "Generate Insurance Backed Guarantee Certificates"
-            )}
+            className='px-6 py-2 bg-[#DCFCE7] text-[#16A34A] rounded-lg cursor-pointer hover:bg-green-100 transition-colors'>
+            Generate Insurance Backed Guarantee Certificates
           </button>
         </div>
       </form>

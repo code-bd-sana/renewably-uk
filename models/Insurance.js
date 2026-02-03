@@ -3,17 +3,6 @@ import mongoose from "mongoose";
 const insuranceSchema = new mongoose.Schema(
   {
     // Basic info
-    // policyNumber: {
-    //   type: String,
-    //   default: function () {
-    //     const year = new Date().getFullYear().toString().slice(-2);
-    //     const random = Math.floor(Math.random() * 1000000)
-    //       .toString()
-    //       .padStart(6, "0");
-    //     return `${year}${random}`;
-    //   },
-    // },
-
     policyNumber: {
       type: String,
       required: true,
@@ -105,6 +94,25 @@ const insuranceSchema = new mongoose.Schema(
     fundingPartner: String,
     schemeProvider: String,
     abs: String,
+
+    // Email Sending
+    emailGenerated: {
+      type: Boolean,
+      default: false,
+    },
+    emailGeneratedAt: {
+      type: Date,
+    },
+    emailSentTo: {
+      type: String, // Store which email address it was sent to
+    },
+    emailAttempts: {
+      type: Number,
+      default: 0,
+    },
+    emailError: {
+      type: String, // Store error message if email fails
+    },
 
     // Status
     status: {
