@@ -291,6 +291,8 @@ const styles = StyleSheet.create({
 });
 
 const CertificatePDF = ({ certificate, contractor }) => {
+  const productIndex = certificate.productIndex || 1;
+  const totalProducts = certificate.totalProducts || 1;
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -354,6 +356,21 @@ const CertificatePDF = ({ certificate, contractor }) => {
   return (
     <Document>
       <Page size='A4' style={styles.page}>
+        {/* Add certificate number indicator */}
+        {totalProducts > 1 && (
+          <View
+            style={{
+              marginBottom: 10,
+              padding: 5,
+              backgroundColor: "#f0f7ff",
+              borderRadius: 4,
+            }}>
+            <Text
+              style={{ fontSize: 10, color: "#0F47A8", textAlign: "center" }}>
+              Certificate {productIndex} of {totalProducts}
+            </Text>
+          </View>
+        )}
         {/* Header */}
         {/* <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>Certificate Template</Text>

@@ -1,7 +1,10 @@
 // app/api/insurance/route.js
 import connectDB from "@/lib/db";
+import { sendCertificateEmail } from "@/lib/email";
 import Insurance from "@/models/Insurance";
 import User from "@/models/User";
+import { sendCertificateWithEmail } from "@/utils/certificateUtils";
+import { generateCertificatePDF } from "@/utils/serverPdfGenerator";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -16,7 +19,7 @@ export async function GET(request) {
     if (!token) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -48,7 +51,7 @@ export async function GET(request) {
     console.error("Fetch insurances error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch insurances" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -60,7 +63,10 @@ export async function POST(request) {
     const token = cookieStore.get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 },
+      );
     }
 
     let decoded;
@@ -68,7 +74,10 @@ export async function POST(request) {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (jwtErr) {
       console.error("JWT verification failed:", jwtErr.message);
-      return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Invalid token" },
+        { status: 401 },
+      );
     }
 
     const userId = decoded.userId;
@@ -86,29 +95,33 @@ export async function POST(request) {
       !data.address ||
       !data.country ||
       !data.postcode ||
-      !data.products || data.products.length === 0
+      !data.products ||
+      data.products.length === 0
     ) {
       console.log("Missing required fields in data:", data);
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Load contractor (prefix logic)
     const contractor = await User.findById(userId).select(
-      "policyNoPrefix lastCertificateSequence companyName name isPrefixLocked"
+      "policyNoPrefix lastCertificateSequence companyName name isPrefixLocked",
     );
 
     if (!contractor) {
       console.log("Contractor not found for userId:", userId);
-      return NextResponse.json({ success: false, error: "Contractor not found" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Contractor not found" },
+        { status: 404 },
+      );
     }
 
     console.log("Contractor loaded:", {
       id: contractor._id,
       prefix: contractor.policyNoPrefix,
-      sequence: contractor.lastCertificateSequence
+      sequence: contractor.lastCertificateSequence,
     });
     // Generate policy number
     let policyNumber;
@@ -118,7 +131,7 @@ export async function POST(request) {
       const updated = await User.findByIdAndUpdate(
         userId,
         { $inc: { lastCertificateSequence: 1 } },
-        { new: true, select: "lastCertificateSequence policyNoPrefix" }
+        { new: true, select: "lastCertificateSequence policyNoPrefix" },
       );
 
       const sequence = updated.lastCertificateSequence;
@@ -130,7 +143,7 @@ export async function POST(request) {
       if (sequence === 1 && !contractor.isPrefixLocked) {
         await User.updateOne(
           { _id: userId },
-          { $set: { isPrefixLocked: true } }
+          { $set: { isPrefixLocked: true } },
         );
       }
     } else {
@@ -143,161 +156,174 @@ export async function POST(request) {
     }
 
     // Create new insurance
-    // const insurance = new Insurance({
-    //   ...data,
-    //   userId: decoded.userId,
-    //   status: "active",
-    // });
-
     const insurance = new Insurance({
       ...data,
-      policyNumber,  // from prefix logic
+      policyNumber, // from prefix logic
       userId,
-      contractorName: contractor.companyName || contractor.name || data.contractorName,
+      contractorName:
+        contractor.companyName || contractor.name || data.contractorName,
       status: "active",
+      emailGenerated: false,
+      emailAttempts: 0,
+      emailSentTo: data.email, // Store policy holder email
     });
 
     await insurance.save();
 
     console.log("Insurance saved successfully:", insurance._id);
 
-    return NextResponse.json({
-      success: true,
-      message: "Insurance created successfully",
-      insuranceId: insurance._id,
-      policyNumber: insurance.policyNumber,
+    // ========== EMAIL SENDING - SINGLE EMAIL WITH MULTIPLE ATTACHMENTS ==========
+    let emailSent = false;
+    let emailError = null;
+    let generatedPdfs = [];
+
+    try {
+      console.log(
+        `📧 Preparing to send email with ${data.products.length} certificate(s)`,
+      );
+
+      // Generate PDF for EACH product first
+      const pdfAttachments = [];
+
+      for (let i = 0; i < data.products.length; i++) {
+        const product = data.products[i];
+
+        console.log(
+          `🔄 Generating PDF for product ${i + 1}/${data.products.length}: ${product.measureType}`,
+        );
+
+        // Prepare certificate data for THIS product
+        const certificateData = {
+          _id: insurance._id,
+          policyNumber: insurance.policyNumber,
+          productIndex: i + 1,
+          totalProducts: data.products.length,
+          policyHolderName: data.policyHolderName,
+          holderName: data.policyHolderName,
+          address: data.address,
+          email: data.email,
+          phone: data.phone,
+          inceptionDate: product.inceptionDate || "",
+          expiryDate: product.expiryDate || "",
+          productType: product.measureType || "",
+          price: product.price || product.contractValue * 0.05 || 0,
+          contractValue: product.contractValue || 0,
+          retrofitAssessor: data.retrofitAssessor || "",
+          retrofitCoordinator: data.retrofitCoordinator || "",
+          fundingPartner: data.fundingPartner || "",
+          schemeProvider: data.schemeProvider || "",
+          abs: data.abs || "",
+          rawData: {
+            insurance: data,
+            product: product,
+          },
+          createdAt: insurance.createdAt,
+        };
+
+        // Prepare contractor data
+        const contractorData = {
+          companyName: contractor.companyName || contractor.name,
+          name: contractor.name,
+          address: data.contractorAddress || contractor.address,
+          email: contractor.email,
+        };
+
+        // Generate PDF for this product
+        const pdfBuffer = await generateCertificatePDF(
+          certificateData,
+          contractorData,
+        );
+
+        console.log(
+          `PDF generated for product ${i + 1}, size: ${pdfBuffer.length} bytes`,
+        );
+
+        // Create filename for this product
+        const fileName = `Insurance_Certificate_${insurance.policyNumber}_${product.measureType.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+
+        // Add to attachments array
+        pdfAttachments.push({
+          filename: fileName,
+          content: pdfBuffer,
+          contentType: "application/pdf",
+          productIndex: i + 1,
+          productType: product.measureType,
+        });
+
+        generatedPdfs.push({
+          productIndex: i + 1,
+          productType: product.measureType,
+          fileName: fileName,
+          size: pdfBuffer.length,
+        });
+      }
+
+      console.log(
+        `📎 All PDFs generated. Total attachments: ${pdfAttachments.length}`,
+      );
+
+      // Send SINGLE email with ALL PDF attachments
+      const emailResult = await sendCertificateEmail(
+        data.email,
+        data.policyHolderName,
+        contractor.companyName || contractor.name,
+        insurance.policyNumber,
+        pdfAttachments,
+        data.products.length,
+      );
+
+      if (!emailResult) {
+        throw new Error("Failed to send email with attachments");
+      }
+
+      emailSent = true;
+      console.log(
+        `✅ Email sent successfully with ${pdfAttachments.length} certificate(s)`,
+      );
+    } catch (emailErr) {
+      console.error("❌ Error sending certificate email:", emailErr);
+      emailError = emailErr.message;
+      emailSent = false;
+    }
+    // ========== END EMAIL LOGIC ==========
+
+    // Update insurance email status
+    await Insurance.findByIdAndUpdate(insurance._id, {
+      emailGenerated: emailSent,
+      emailGeneratedAt: emailSent ? new Date() : null,
+      emailAttempts: 1,
+      emailError: emailError,
+      emailDetails: {
+        totalProducts: data.products.length,
+        sent: emailSent,
+        generatedPdfs: generatedPdfs,
+        singleEmail: true,
+      },
     });
 
+    return NextResponse.json({
+      success: true,
+      message: emailSent
+        ? `Insurance created and ${data.products.length} certificate(s) sent in one email`
+        : "Insurance created but email sending failed",
+      insuranceId: insurance._id,
+      policyNumber: insurance.policyNumber,
+      emailSent: emailSent,
+      emailError: emailError,
+      details: {
+        totalCertificates: data.products.length,
+        singleEmail: true,
+      },
+    });
   } catch (error) {
     console.error("POST /api/insurance full error:", error);
     console.error("Error stack:", error.stack);
     return NextResponse.json(
       { success: false, error: error.message || "Failed to create insurance" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-// export async function POST(request) {
-//   try {
-//     // Check authentication
-//     const cookieStore = await cookies();
-//     const token = cookieStore.get("auth_token")?.value;
-
-//     if (!token) {
-//       return NextResponse.json(
-//         { success: false, error: "Not authenticated" },
-//         { status: 401 }
-//       );
-//     }
-
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     const data = await request.json();
-
-//     console.log("Creating insurance with data:", data);
-
-//     await connectDB();
-
-//     // Validate required fields
-//     if (
-//       !data.contractorName ||
-//       !data.policyHolderName ||
-//       !data.email ||
-//       !data.phone ||
-//       !data.address ||
-//       !data.products ||
-//       data.products.length === 0
-//     ) {
-//       return NextResponse.json(
-//         { success: false, error: "Missing required fields" },
-//         { status: 400 }
-//       );
-//     }
-
-//     // Load contractor to get prefix & sequence
-//     const contractor = await User.findById(userId).select(
-//       "policyNoPrefix lastCertificateSequence companyName name isPrefixLocked"
-//     );
-
-//     if (!contractor) {
-//       return NextResponse.json(
-//         { success: false, error: "Contractor not found" },
-//         { status: 404 }
-//       );
-//     }
-
-//     // Generate policy number
-//     let policyNumber;
-
-//     if (contractor.policyNoPrefix && contractor.policyNoPrefix.trim() !== "") {
-//       // Atomically increment sequence
-//       const updated = await User.findByIdAndUpdate(
-//         userId,
-//         { $inc: { lastCertificateSequence: 1 } },
-//         { new: true, select: "lastCertificateSequence policyNoPrefix" }
-//       );
-
-//       const sequence = updated.lastCertificateSequence;
-//       policyNumber = `${updated.policyNoPrefix}${sequence
-//         .toString()
-//         .padStart(5, "0")}`;
-
-//       // Lock prefix after first certificate (if not already locked)
-//       if (sequence === 1 && !contractor.isPrefixLocked) {
-//         await User.updateOne(
-//           { _id: userId },
-//           { $set: { isPrefixLocked: true } }
-//         );
-//       }
-//     } else {
-//       // Fallback to old random format
-//       const year = new Date().getFullYear().toString().slice(-2);
-//       const random = Math.floor(Math.random() * 1000000)
-//         .toString()
-//         .padStart(6, "0");
-//       policyNumber = `${year}${random}`;
-//     }
-
-//     // Create new insurance
-//     // const insurance = new Insurance({
-//     //   ...data,
-//     //   userId: decoded.userId,
-//     //   status: "active",
-//     // });
-
-//     const insurance = new Insurance({
-//       ...data,
-//       policyNumber, 
-//       userId: decoded.userId,
-//       contractorName:
-//         contractor.companyName || contractor.name || data.contractorName,
-//       status: "active",
-//     });
-//     await insurance.save();
-
-//     return NextResponse.json({
-//       success: true,
-//       message: "Insurance created successfully",
-//       insuranceId: insurance._id,
-//       policyNumber: insurance.policyNumber,
-//     });
-//   } catch (error) {
-//     console.error("Create insurance error:", error);
-
-//     if (error.name === "ValidationError") {
-//       return NextResponse.json(
-//         { success: false, error: error.message },
-//         { status: 400 }
-//       );
-//     }
-
-//     return NextResponse.json(
-//       { success: false, error: "Failed to create insurance" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// PUT
 
 export async function PUT(request) {
   await connectDB();
@@ -316,14 +342,14 @@ export async function PUT(request) {
     if (!certificateId) {
       return NextResponse.json(
         { success: false, error: "Certificate ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!documentUrls || !Array.isArray(documentUrls)) {
       return NextResponse.json(
         { success: false, error: "Valid document URLs array is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -342,7 +368,7 @@ export async function PUT(request) {
           success: false,
           error: `Invalid certificate ID format: ${cleanCertificateId}. Expected 24-character hex string.`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -357,7 +383,7 @@ export async function PUT(request) {
           status: "submitted",
           updatedAt: new Date(),
         },
-      }
+      },
     );
 
     console.log("Update result:", updated);
@@ -368,7 +394,7 @@ export async function PUT(request) {
           success: false,
           error: `Certificate not found with ID: ${cleanCertificateId}`,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -378,7 +404,7 @@ export async function PUT(request) {
         message: "Insurance Updated Successfully",
         data: updated,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error updating insurance:", error);
@@ -391,7 +417,7 @@ export async function PUT(request) {
           success: false,
           error: `Invalid certificate ID format. ${error.message}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -400,7 +426,7 @@ export async function PUT(request) {
         success: false,
         error: error.message || "Failed to update insurance",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
