@@ -14,7 +14,7 @@ export async function GET(request) {
     if (!token) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -48,11 +48,13 @@ export async function GET(request) {
           document: insurance.document,
           contractValue: `£ ${product.contractValue.toFixed(2)}`,
           inceptionDate: new Date(product.inceptionDate).toLocaleDateString(
-            "en-GB"
+            "en-GB",
           ),
           expiryDate: new Date(product.expiryDate).toLocaleDateString("en-GB"),
           transactionType: "Certificate Generated",
           price: `£ ${product.price.toFixed(2)}`,
+          emailGenerated: insurance.emailGenerated === true,
+          emailSentTo: insurance.emailSentTo || null,
           status: insurance.status,
           rawData: {
             insurance: {
@@ -95,13 +97,13 @@ export async function GET(request) {
     ) {
       return NextResponse.json(
         { success: false, error: "Invalid or expired token" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to fetch certificates" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

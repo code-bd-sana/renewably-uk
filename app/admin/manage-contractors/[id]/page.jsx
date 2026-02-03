@@ -40,6 +40,10 @@ export default function ContractorCertificatesPage() {
   const [modalError, setModalError] = useState("");
   const [requestReason, setRequestReason] = useState("");
 
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailCertificate, setEmailCertificate] = useState(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const itemsPerPage = 10;
@@ -185,6 +189,19 @@ export default function ContractorCertificatesPage() {
     setShowModal(true);
     setRequestType("");
     setModalError("");
+  };
+
+  const handleSendEmail = (certificate) => {
+    console.log("Opening email modal for:", certificate);
+    setEmailCertificate({
+      ...certificate,
+      policyHolderName: certificate.holderName,
+      email: certificate.email || certificate.rawData?.insurance?.email,
+      address: certificate.address || certificate.rawData?.insurance?.address,
+      productType: certificate.productType,
+      insuranceId: certificate.id?.split("-")[0], // Extract insurance ID
+    });
+    setShowEmailModal(true);
   };
 
   const handleDownload = async (certificateId) => {
@@ -910,6 +927,9 @@ Renewably UK - Powering Renewables
                     Creation Date
                   </th>
                   <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
+                    Issued Status
+                  </th>
+                  <th className='px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-700'>
                     Action
                   </th>
                 </tr>
@@ -981,10 +1001,21 @@ Renewably UK - Powering Renewables
                       <td className='px-4 lg:px-6 py-3 font-medium text-gray-900 text-xs sm:text-sm'>
                         {cert.price}
                       </td>
+
                       <td className='px-4 lg:px-6 py-3 text-gray-700 text-xs sm:text-sm'>
                         <div className='whitespace-nowrap'>
                           {formatTimestamp(cert.createdAt)}
                         </div>
+                      </td>
+                      <td className='px-4 lg:px-6 py-3'>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            cert.emailGenerated
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}>
+                          {cert.emailGenerated ? "Issued" : "Not Issued"}
+                        </span>
                       </td>
                       <td className='px-4 lg:px-6 py-3'>
                         <div className='flex items-center gap-2'>
@@ -993,6 +1024,27 @@ Renewably UK - Powering Renewables
                             className='text-blue-600 hover:text-blue-800 transition-colors p-1'
                             title='View'>
                             <EyeIcon size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleSendEmail(cert)}
+                            className={`p-1 transition-colors ${
+                              cert.emailGenerated
+                                ? "text-green-600 hover:text-green-800"
+                                : "text-gray-600 hover:text-gray-800"
+                            }`}
+                            title={
+                              cert.emailGenerated
+                                ? "Resend Email"
+                                : "Send Email"
+                            }>
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              className='h-4 w-4'
+                              viewBox='0 0 20 20'
+                              fill='currentColor'>
+                              <path d='M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z' />
+                              <path d='M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z' />
+                            </svg>
                           </button>
                           <button
                             onClick={() => handleDownloadSingle(cert)}

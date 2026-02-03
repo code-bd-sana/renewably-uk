@@ -11,14 +11,14 @@ export async function GET(request) {
     if (!auth.success) {
       return Response.json(
         { success: false, error: auth.error },
-        { status: auth.status || 401 }
+        { status: auth.status || 401 },
       );
     }
 
     if (auth.userRole !== "admin") {
       return Response.json(
         { success: false, error: "Admin access required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -40,7 +40,7 @@ export async function GET(request) {
 
     if (contractorId) {
       contractor = await User.findById(contractorId).select(
-        "email name companyName companyAddress"
+        "email name companyName companyAddress",
       );
 
       if (contractor) {
@@ -88,6 +88,34 @@ export async function GET(request) {
 
     // Fetch certificates
     const certificates = await Insurance.find(query)
+      .select(
+        `
+    _id 
+    policyNumber 
+    policyHolderName 
+    email 
+    phone 
+    address 
+    country 
+    postcode 
+    products 
+    emailGenerated 
+    emailGeneratedAt 
+    emailSentTo 
+    emailAttempts 
+    emailError
+    contractorName
+    contractorAddress
+    retrofitAssessor
+    retrofitCoordinator
+    fundingPartner
+    schemeProvider
+    abs
+    status
+    createdAt
+    updatedAt
+  `,
+      )
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -128,6 +156,9 @@ export async function GET(request) {
           userId: cert.userId,
           contractorName: cert.contractorName,
           rawData: cert,
+          emailGenerated: cert.emailGenerated || false,
+          emailGeneratedAt: cert.emailGeneratedAt,
+          emailSentTo: cert.emailSentTo,
           insuranceId: cert._id.toString(), // ← useful for later detail fetch
         });
         continue;
@@ -186,7 +217,7 @@ export async function GET(request) {
 
     // Then return them sorted by createdAt (newest first)
     formattedCertificates.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
     );
 
     return Response.json({
@@ -209,7 +240,7 @@ export async function GET(request) {
     console.error("GET /api/admin/certificates error:", error);
     return Response.json(
       { success: false, error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

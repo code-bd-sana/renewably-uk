@@ -663,6 +663,7 @@ export default function CreateInsuranceForm() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
               />
             </div>
           </div>
