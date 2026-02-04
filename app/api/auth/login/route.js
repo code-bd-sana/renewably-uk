@@ -18,7 +18,7 @@ export async function POST(request) {
     if (!email || !password) {
       return Response.json(
         { success: false, error: "Email and password required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -28,7 +28,7 @@ export async function POST(request) {
     if (!user) {
       return Response.json(
         { success: false, error: "Invalid email or password" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -36,7 +36,7 @@ export async function POST(request) {
     if (!user.isApproved) {
       return Response.json(
         { success: false, error: "Account pending admin approval" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -52,7 +52,7 @@ export async function POST(request) {
           error: "Account suspended",
           message: message,
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -62,7 +62,7 @@ export async function POST(request) {
     if (!isValid) {
       return Response.json(
         { success: false, error: "Invalid email or password" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -75,7 +75,7 @@ export async function POST(request) {
         name: user.name,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     // Create response FIRST
@@ -97,11 +97,12 @@ export async function POST(request) {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Set-Cookie": `auth_token=${token}; HttpOnly; Path=/; Max-Age=${
-          7 * 24 * 60 * 60
-        }; SameSite=Lax${
-          process.env.NODE_ENV === "production" ? "; Secure" : ""
-        }`,
+        // "Set-Cookie": `auth_token=${token}; HttpOnly; Path=/; Max-Age=${
+        //   7 * 24 * 60 * 60
+        // }; SameSite=Lax${
+        //   process.env.NODE_ENV === "production" ? "; Secure" : ""
+        // }`,
+        "Set-Cookie": `auth_token=${token}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax`,
       },
     });
 
@@ -110,7 +111,7 @@ export async function POST(request) {
     console.error("Login error:", error);
     return Response.json(
       { success: false, error: "Login failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
