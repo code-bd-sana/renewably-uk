@@ -32,7 +32,7 @@ export async function GET(request, { params }) {
     // Await params in Next.js 13/14
     const { id } = await params;
 
-    console.log("Fetching contractor with ID:", id);
+    // console.log("Fetching contractor with ID:", id);
 
     // Find contractor by ID
     const contractor = await User.findOne({
@@ -50,7 +50,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    console.log("Contractor found:", contractor.email);
+    // console.log("Contractor found:", contractor.email);
 
     // Get certificate count for this contractor (optional)
     const certificateCount = await Insurance.countDocuments({
