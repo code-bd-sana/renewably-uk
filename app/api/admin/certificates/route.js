@@ -46,7 +46,7 @@ export async function GET(request) {
       if (contractor) {
         // Find certificates by user ID (contractor ID)
         query.userId = contractorId;
-        console.log("Searching certificates for contractor ID:", contractorId);
+        // console.log("Searching certificates for contractor ID:", contractorId);
       } else {
         console.log("Contractor not found:", contractorId);
         return Response.json({
@@ -84,7 +84,7 @@ export async function GET(request) {
       };
     }
 
-    console.log("Query:", JSON.stringify(query, null, 2));
+    // console.log("Query:", JSON.stringify(query, null, 2));
 
     // Fetch certificates
     const certificates = await Insurance.find(query)
