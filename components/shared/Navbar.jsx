@@ -120,7 +120,7 @@ export default function Navbar() {
             {/* LOGO */}
             <Link href='/' className='flex items-center py-2'>
               <Image
-                src='/FullLogo_Transparent.png'
+                src='/Print_Transparent-2.svg'
                 alt='Renewably UK'
                 width={180}
                 height={180}

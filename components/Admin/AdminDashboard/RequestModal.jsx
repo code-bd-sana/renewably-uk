@@ -21,7 +21,6 @@ export default function RequestModal({
   handleDownloadSingle,
 }) {
   if (!showRequestModal || !selectedRequest) return null;
-
   return (
     <div className='fixed inset-0 bg-black/50 flex items-start md:items-center justify-center p-2 md:p-4 z-50 overflow-y-auto'>
       <div className='bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden my-auto'>
@@ -41,11 +40,18 @@ export default function RequestModal({
                   ? `Contractor Application: ${selectedRequest.name}`
                   : `Policy Request: ${selectedRequest.policyNumber}`}
               </h1>
-              <p className='text-xs md:text-sm text-gray-600 truncate'>
-                {selectedRequest.type === "user_request"
-                  ? `Company: ${selectedRequest.companyName}`
-                  : `By: ${selectedRequest.contractor?.name}`}
-              </p>
+              <div className='flex gap-x-4 p-2'>
+                <p className='text-xs md:text-sm text-gray-600 truncate'>
+                  {selectedRequest.type === "user_request"
+                    ? `Company: ${selectedRequest.companyName}`
+                    : `By: ${selectedRequest.contractor?.name}`}
+                </p>
+                <p className='text-xs md:text-sm text-gray-600 truncate'>
+                  {selectedRequest.type === "user_request"
+                    ? `Company Address: ${selectedRequest.companyAddress}`
+                    : `By: ${selectedRequest.contractor?.name}`}
+                </p>
+              </div>
             </div>
             <div className='flex items-center gap-3'>
               <CertificateActionsDropdown
@@ -134,6 +140,12 @@ export default function RequestModal({
                     <p className='text-sm text-gray-500'>Company Name</p>
                     <p className='font-medium'>{selectedRequest.companyName}</p>
                   </div>
+                  {/* <div>
+                    <p className='text-sm text-gray-500'>Company Address</p>
+                    <p className='font-medium'>
+                      {selectedRequest.companyAddress}
+                    </p>
+                  </div> */}
                   <div>
                     <p className='text-sm text-gray-500'>Email Address</p>
                     <p className='font-medium'>{selectedRequest.email}</p>
@@ -154,6 +166,12 @@ export default function RequestModal({
                     <p className='text-sm text-gray-500'>Status</p>
                     <p className='font-medium'>Pending Approval</p>
                   </div>
+                </div>
+                <div className='py-3'>
+                  <p className='text-sm text-gray-500'>Requested Roles</p>
+                  <p className='font-medium'>
+                    {selectedRequest.requestedRoles.join(", ")}
+                  </p>
                 </div>
               </div>
 

@@ -40,7 +40,7 @@ export async function GET(request) {
 
     if (contractorId) {
       contractor = await User.findById(contractorId).select(
-        "email name companyName companyAddress",
+        "email name companyName companyAddress requestedRoles",
       );
 
       if (contractor) {
