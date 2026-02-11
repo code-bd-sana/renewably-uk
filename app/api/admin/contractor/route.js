@@ -262,6 +262,7 @@ export async function GET(request) {
         companyName: contractor.companyName || "",
         phoneNumber: contractor.phoneNumber || "",
         companyAddress: contractor.companyAddress || "",
+        requestedRoles: contractor.requestedRoles || [],
         position: contractor.position || "",
         role: contractor.role,
         roles: contractor.roles,

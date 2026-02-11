@@ -778,7 +778,7 @@ export default function AdminDashboard() {
             postcode: data.certificate.postcode || "N/A",
             email: data.certificate.email || "N/A",
             phone: data.certificate.phone || "N/A",
-            // NEW – pull from products[0]
+            // pull from products[0]
             productType:
               data.certificate.productType ||
               data.certificate.products?.[0]?.productType ||
