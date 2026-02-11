@@ -61,7 +61,18 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: ["contractor"],
     },
-    officeAddress: String,
+    // What the user WANTED / requested during signup
+    requestedRoles: {
+      type: [String],
+      default: [],
+    },
+
+    // Company address
+    companyAddress: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     resetPasswordToken: {
       type: String,
       default: null,

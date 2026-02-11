@@ -66,6 +66,7 @@ export async function GET(request, { params }) {
         phone: contractor.phone || "",
         companyName: contractor.companyName || "",
         companyAddress: contractor.companyAddress || "",
+        requestedRoles: contractor.requestedRoles || [],
         position: contractor.position || "",
         role: contractor.role,
         roles: contractor.roles,

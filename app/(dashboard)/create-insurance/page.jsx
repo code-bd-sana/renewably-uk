@@ -176,7 +176,7 @@ export default function CreateInsuranceForm() {
         const res = await fetch("/api/compliance/providers");
         const data = await res.json();
         if (data.success) {
-          console.log("Compliance Providers Loaded:", data.providers);
+          // console.log("Compliance Providers Loaded:", data.providers);
           setAllProviders(data.providers);
         } else {
           toast.error("Failed to load compliance providers");
@@ -319,7 +319,7 @@ export default function CreateInsuranceForm() {
           setFormData((prev) => ({
             ...prev,
             contractorName: data.user.companyName || data.user.name,
-            contractorAddress: data.user.officeAddress || "",
+            contractorAddress: data.user.companyAddress || "",
           }));
           if (data.user.allowedProducts) {
             const ids = data.user.allowedProducts.map((id) =>
@@ -1072,7 +1072,7 @@ export default function CreateInsuranceForm() {
             </div>
             <div>
               <label className='block text-sm font-medium mb-2'>
-                Contractor Office Address
+                Contractor Company Address
               </label>
               <input
                 type='text'

@@ -63,7 +63,7 @@ export default function ManageContractorsPage() {
       console.log("Fetching contractors...");
       const res = await fetch("/api/admin/contractor");
       const data = await res.json();
-      console.log("Fetched contractors:", data.users);
+      // console.log("Fetched contractors:", data.users);
 
       if (data.success) {
         setContractors(data.users);

@@ -4,6 +4,7 @@ import { Eye, FileText, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import ProductAssignmentSection from "@/components/Admin/ProductAssignmentSection";
 import { useState } from "react";
+import { div } from "framer-motion/client";
 
 export default function ContractorModal({
   showContractorModal,
@@ -25,7 +26,7 @@ export default function ContractorModal({
   const [localPrefixInput, setLocalPrefixInput] = useState(prefixInput);
 
   if (!showContractorModal || !selectedContractor) return null;
-
+  console.log("ksndfj", selectedContractor);
   return (
     <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
       <div className='bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'>
@@ -99,7 +100,7 @@ export default function ContractorModal({
                   Company Address
                 </div>
                 <div className='text-sm text-gray-900 text-right'>
-                  {selectedContractor.address || "N/A"}
+                  {selectedContractor.companyAddress || "N/A"}
                 </div>
               </div>
 
@@ -158,6 +159,28 @@ export default function ContractorModal({
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div>
+              <p>Requested Roles</p>
+              <div>
+                {selectedContractor.requestedRoles &&
+                selectedContractor.requestedRoles.length > 0 ? (
+                  <div className='flex flex-wrap justify-start gap-2'>
+                    {selectedContractor.requestedRoles.map((role, index) => (
+                      <span
+                        key={index}
+                        className='text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded'>
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className='text-sm text-gray-500'>
+                    No roles requested
+                  </span>
+                )}
               </div>
             </div>
 
