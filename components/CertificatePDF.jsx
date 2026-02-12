@@ -434,13 +434,13 @@ const CertificatePDF = ({ certificate, contractor }) => {
               <Text style={styles.companyName}>
                 {contractor?.companyName ||
                   certificate.rawData?.insurance?.contractorName ||
-                  "North West Energy Grants Ltd"}
+                  "Not Provided"}
               </Text>
               <View style={styles.addressContainer}>
                 <Text style={styles.addressText}>
                   {contractor?.address ||
                     certificate.rawData?.insurance?.contractorAddress ||
-                    "2464 Royal Ln. Mesa, New Jersey 45463"}
+                    "Not Provided"}
                 </Text>
               </View>
             </View>
@@ -460,7 +460,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
               <Text style={styles.detailValue}>
                 {certificate.holderName ||
                   certificate.policyHolderName ||
-                  "Mr Leslie Corcoran"}
+                  "Not Provided"}
               </Text>
             </View>
             <View style={styles.detailColumn}>
@@ -468,7 +468,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
               <Text style={styles.detailValue}>
                 {certificate.inceptionDate ||
                   formatDate(certificate.createdAt) ||
-                  "05/09/2025"}
+                  formatDate(new Date())}
               </Text>
             </View>
           </View>
@@ -481,13 +481,13 @@ const CertificatePDF = ({ certificate, contractor }) => {
                 {certificate.address ||
                   certificate.policyHolderAddress ||
                   certificate.rawData?.insurance?.address ||
-                  "Shadyview Gn, Richardson, California 62639"}
+                  "Not Provided"}
               </Text>
             </View>
             <View style={styles.detailColumn}>
               <Text style={styles.detailLabel}>Expiry Date</Text>
               <Text style={styles.detailValue}>
-                {certificate.expiryDate || "05/09/2027"}
+                {certificate.expiryDate || "Not Provided"}
               </Text>
             </View>
           </View>
@@ -497,7 +497,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
             <View style={styles.detailColumn}>
               <Text style={styles.detailLabel}>Type of Installation</Text>
               <Text style={styles.detailValue}>
-                {certificate.productType || "Gas-Fired Condensing Boiler"}
+                {certificate.productType || "Not Provided"}
               </Text>
 
               <Text style={styles.policyMediumText}>
@@ -507,7 +507,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
             <View style={styles.detailColumn}>
               <Text style={styles.detailLabel}>Premium</Text>
               <Text style={styles.premiumAmount}>
-                {certificate.price || "£19.04"}
+                {certificate.price || "Not Provided"}
               </Text>
               <Text style={styles.policySmallText}>
                 Including Fire policy Premium Tax
@@ -525,7 +525,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
               <Text style={styles.schemeValue}>
                 {certificate.retrofitAssessor ||
                   certificate.rawData?.insurance?.retrofitAssessor ||
-                  "Savannah Nguyen"}
+                  "Not Provided"}
               </Text>
             </View>
             <View style={styles.schemeItem}>
@@ -533,7 +533,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
               <Text style={styles.schemeValue}>
                 {certificate.retrofitCoordinator ||
                   certificate.rawData?.insurance?.retrofitCoordinator ||
-                  "Cameron Williamson"}
+                  "Not Provided"}
               </Text>
             </View>
             <View style={styles.schemeItem}>
@@ -541,7 +541,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
               <Text style={styles.schemeValue}>
                 {certificate.fundingPartner ||
                   certificate.rawData?.insurance?.fundingPartner ||
-                  "Bessie Cooper"}
+                  "Not Provided"}
               </Text>
             </View>
             <View style={styles.schemeItem}>
@@ -549,7 +549,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
               <Text style={styles.schemeValue}>
                 {certificate.schemeProvider ||
                   certificate.rawData?.insurance?.schemeProvider ||
-                  "Ronald Richards"}
+                  "Not Provided"}
               </Text>
             </View>
           </View>
@@ -609,7 +609,8 @@ const CertificatePDF = ({ certificate, contractor }) => {
           </Text>
           <Text style={styles.footerText}>
             Certificate ID: BDIGWE{certificate?.policyNumber || "000000"} |
-            Issue Date: {formatDate(certificate.createdAt) || "16/12/2025"}
+            Issue Date:{" "}
+            {formatDate(certificate.createdAt) || formatDate(new Date())}
           </Text>
         </View>
       </Page>

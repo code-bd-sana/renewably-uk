@@ -588,6 +588,15 @@ function DashboardPage() {
             )}
           </>
         )}
+
+        <p className='text-xs text-gray-400 px-10 py-6'>
+          Bluedrop Services (NW) Limited Company No: 7287668 Registered Office:
+          Unit 4 Flanders Road, 1st Floor West Wing, Royal London Park, Hedge
+          End SO30 2LG. Bluedrop Services (NW) Limited is authorised and
+          regulated by the Financial Conduct Authority. Registration No. 530244.
+          You can check our registration by contacting the FCA on 0800 111 6768
+          or by visiting www.fca.org.uk/register.
+        </p>
       </div>
 
       {/* View Certificate Modal */}
