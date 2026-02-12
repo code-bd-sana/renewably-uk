@@ -17,6 +17,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -33,6 +34,9 @@ export default function SignUpPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+
+  // captcha state
+  const [captchaToken, setCaptchaToken] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,6 +71,12 @@ export default function SignUpPage() {
       return;
     }
 
+    if (!captchaToken) {
+      setError("Please complete the CAPTCHA verification");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -80,6 +90,7 @@ export default function SignUpPage() {
           confirmPassword,
           requestedRoles,
           companyAddress,
+          captchaToken,
         }),
       });
 
@@ -141,7 +152,7 @@ export default function SignUpPage() {
           <div className='hidden lg:block w-full lg:w-1/2 max-w-xl'>
             <div className='space-y-8'>
               {/* Logo */}
-              <div className='flex justify-center md:mt-8'>
+              <div className='flex justify-center md:-mt-56'>
                 <Image
                   src='/Print_Transparent-2.svg'
                   height='190'
@@ -491,10 +502,19 @@ export default function SignUpPage() {
                     </div>
                   </div>
 
+                  <div className='flex justify-center my-6'>
+                    <ReCAPTCHA
+                      sitekey={process.env.NEXT_PUBLIC_CAPTCHA_SITE_KEY}
+                      onChange={(token) => setCaptchaToken(token)}
+                      onExpired={() => setCaptchaToken(null)}
+                      onErrored={() => setCaptchaToken(null)}
+                    />
+                  </div>
+
                   {/* Sign Up Button */}
                   <button
                     type='submit'
-                    disabled={loading}
+                    disabled={loading || !captchaToken}
                     className='w-full bg-[#0F47A8] hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'>
                     {loading ? "Creating Account..." : "Create Account"}
                   </button>

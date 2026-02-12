@@ -11,6 +11,9 @@ export async function POST(request) {
     await connectDB();
 
     const body = await request.json();
+
+    const captchaToken = body.captchaToken;
+
     const {
       name,
       companyName,
@@ -72,6 +75,28 @@ export async function POST(request) {
       return Response.json(
         { success: false, error: "User already exists" },
         { status: 409 },
+      );
+    }
+
+    // Captcha verification
+    if (!captchaToken) {
+      return Response.json(
+        { success: false, error: "Please complete the CAPTCHA" },
+        { status: 400 },
+      );
+    }
+
+    const verification = await fetch(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`,
+      { method: "POST" },
+    );
+
+    const result = await verification.json();
+
+    if (!result.success) {
+      return Response.json(
+        { success: false, error: "CAPTCHA verification failed" },
+        { status: 400 },
       );
     }
 
