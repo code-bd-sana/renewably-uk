@@ -715,48 +715,68 @@ export default function CreateInsuranceForm() {
     e.preventDefault();
     setError("");
 
-    // ========== VALIDATE BEFORE SHOWING POPUP ==========
+    // ────────────────────────────────────────────────
+    // EARLY VALIDATION – STOP HERE IF ANYTHING IS WRONG
+    // ────────────────────────────────────────────────
     let validationErrors = [];
 
-    // 1. Validate all products before showing popup
+    // Policy Holder
+    if (!formData.policyHolderName?.trim())
+      validationErrors.push("Policy Holder Name is required");
+    if (!formData.email?.trim())
+      validationErrors.push("Email Address is required");
+    if (!formData.phone?.trim())
+      validationErrors.push("Phone Number is required");
+    if (!formData.address?.trim()) validationErrors.push("Address is required");
+    if (!formData.postcode?.trim())
+      validationErrors.push("Postcode is required");
+
+    // Products
     formData.products.forEach((product, index) => {
-      const contractValue = parseFloat(product.contractValue);
-      if (isNaN(contractValue) || contractValue <= 0) {
-        validationErrors.push(
-          `Product ${
-            index + 1
-          }: Please enter a valid contract value (must be a number greater than 0)`,
-        );
-      }
-
-      if (!product.measureType) {
+      if (!product.measureType?.trim())
         validationErrors.push(`Product ${index + 1}: Measure Type is required`);
-      }
-
-      if (!product.inceptionDate) {
+      if (!product.inceptionDate?.trim())
         validationErrors.push(
-          `Product ${index + 1}: Inception date is required`,
+          `Product ${index + 1}: Inception Date is required`,
         );
-      }
+      if (!product.expiryDate?.trim())
+        validationErrors.push(`Product ${index + 1}: Expiry Date is required`);
+      const cv = parseFloat(product.contractValue);
+      if (isNaN(cv) || cv <= 0)
+        validationErrors.push(
+          `Product ${index + 1}: Contract Value must be > 0`,
+        );
     });
 
-    // Validate ABS field
+    // Compliance fields – NOW REQUIRED
+    if (!formData.retrofitAssessor?.trim()) {
+      validationErrors.push("Retrofit Assessor is required");
+    }
+    if (!formData.retrofitCoordinator?.trim()) {
+      validationErrors.push("Retrofit Coordinator is required");
+    }
+    if (!formData.fundingPartner?.trim()) {
+      validationErrors.push("Funding Partner is required");
+    }
+    if (!formData.schemeProvider?.trim()) {
+      validationErrors.push("Scheme Provider is required");
+    }
+
+    // ABS – only validate format if filled
     if (absValue && isNaN(parseFloat(absValue))) {
       validationErrors.push("ABS must be a valid number");
     }
 
-    // ========== SHOW ERRORS IMMEDIATELY (NO POPUP) ==========
+    // Show errors and STOP
     if (validationErrors.length > 0) {
-      const errorMessage = validationErrors.join("\n");
-      toast.error(errorMessage, {
-        duration: 5000,
-        position: "top-right",
-      });
-      setError(errorMessage);
-      return; // STOP HERE, don't show popup
+      validationErrors.forEach((err) => toast.error(err, { duration: 4000 }));
+      setError(validationErrors.join(" • "));
+      return;
     }
 
-    // ========== ONLY SHOW POPUP IF VALIDATION PASSES ==========
+    // ────────────────────────────────────────────────
+    // ONLY IF VALIDATION PASSES → show generating screen
+    // ────────────────────────────────────────────────
     setShowGeneratingMessage(true);
     setProgress(0);
 
@@ -767,7 +787,7 @@ export default function CreateInsuranceForm() {
           clearInterval(progressInterval);
           return 100;
         }
-        return prev + 20; // Will complete in 5 steps (0, 20, 40, 60, 80, 100)
+        return prev + 20;
       });
     }, 300);
 
@@ -776,19 +796,13 @@ export default function CreateInsuranceForm() {
       const processedProducts = formData.products.map((product) => {
         const contractValueNum = parseFloat(product.contractValue) || 0;
 
-        // Find the full product object from backend data
         const selectedProduct = products.find(
           (p) => p.Measures === product.measureType,
         );
 
         let price = 0;
-
         if (selectedProduct) {
           price = getPriceFromTier(selectedProduct, contractValueNum);
-        } else {
-          console.warn(
-            `Could not find product data for: ${product.measureType}`,
-          );
         }
 
         return {
@@ -878,14 +892,48 @@ export default function CreateInsuranceForm() {
       setError(error.message || "Failed to submit form. Please try again.");
     } finally {
       setLoading(false);
+      // Important: hide generating message even on error
+      setShowGeneratingMessage(false);
+      clearInterval(progressInterval);
     }
   };
-
   const handleCancel = () => {
-    if (
-      confirm("Are you sure you want to cancel? All unsaved data will be lost.")
-    ) {
-      router.push("/dashboard");
+    if (window.confirm("Clear all fields? This cannot be undone.")) {
+      // Reset formData to initial/empty values
+      setFormData({
+        contractorName: contractorData?.companyName || "",
+        contractorAddress: contractorData?.companyAddress || "",
+        policyHolderName: "",
+        email: "",
+        phone: "",
+        address: "",
+        country: "United Kingdom",
+        postcode: "",
+        products: [
+          {
+            id: Date.now(),
+            productType: "",
+            measureType: "",
+            inceptionDate: "",
+            expiryDate: "",
+            contractValue: "",
+          },
+        ],
+        retrofitAssessor: "",
+        retrofitCoordinator: "",
+        fundingPartner: "",
+        schemeProvider: "",
+        abs: "",
+      });
+
+      // Also reset ABS input field
+      setAbsValue("");
+
+      // Optional: show success toast (nice UX)
+      toast.success("Form Cancelled", {
+        duration: 2000,
+        position: "top-right",
+      });
     }
   };
 
@@ -934,86 +982,93 @@ export default function CreateInsuranceForm() {
 
   if (showGeneratingMessage) {
     const steps = [
-      "Reviewing Policy Holder Details",
-      "Reviewing Product Details",
-      "Reviewing Compliance and Submission",
-      "Securely Storing Insurance Backed Guarantee Data",
-      "Generating Insurance Backed Guarantees",
-      "Sending Certificate to Policy Holder",
+      { text: "Connecting to Bluedrop Services", completed: true },
+      { text: "Accessing Secure Data Service", completed: true },
+      { text: "Retrieving Insurance Backed Guarantees", completed: true },
+      { text: "Data Sync Secure and Complete", completed: true },
+      { text: "Insurance Backed Guarantees Available", completed: true },
     ];
-
-    // Calculate which steps are completed based on progress
-    const completedSteps = Math.floor(progress / 16.67); // 6 steps total (100/6 = 16.67)
 
     return (
       <main className='min-h-screen bg-gray-50 flex items-center justify-center p-4'>
-        <div className='bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center relative'>
-          {/* Add close button for emergencies */}
+        <div className='bg-white rounded-xl shadow-xl p-8 max-w-lg w-full text-center relative'>
+          {/* Emergency close button */}
           <button
             onClick={() => {
               setShowGeneratingMessage(false);
               setProgress(0);
             }}
-            className='absolute top-4 right-4 text-gray-400 hover:text-gray-600'
+            className='absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold'
             title='Close (emergency)'>
             ✕
           </button>
 
-          <div className='mb-6'>
+          {/* Logo & Title */}
+          <div className='mb-8'>
             <Image
               src={bluedrop}
-              height={150}
-              width={192}
-              alt='logo'
-              className='mx-auto flex justify-center'
+              height={140}
+              width={180}
+              alt='Bluedrop Services'
+              className='mx-auto mb-4'
             />
-            <h1 className='text-2xl font-bold text-gray-800 mb-2'>
-              {progress < 100 ? "Generating Certificates..." : "Complete!"}
+            <h1 className='text-2xl font-bold text-gray-900'>
+              Insurance Backed Guarantee Generation
             </h1>
-            <p className='text-gray-600'>
-              {progress < 100
-                ? "Please wait while we generate and email your certificates..."
-                : "Certificates generated successfully!"}
-            </p>
           </div>
 
           {/* Steps List */}
-          <div className='mb-6 text-left'>
+          <div className='mb-8 text-left space-y-4'>
             {steps.map((step, index) => (
-              <div key={index} className='flex items-center gap-3 mb-3'>
-                <span
-                  className={`${index < completedSteps ? "text-green-600 font-medium" : "text-gray-600"}`}>
-                  {step}:{" "}
-                  {index < completedSteps ? "Completed" : "In Progress..."}
+              <div
+                key={index}
+                className='flex items-center gap-3 text-gray-900'>
+                {step.completed ? (
+                  <Check className='h-5 w-5 text-green-600' strokeWidth={3} />
+                ) : step.inProgress ? (
+                  <Loader2 className='h-5 w-5 text-blue-600 animate-spin' />
+                ) : (
+                  <div className='h-5 w-5 rounded-full border-2 border-gray-300' />
+                )}
+                <span className='font-medium'>
+                  {step.text}:{" "}
+                  {step.completed
+                    ? "Completed"
+                    : step.inProgress
+                      ? "In Progress…"
+                      : ""}
                 </span>
               </div>
             ))}
+
+            {/* Extra Sending Email line */}
+            <div className='flex items-center gap-3 text-gray-900 mt-2 pl-8'>
+              <Loader2 className='h-4 w-4 green animate-spin' />
+              <span>Sending Email</span>
+            </div>
           </div>
 
           {/* Progress Bar */}
-          <div className='mb-4'>
-            <div className='w-full bg-gray-200 rounded-full h-2.5 mb-2'>
+          <div className='mb-6'>
+            <div className='w-full bg-gray-200 rounded-full h-3 overflow-hidden'>
               <div
-                className='bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out'
-                style={{ width: `${progress}%` }}></div>
+                className='bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out'
+                style={{ width: `${progress}%` }}
+              />
             </div>
-            <div className='flex justify-between text-sm text-gray-500'>
-              <span>Processing...</span>
+            <div className='flex justify-between text-sm text-gray-700 mt-2 font-medium'>
+              <span>Processing</span>
               <span>{progress}%</span>
             </div>
           </div>
 
-          <div className='flex items-center justify-center gap-2 text-sm text-gray-500'>
-            <Loader2 size={16} className='animate-spin' />
-            <span>
-              {progress < 80 ? "Creating certificates..." : "Sending email..."}
-            </span>
-          </div>
+          <p className='text-sm text-gray-600'>
+            Please wait while we finalize and email your certificates...
+          </p>
         </div>
       </main>
     );
   }
-
   return (
     <main className='p-4 sans lg:p-6 max-w-455 mx-auto'>
       <Toaster
@@ -1085,11 +1140,13 @@ export default function CreateInsuranceForm() {
         </div>
 
         {/* Policy Holder Details */}
-        <div className='bg-white rounded-lg border border-gray-200  p-6 mb-6'>
+        <div className='bg-white rounded-lg border border-gray-200 p-6 mb-6'>
           <h2 className='text-lg font-semibold mb-4'>Policy Holder Details</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div>
-              <label className='block text-sm font-medium mb-2'>Name *</label>
+              <label className='block text-sm font-medium mb-2'>
+                Name <span className=''>*</span>
+              </label>
               <input
                 type='text'
                 placeholder='Enter Policy Holder name'
@@ -1103,7 +1160,7 @@ export default function CreateInsuranceForm() {
             </div>
             <div>
               <label className='block text-sm font-medium mb-2'>
-                Email Address *
+                Email Address <span className=''>*</span>
               </label>
               <input
                 type='email'
@@ -1118,7 +1175,7 @@ export default function CreateInsuranceForm() {
             </div>
             <div>
               <label className='block text-sm font-medium mb-2'>
-                Phone Number *
+                Phone Number <span className=''>*</span>
               </label>
               <input
                 type='tel'
@@ -1133,7 +1190,7 @@ export default function CreateInsuranceForm() {
             </div>
             <div>
               <label className='block text-sm font-medium mb-2'>
-                Address *
+                Address <span className=''>*</span>
               </label>
               <input
                 type='text'
@@ -1148,14 +1205,16 @@ export default function CreateInsuranceForm() {
             </div>
             <div>
               <label className='block text-sm font-medium mb-2'>
-                Country *
+                Country <span className=''>*</span>
               </label>
               <div className='w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-700'>
                 United Kingdom
               </div>
             </div>
             <div>
-              <label className='block text-sm font-medium mb-2'>Postcode</label>
+              <label className='block text-sm font-medium mb-2'>
+                Postcode <span className='text-red-500'>*</span>
+              </label>
               <input
                 type='text'
                 placeholder='Enter Policy Holder postcode (e.g., LL31 9FF)'
@@ -1166,6 +1225,7 @@ export default function CreateInsuranceForm() {
                 }
                 pattern='[A-Za-z0-9 ]{5,8}'
                 title='Enter a valid UK postcode (e.g., LL31 9FF)'
+                required
               />
             </div>
           </div>
@@ -1351,7 +1411,10 @@ export default function CreateInsuranceForm() {
                 type='button'
                 onClick={() => setShowRetrofitAssessor(!showRetrofitAssessor)}
                 className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between'>
-                <span>{formData.retrofitAssessor || "Select"}</span>
+                <span>
+                  {formData.retrofitAssessor ||
+                    "Select Approved Retrofit Assessor "}
+                </span>
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
@@ -1378,7 +1441,8 @@ export default function CreateInsuranceForm() {
                 }
                 className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between'>
                 <span>
-                  {formData.retrofitCoordinator || "Select your cover option"}
+                  {formData.retrofitCoordinator ||
+                    "Select Approved Retrofit Coordinator"}
                 </span>
                 <ChevronRight size={18} />
               </button>
@@ -1403,7 +1467,10 @@ export default function CreateInsuranceForm() {
                 type='button'
                 onClick={() => setShowFundingPartner(!showFundingPartner)}
                 className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between'>
-                <span>{formData.fundingPartner || "Select"}</span>
+                <span>
+                  {formData.fundingPartner ||
+                    "Select Approved Funding Partner "}
+                </span>
                 <ChevronRight size={18} />
               </button>
               <DropdownMenu
@@ -1429,7 +1496,7 @@ export default function CreateInsuranceForm() {
                 onClick={() => setShowSchemeProvider(!showSchemeProvider)}
                 className='w-full border border-gray-200 rounded-lg px-3 py-2 text-left flex items-center justify-between'>
                 <span>
-                  {formData.schemeProvider || "Select your cover option"}
+                  {formData.schemeProvider || "Select Approved Scheme Provider"}
                 </span>
                 <ChevronRight size={18} />
               </button>
@@ -1450,7 +1517,7 @@ export default function CreateInsuranceForm() {
               <label className='block text-sm font-medium mb-2'>ABS</label>
               <input
                 type='text'
-                placeholder='Enter ABS number (e.g., 1000)'
+                placeholder='Enter Projects Annual Bill Saving (ABS) amount'
                 className='w-full border border-gray-200 rounded-lg px-3 py-2'
                 value={absValue}
                 onChange={(e) => setAbsValue(e.target.value)}
@@ -1475,6 +1542,14 @@ export default function CreateInsuranceForm() {
           </button>
         </div>
       </form>
+      <p className='text-xs text-gray-400 px-10 py-6'>
+        Bluedrop Services (NW) Limited Company No: 7287668 Registered Office:
+        Unit 4 Flanders Road, 1st Floor West Wing, Royal London Park, Hedge End
+        SO30 2LG. Bluedrop Services (NW) Limited is authorised and regulated by
+        the Financial Conduct Authority. Registration No. 530244. You can check
+        our registration by contacting the FCA on 0800 111 6768 or by visiting
+        www.fca.org.uk/register.
+      </p>
     </main>
   );
 }
