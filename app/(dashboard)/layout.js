@@ -132,7 +132,21 @@ function DashboardLayout({ children }) {
             router.push("/");
           }}
           className='p-4 border-b-2 border-[#E2E8F0] cursor-pointer'>
-          <Image src={logo} alt="Logo" />
+          <Image
+            src='/FullLogo_Transparent_NoBuffer-3.png'
+            height={250}
+            width={250}
+            alt='Renewably UK'
+            className='h-auto w-auto'
+            onError={(e) => {
+              const target = e.target;
+              target.style.display = "none";
+              const nextSibling = target.nextSibling;
+              if (nextSibling && nextSibling.style) {
+                nextSibling.style.display = "flex";
+              }
+            }}
+          />
         </div>
 
         {/* Menu Items */}
