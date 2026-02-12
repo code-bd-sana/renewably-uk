@@ -106,7 +106,8 @@ function DashboardPage() {
               thisMonthCertificates: thisMonthCertificates.length,
               accountBalance: `£${accountBalanceNumber.toFixed(2)}`,
               editPending: certsData.certificates.filter(
-                (cert) => cert.status === "pending_edit",
+                // (cert) => cert.status === "pending_edit",
+                (cert) => cert.status === "pending",
               ).length,
             });
           }

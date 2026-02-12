@@ -313,15 +313,55 @@ const CertificatePDF = ({ certificate, contractor }) => {
 
     try {
       // Helper to parse DD/MM/YYYY format
-      const parseUKDate = (dateStr) => {
-        if (!dateStr) return null;
-        // Try DD/MM/YYYY format first
-        const parts = dateStr.split("/");
-        if (parts.length === 3) {
-          return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      // const parseUKDate = (dateStr) => {
+      //   if (!dateStr) return null;
+      //   // Try DD/MM/YYYY format first
+      //   const parts = dateStr.split("/");
+      //   if (parts.length === 3) {
+      //     return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      //   }
+      //   // Try YYYY-MM-DD format
+      //   return new Date(dateStr);
+      // };
+
+      const parseUKDate = (input) => {
+        if (!input) return null;
+
+        // Already a valid Date? Return it
+        if (input instanceof Date && !isNaN(input)) {
+          return input;
         }
-        // Try YYYY-MM-DD format
-        return new Date(dateStr);
+
+        // String? Try to parse
+        if (typeof input === "string") {
+          const str = input.trim();
+
+          // Try DD/MM/YYYY
+          if (str.includes("/")) {
+            const parts = str.split("/");
+            if (parts.length === 3) {
+              const date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+              if (!isNaN(date)) return date;
+            }
+          }
+
+          // Fallback: let Date try
+          const fallback = new Date(str);
+          if (!isNaN(fallback)) return fallback;
+        }
+
+        console.warn("Bad date:", input);
+        return null;
+      };
+
+      const formatDate = (input) => {
+        const date = parseUKDate(input);
+        if (!date) return "N/A";
+        return date.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
       };
 
       const inception = parseUKDate(inceptionDate);
@@ -357,7 +397,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
     <Document>
       <Page size='A4' style={styles.page}>
         {/* Add certificate number indicator */}
-        {totalProducts > 1 && (
+        {/* {totalProducts > 1 && (
           <View
             style={{
               marginBottom: 10,
@@ -370,7 +410,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
               Certificate {productIndex} of {totalProducts}
             </Text>
           </View>
-        )}
+        )} */}
         {/* Header */}
         {/* <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>Certificate Template</Text>
@@ -466,7 +506,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
             <View style={styles.detailColumn}>
               <Text style={styles.detailLabel}>Inception Date</Text>
               <Text style={styles.detailValue}>
-                {certificate.inceptionDate ||
+                {formatDate(certificate.inceptionDate) ||
                   formatDate(certificate.createdAt) ||
                   formatDate(new Date())}
               </Text>
@@ -487,7 +527,7 @@ const CertificatePDF = ({ certificate, contractor }) => {
             <View style={styles.detailColumn}>
               <Text style={styles.detailLabel}>Expiry Date</Text>
               <Text style={styles.detailValue}>
-                {certificate.expiryDate || "Not Provided"}
+                {formatDate(certificate.expiryDate) || "Not Provided"}
               </Text>
             </View>
           </View>

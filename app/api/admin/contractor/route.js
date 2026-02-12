@@ -128,19 +128,19 @@ export async function GET(request) {
           contractValue:
             get("contractValue") === "N/A"
               ? "N/A"
-              : `£ ${Number(get("contractValue")).toLocaleString("en-GB", {
+              : `£${Number(get("contractValue")).toLocaleString("en-GB", {
                   minimumFractionDigits: 2,
                 })}`,
           totalAmount:
             get("totalProjectCost") === "N/A"
               ? "N/A"
-              : `£ ${Number(get("totalProjectCost")).toLocaleString("en-GB", {
+              : `£${Number(get("totalProjectCost")).toLocaleString("en-GB", {
                   minimumFractionDigits: 2,
                 })}`,
           price:
             get("price") === "N/A"
               ? "N/A"
-              : `£ ${Number(get("price")).toLocaleString("en-GB", {
+              : `£${Number(get("price")).toLocaleString("en-GB", {
                   minimumFractionDigits: 2,
                 })}`,
 
