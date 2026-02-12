@@ -598,7 +598,6 @@ export default function CertificatesPage() {
                       </div>
                     </div>
                   )}
-                  {/* ... rest of your dropdown code stays exactly the same ... */}
                 </div>
               ) : (
                 <input
@@ -957,7 +956,18 @@ export default function CertificatesPage() {
                           {cert.price}
                         </td>
                         <td className='px-4 py-3 text-sm font-normal text-[#6B7280] font-mono'>
-                          {cert.createdAt}
+                          {cert.createdAt
+                            ? new Date(cert.createdAt)
+                                .toLocaleString("en-GB", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                                })
+                                .replace(",", "")
+                            : "—"}
                         </td>
 
                         <td className='px-4 py-3'>
@@ -1696,7 +1706,7 @@ export default function CertificatesPage() {
                     )}
                     {renderStaticField(
                       "Price",
-                      selectedCertificate.price || "£ 0.00",
+                      selectedCertificate.price || "£0.00",
                     )}
                   </div>
                 </div>

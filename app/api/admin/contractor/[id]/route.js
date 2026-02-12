@@ -63,7 +63,7 @@ export async function GET(request, { params }) {
         id: contractor._id.toString(),
         name: contractor.name,
         email: contractor.email,
-        phone: contractor.phone || "",
+        phone: contractor.phoneNumber || "",
         companyName: contractor.companyName || "",
         companyAddress: contractor.companyAddress || "",
         requestedRoles: contractor.requestedRoles || [],

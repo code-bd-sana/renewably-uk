@@ -360,7 +360,7 @@ export default function Page() {
             {/* Modal Header */}
             <div className='flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200'>
               <div className='flex items-center gap-3'>
-                <FileText className='w-6 h-6 text-blue-600' />
+                <FileText className='w-6 h-6 text-blue-700' />
                 <div>
                   <h3 className='text-lg font-semibold text-gray-900'>
                     {selectedDocument.title}
@@ -495,13 +495,13 @@ export default function Page() {
           <div className='p-8'>
             {/* Profile Header */}
             <div className='flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-10 pb-8 border-b border-gray-200'>
-              <div className='w-24 h-24 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-2xl font-bold text-white shadow-lg ring-4 ring-blue-100 flex-shrink-0'>
+              <div className='w-24 h-24 rounded-full bg-linear-to-br from-blue-800 to-blue-900 flex items-center justify-center text-2xl font-bold text-white shadow-lg ring-4 ring-blue-100 shrink-0'>
                 {userData?.name
                   ?.split(" ")
                   .map((n) => n[0])
                   .join("") || "U"}
               </div>
-              <div className='text-center sm:text-left'>
+              <div className='text-center sm:text-left md:mt-3 lg:mt-3 '>
                 <h2 className='text-2xl font-bold text-gray-900'>
                   {userData?.name || "Contractor Name"}
                 </h2>

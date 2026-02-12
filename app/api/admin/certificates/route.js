@@ -142,10 +142,10 @@ export async function GET(request) {
           policyNo,
           holderName: cert.policyHolderName,
           productType: "Insurance Backed Guarantee",
-          contractValue: "£ 0.00",
+          contractValue: "£0.00",
           inceptionDate: "N/A",
           expiryDate: "N/A",
-          price: "£ 0.00",
+          price: "£0.00",
           createdAt: cert.createdAt,
           status: cert.status || "active",
           email: cert.email,
@@ -175,18 +175,18 @@ export async function GET(request) {
           : "N/A";
 
         const contractValue = product.contractValue
-          ? `£ ${product.contractValue.toLocaleString("en-US", {
+          ? `£${product.contractValue.toLocaleString("en-US", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}`
-          : "£ 0.00";
+          : "£0.00";
 
         const price = product.price
-          ? `£ ${product.price.toLocaleString("en-US", {
+          ? `£${product.price.toLocaleString("en-US", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}`
-          : "£ 0.00";
+          : "£0.00";
 
         formattedCertificates.push({
           id: `${cert._id}-${index}`, // ← compound ID! Important
