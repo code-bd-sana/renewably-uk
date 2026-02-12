@@ -119,7 +119,7 @@ export default function AdminDashboard() {
 
                 // Product details
                 productType: product.productType,
-                contractValue: `£ ${
+                contractValue: `£${
                   product.contractValue?.toFixed(2) || "0.00"
                 }`,
                 inceptionDate: new Date(
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
                 expiryDate: new Date(product.expiryDate).toLocaleDateString(
                   "en-GB",
                 ),
-                price: `£ ${product.price?.toFixed(2) || "0.00"}`,
+                price: `£${product.price?.toFixed(2) || "0.00"}`,
 
                 // Additional fields for PDF
                 retrofitAssessor: insurance.retrofitAssessor,
@@ -674,7 +674,7 @@ export default function AdminDashboard() {
           "Unknown",
         contractValue:
           data.certificate.contractValue ||
-          `£ ${
+          `£${
             data.certificate.products?.[0]?.contractValue?.toFixed(2) || "0.00"
           }`,
         inceptionDate:
@@ -689,7 +689,7 @@ export default function AdminDashboard() {
           ).toLocaleDateString("en-GB"),
         price:
           data.certificate.price ||
-          `£ ${data.certificate.products?.[0]?.price?.toFixed(2) || "0.00"}`,
+          `£${data.certificate.products?.[0]?.price?.toFixed(2) || "0.00"}`,
       };
 
       await downloadPdf(certificateData, data.contractor);

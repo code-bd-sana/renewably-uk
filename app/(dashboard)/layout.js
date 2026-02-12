@@ -131,7 +131,7 @@ function DashboardLayout({ children }) {
           onClick={() => {
             router.push("/");
           }}
-          className='p-4 border-b-2 border-[#E2E8F0] cursor-pointer'>
+          className='p-4 border-[#E2E8F0] cursor-pointer'>
           <Image
             src='/FullLogo_Transparent_NoBuffer-3.png'
             height={250}

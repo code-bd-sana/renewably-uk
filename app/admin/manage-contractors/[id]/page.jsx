@@ -276,7 +276,7 @@ export default function ContractorCertificatesPage() {
         // Product details
         productType: productData.productType || basicCertificate.productType,
         contractValue: productData.contractValue
-          ? `£ ${productData.contractValue.toFixed(2)}`
+          ? `£${productData.contractValue.toFixed(2)}`
           : basicCertificate.contractValue,
         inceptionDate: productData.inceptionDate
           ? new Date(productData.inceptionDate).toLocaleDateString("en-GB")
@@ -285,7 +285,7 @@ export default function ContractorCertificatesPage() {
           ? new Date(productData.expiryDate).toLocaleDateString("en-GB")
           : basicCertificate.expiryDate,
         price: productData.price
-          ? `£ ${productData.price.toFixed(2)}`
+          ? `£${productData.price.toFixed(2)}`
           : basicCertificate.price,
 
         // Additional fields

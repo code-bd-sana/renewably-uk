@@ -53,11 +53,11 @@ export async function GET(request) {
         policyNo: cert.policyNumber,
         holderName: cert.holderName,
         measureType: cert.measureType,
-        contractValue: `£ ${cert.contractValue.toFixed(2)}`,
+        contractValue: `£${cert.contractValue.toFixed(2)}`,
         inceptionDate: new Date(cert.inceptionDate).toLocaleDateString("en-GB"),
         expiryDate: new Date(cert.expiryDate).toLocaleDateString("en-GB"),
         transactionType: "Certificate Generated",
-        price: `£ ${cert.price.toFixed(2)}`,
+        price: `£${cert.price.toFixed(2)}`,
         status: cert.status,
       }));
 
