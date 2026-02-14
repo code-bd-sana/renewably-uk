@@ -12,7 +12,7 @@ export async function POST(request) {
     if (!email) {
       return Response.json(
         { success: false, error: "Email is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -22,12 +22,13 @@ export async function POST(request) {
     // Find user
     const user = await User.findOne({ email });
     console.log("User found:", user ? `Yes (${user.email})` : "No");
-    
+
     if (!user) {
       // For security
       return Response.json({
         success: true,
-        message: "If an account exists with this email, a reset link will be sent"
+        message:
+          "If an account exists with this email, a reset link will be sent",
       });
     }
 
@@ -35,22 +36,25 @@ export async function POST(request) {
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
 
-    console.log("Generated token (first 10 chars):", resetToken.substring(0, 10) + "...");
+    console.log(
+      "Generated token (first 10 chars):",
+      resetToken.substring(0, 10) + "...",
+    );
     console.log("Full token:", resetToken);
     console.log("Token expiry:", resetTokenExpiry);
 
     // Update user with new token - use save() instead of findByIdAndUpdate
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = resetTokenExpiry;
-    
+
     console.log("Before save - user object:", {
       token: user.resetPasswordToken,
-      expires: user.resetPasswordExpires
+      expires: user.resetPasswordExpires,
     });
 
     // Save the user
     await user.save();
-    
+
     console.log("User saved successfully");
 
     // Verify by fetching fresh data
@@ -58,21 +62,24 @@ export async function POST(request) {
     console.log("After save - verified:", {
       token: updatedUser.resetPasswordToken,
       tokenMatches: updatedUser.resetPasswordToken === resetToken,
-      expires: updatedUser.resetPasswordExpires
+      expires: updatedUser.resetPasswordExpires,
     });
 
-    if (!updatedUser.resetPasswordToken || updatedUser.resetPasswordToken !== resetToken) {
+    if (
+      !updatedUser.resetPasswordToken ||
+      updatedUser.resetPasswordToken !== resetToken
+    ) {
       console.error("TOKEN NOT SAVED PROPERLY!");
       return Response.json({
         success: false,
-        error: "Failed to save reset token"
+        error: "Failed to save reset token",
       });
     }
 
     // Send email
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
     console.log("Reset URL:", resetUrl);
-    
+
     try {
       await sendResetPasswordEmail(email, user.name, resetUrl);
       console.log("Reset email sent successfully");
@@ -81,19 +88,18 @@ export async function POST(request) {
     }
 
     console.log("=== FORGOT PASSWORD COMPLETE ===");
-    
+
     return Response.json({
       success: true,
-      message: "Password reset email sent"
+      message: "Password reset email sent",
     });
-
   } catch (error) {
     console.error("=== FORGOT PASSWORD ERROR ===");
     console.error("Error:", error);
     console.error("Error stack:", error.stack);
     return Response.json(
       { success: false, error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
