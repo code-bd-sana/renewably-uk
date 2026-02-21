@@ -8,7 +8,7 @@ export default function HubSpotChat() {
     if (document.getElementById("hs-script-loader")) {
       console.log("HubSpot script already exists");
 
-      // Try to refresh the widget if it exists (helps after navigation)
+      // Try to refresh the widget if it exists
       if (window.HubSpotConversations?.widget) {
         window.HubSpotConversations.widget.refresh();
         console.log("HubSpot widget refreshed");
@@ -26,7 +26,7 @@ export default function HubSpotChat() {
 
     script.onload = () => {
       console.log("HubSpot script loaded successfully");
-      // Optional: force widget refresh after load
+      // force widget refresh after load
       if (window.HubSpotConversations?.widget) {
         window.HubSpotConversations.widget.refresh();
       }
@@ -38,7 +38,7 @@ export default function HubSpotChat() {
 
     document.body.appendChild(script);
 
-    // Cleanup when component unmounts (important for Next.js navigation)
+    // Cleanup when component unmounts
     return () => {
       const existingScript = document.getElementById("hs-script-loader");
       if (existingScript) {
@@ -46,7 +46,7 @@ export default function HubSpotChat() {
         console.log("HubSpot script removed on unmount");
       }
     };
-  }, []); // Empty dependency array → runs once per mount
+  }, []);
 
   return null;
 }

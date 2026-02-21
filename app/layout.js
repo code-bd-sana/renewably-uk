@@ -12,7 +12,7 @@ const manrope = Manrope({
 });
 
 export const metadata = {
-  title: "Renewably",
+  title: "Renewably UK - Powering Renewable",
   description: "",
 };
 

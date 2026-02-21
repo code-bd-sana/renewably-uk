@@ -433,6 +433,12 @@ export async function DELETE(request, { params }) {
     const awaitedParams = await params;
     const { id } = awaitedParams;
 
+    // Delete all insurance records for this contractor (cascade delete)
+    const deletedInsurances = await Insurance.deleteMany({ userId: id });
+    console.log(
+      `Deleted ${deletedInsurances.deletedCount} insurance records for contractor ${id}`,
+    );
+
     // Find and delete the contractor
     const contractor = await User.findOneAndDelete({
       _id: id,
