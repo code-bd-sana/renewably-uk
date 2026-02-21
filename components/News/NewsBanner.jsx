@@ -2,51 +2,50 @@ import Image from "next/image";
 
 const NewsBanner = () => {
   return (
-    <section className="w-full -mt-[76px]">
-      <div className="mx-auto px-4">
-        <div className="relative h-[680px] rounded-[24px] overflow-hidden">
+    <section className='w-full -mt-19'>
+      <div className='mx-auto px-4'>
+        <div className='relative h-170 rounded-3xl overflow-hidden'>
           {/* Background image */}
           <Image
-            src="/News/banner.jpg"
-            alt="Renewable energy installation"
+            src='/News/banner.jpg'
+            alt='Renewable energy installation'
             fill
             priority
-            className="object-cover"
+            className='object-cover'
           />
 
           {/* VERY SUBTLE LEFT BLUR (FIGMA-LIKE) */}
-          <div className="absolute inset-0 pointer-events-none">
+          <div className='absolute inset-0 pointer-events-none'>
             {/* Blur layer (very light) */}
             <div
-              className="
+              className='
                 absolute left-0 top-0 h-full w-[50%]
                 backdrop-blur-[2px]
-              "
+              '
             />
 
             {/* Soft fade (not dark) */}
             <div
-              className="
+              className='
                 absolute left-0 top-0 h-full w-[48%]
-                bg-gradient-to-r
+                bg-linear-to-r
                 from-black/25
                 via-black/12
                 to-transparent
-              "
+              '
             />
           </div>
 
           {/* Content */}
-          <div className="relative z-10 h-full flex items-start">
+          <div className='relative z-10 h-full flex items-start'>
             <div
-              className="
-     pt-[240px]
-      pl-6 sm:pl-10 lg:pl-[72px]
-      max-w-full sm:max-w-[720px] lg:max-w-[980px]
-    "
-            >
+              className='
+     pt-60
+      pl-6 sm:pl-10 lg:pl-18
+      max-w-full sm:max-w-180 lg:max-w-245
+    '>
               <h1
-                className="
+                className='
     text-white
     font-semibold
     leading-[1.15]
@@ -54,26 +53,21 @@ const NewsBanner = () => {
     text-[32px]
     sm:text-[42px]
     lg:text-[56px]
-    max-w-[980px]
-  "
-              >
-                Supporting Renewable
-                <br />
-                Projects with Confidence
+    max-w-245
+  '>
+                Welcome to Renewably UK Ltd
               </h1>
 
               <p
-                className="
+                className='
         text-white/90
-        leading-[1.7]
+              leading-[1.7]
         text-[14px]
         sm:text-[15px]
         lg:text-[16px]
-        max-w-full sm:max-w-[420px] lg:max-w-[520px]
-      "
-              >
-                Insurance-backed guarantees designed to support funded renewable
-                energy installations.
+              max-w-full sm:max-w-105 lg:max-w-130
+      '>
+                A New Chapter. The Same Trusted Team. A Stronger Platform.
               </p>
             </div>
           </div>
