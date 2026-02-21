@@ -1,28 +1,28 @@
 import connectDB from "@/lib/db";
 import User from "@/models/User";
 import { sendRejectEmail } from "@/lib/email";
-import { authenticate } from '@/middleware/auth';
+import { authenticate } from "@/middleware/auth";
 
 export async function POST(request) {
   try {
     // CHECK AUTH
     const auth = await authenticate(request);
-    
+
     if (!auth.success) {
       return Response.json(
         { success: false, error: auth.error },
-        { status: auth.status || 401 }
+        { status: auth.status || 401 },
       );
     }
-    
+
     // CHECK IF USER IS ADMIN
-    if (auth.userRole !== 'admin') {
+    if (auth.userRole !== "admin") {
       return Response.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
+        { success: false, error: "Admin access required" },
+        { status: 403 },
       );
     }
-    
+
     // NOW THE REJECT LOGIC
     await connectDB();
 
@@ -33,7 +33,7 @@ export async function POST(request) {
     if (!userId) {
       return new Response(
         JSON.stringify({ success: false, error: "User ID required" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -43,7 +43,7 @@ export async function POST(request) {
     if (!user) {
       return new Response(
         JSON.stringify({ success: false, error: "User not found" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -52,13 +52,19 @@ export async function POST(request) {
     const userName = user.name;
     const userCompany = user.companyName;
 
-    // Delete the user 
+    // Delete all insurance records for this user (cascade delete)
+    const deletedInsurances = await Insurance.deleteMany({ userId: userId });
+    console.log(
+      `Deleted ${deletedInsurances.deletedCount} insurance records for user ${userId}`,
+    );
+
+    // Delete the user
     const result = await User.findByIdAndDelete(userId);
 
     if (!result) {
       return new Response(
         JSON.stringify({ success: false, error: "Failed to delete user" }),
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -74,20 +80,21 @@ export async function POST(request) {
     return Response.json(
       {
         success: true,
-        message: "User rejected and deleted successfully. Rejection email sent.",
+        message:
+          "User rejected and deleted successfully. Rejection email sent.",
         user: {
           email: userEmail,
           companyName: userCompany,
           name: userName,
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Reject error:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }

@@ -262,7 +262,9 @@ export default function RequestModal({
                           Policy Holder Address
                         </p>
                         <p className='text-gray-900'>
-                          {selectedRequest.policyHolderAddress}
+                          {selectedRequest.policyHolderAddress ||
+                            selectedRequest.address ||
+                            "N/A"}
                         </p>
                       </div>
 
@@ -308,16 +310,19 @@ export default function RequestModal({
                             ?.toString()
                             .includes("£")
                             ? selectedRequest.contractValue
-                            : `${selectedRequest.contractValue}`}
+                            : `£${selectedRequest.contractValue}`}
                         </p>
                       </div>
 
                       <div>
                         <p className='text-sm text-gray-600 mb-1'>
-                          Insurance Coverage
+                          Insurance Coverage / Cover Option
                         </p>
                         <p className='text-gray-900'>
-                          {selectedRequest.insuranceCoverage}
+                          {selectedRequest.coverOption ||
+                            selectedRequest.insuranceCoverage ||
+                            selectedRequest.products?.[0]?.coverOption ||
+                            "Insurance Backed Guarantee"}
                         </p>
                       </div>
 
