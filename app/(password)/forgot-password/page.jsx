@@ -39,41 +39,40 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className='min-h-screen bg-gray-50 flex items-center justify-center px-4'>
       {/* Back Button */}
-      <div className="absolute top-6 left-6">
+      <div className='absolute top-6 left-6'>
         <Link
-          href="/login"
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="text-sm font-medium">Back to Login</span>
+          href='/login'
+          className='flex items-center gap-2 text-gray-600 hover:text-gray-900'>
+          <ArrowLeft className='w-5 h-5' />
+          <span className='text-sm font-medium'>Back to Login</span>
         </Link>
       </div>
 
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className='w-full max-w-md'>
+        <div className='bg-white rounded-lg border border-gray-200 p-8 shadow-sm'>
+          <div className='text-center mb-6'>
+            <h2 className='text-2xl font-bold text-gray-900 mb-2'>
               Reset Password
             </h2>
-            <p className="text-gray-600 text-sm">
+            <p className='text-gray-600 text-sm'>
               Enter your email to receive a password reset link
             </p>
           </div>
 
           {success ? (
-            <div className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+            <div className='text-center space-y-4'>
+              <div className='mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center'>
+                <CheckCircle className='w-8 h-8 text-green-600' />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className='text-lg font-semibold text-gray-900'>
                 Check Your Email
               </h3>
-              <p className="text-gray-600">
+              <p className='text-gray-600'>
                 We have sent a password reset link to <strong>{email}</strong>
               </p>
-              <p className="text-sm text-gray-500">
+              <p className='text-sm text-gray-500'>
                 The link will expire in 1 hour
               </p>
               <button
@@ -81,63 +80,60 @@ export default function ForgotPasswordPage() {
                   setSuccess(false);
                   setEmail("");
                 }}
-                className="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
+                className='mt-4 text-[#0F47A8] hover:text-blue-900 text-sm font-medium'>
                 Send to a different email
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className='space-y-5'>
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm'>
                   {error}
                 </div>
               )}
 
               {resetSent && !success && (
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg text-sm">
-                  Reset link already sent. Check your email or wait a few minutes before trying again.
+                <div className='bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg text-sm'>
+                  Reset link already sent. Check your email or wait a few
+                  minutes before trying again.
                 </div>
               )}
 
               <div>
                 <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
+                  htmlFor='email'
+                  className='block text-sm font-medium text-gray-700 mb-2'>
                   Email Address
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                <div className='relative'>
+                  <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                    <Mail className='h-5 w-5 text-gray-400' />
                   </div>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
+                    id='email'
+                    name='email'
+                    type='email'
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
-                    placeholder="Enter your email"
+                    className='block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F47A8] focus:border-[#0F47A8] text-gray-900 placeholder-gray-400'
+                    placeholder='Enter your email'
                   />
                 </div>
               </div>
 
               <button
-                type="submit"
+                type='submit'
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+                className='w-full bg-[#0F47A8] hover:bg-blue-900 text-white font-medium py-2.5 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0F47A8] disabled:opacity-50 disabled:cursor-not-allowed'>
                 {loading ? "Sending..." : "Send Reset Link"}
               </button>
 
-              <p className="text-center text-sm text-gray-600">
+              <p className='text-center text-sm text-gray-600'>
                 Remember your password?{" "}
                 <Link
-                  href="/login"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
+                  href='/login'
+                  className='font-medium text-[#0F47A8] hover:text-blue-900'>
                   Back to Login
                 </Link>
               </p>
