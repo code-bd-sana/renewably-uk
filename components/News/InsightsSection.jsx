@@ -156,6 +156,30 @@ export default function InsightsSection() {
   const [featured, setFeatured] = useState(articles.find((a) => a.featured));
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const ensureEllipsis = (text) => {
+    if (!text) return "";
+    return /\.\.\.$/.test(text)
+      ? text
+      : text.trim().endsWith(".")
+        ? text.trim() + "..."
+        : text + "...";
+  };
+
+  const getWordCount = (article) => {
+    if (!article) return 0;
+    if (article.sections) {
+      const joined = article.sections
+        .map((s) => (s.paragraphs || []).join(" "))
+        .join(" ");
+      const words = joined.match(/\b\w+\b/g) || [];
+      return words.length;
+    }
+    const words = (article.excerpt || "").match(/\b\w+\b/g) || [];
+    return words.length;
+  };
+
+  const featuredWordCount = getWordCount(featured);
+
   const handleReadMore = (article) => {
     setFeatured(article);
     setIsExpanded(true);
@@ -189,7 +213,7 @@ export default function InsightsSection() {
             />
           </div>
 
-          <div className='p-8'>
+          <div className='p-8 flex flex-col'>
             <div className='flex items-center gap-3 mb-3'>
               <span className='text-[11px] font-medium bg-[#EAF2FF] text-[#2563EB] px-2.5 py-1 rounded-full'>
                 {featured.category}
@@ -204,13 +228,13 @@ export default function InsightsSection() {
             </h3>
 
             {!isExpanded ? (
-              <div>
+              <div className='flex flex-col'>
                 <p className='text-[14px] leading-[1.7] text-[#475569] max-w-190'>
-                  {featured.excerpt}
+                  {ensureEllipsis(featured.excerpt)}
                 </p>
 
                 {featured.sections && (
-                  <div className='mt-4'>
+                  <div className='mt-4 self-start'>
                     <button
                       onClick={() => handleReadMore(featured)}
                       className='inline-flex items-center justify-center h-9 px-4 bg-[#0F47A8] text-white text-[12px] font-medium rounded-lg hover:bg-[#0C3E96] transition'>
@@ -221,37 +245,47 @@ export default function InsightsSection() {
               </div>
             ) : (
               <div className='space-y-6'>
-                {featured.sections?.map((section) => (
-                  <div key={section.heading}>
-                    <h4 className='text-[16px] font-semibold text-[#0F172A] mb-2'>
-                      {section.heading}
-                    </h4>
+                {featured.sections && featured.sections.length > 0 ? (
+                  featured.sections.map((section) => (
+                    <div key={section.heading}>
+                      <h4 className='text-[16px] font-semibold text-[#0F172A] mb-2'>
+                        {section.heading}
+                      </h4>
 
-                    {section.paragraphs?.map((p) => (
-                      <p
-                        key={p}
-                        className='text-[14px] leading-[1.7] text-[#475569] mb-2'>
-                        {p}
-                      </p>
-                    ))}
+                      {section.paragraphs?.map((p) => (
+                        <p
+                          key={p}
+                          className='text-[14px] leading-[1.7] text-[#475569] mb-2'>
+                          {p}
+                        </p>
+                      ))}
 
-                    {section.bullets?.length > 0 && (
-                      <ul className='list-disc pl-5 space-y-2 text-[14px] leading-[1.7] text-[#475569]'>
-                        {section.bullets.map((b) => (
-                          <li key={b}>{b}</li>
-                        ))}
-                      </ul>
-                    )}
+                      {section.bullets?.length > 0 && (
+                        <ul className='list-disc pl-5 space-y-2 text-[14px] leading-[1.7] text-[#475569]'>
+                          {section.bullets.map((b) => (
+                            <li key={b}>{b}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div>
+                    <p className='text-[14px] leading-[1.7] text-[#475569]'>
+                      {featured.excerpt}
+                    </p>
                   </div>
-                ))}
+                )}
 
-                <div>
-                  <button
-                    onClick={handleCollapse}
-                    className='inline-flex items-center justify-center h-9 px-4 bg-[#E6EEF9] text-[#0F47A8] text-[12px] font-medium rounded-lg hover:bg-[#DCE8FF] transition'>
-                    Show less
-                  </button>
-                </div>
+                {featuredWordCount > 200 && (
+                  <div>
+                    <button
+                      onClick={handleCollapse}
+                      className='inline-flex items-center justify-center h-9 px-4 bg-[#E6EEF9] text-[#0F47A8] text-[12px] font-medium rounded-lg hover:bg-[#DCE8FF] transition'>
+                      Show less
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -264,15 +298,7 @@ export default function InsightsSection() {
             .map((item) => (
               <div
                 key={item.id}
-                className='
-                  bg-white
-                  rounded-[14px]
-                  overflow-hidden
-                  border
-                  border-[#EEF2F7]
-                  hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)]
-                  transition
-                '>
+                className='bg-white rounded-[14px] overflow-hidden border border-[#EEF2F7] hover:shadow-[#0F172A14] transition flex flex-col h-full'>
                 <div className='relative h-40'>
                   <Image
                     src={item.image}
@@ -282,7 +308,7 @@ export default function InsightsSection() {
                   />
                 </div>
 
-                <div className='p-5'>
+                <div className='p-5 flex flex-col flex-1'>
                   <div className='flex items-center gap-2.5 mb-2'>
                     <span className='text-[11px] font-medium bg-[#EAF2FF] text-[#2563EB] px-2 py-0.75 rounded-full'>
                       {item.category}
@@ -296,28 +322,17 @@ export default function InsightsSection() {
                     {item.title}
                   </h4>
 
-                  <p className='text-[13px] leading-[1.6] text-[#6B7280] mb-3'>
-                    {item.excerpt}
+                  <p className='text-[13px] leading-[1.6] text-[#6B7280] mb-3 flex-1'>
+                    {ensureEllipsis(item.excerpt)}
                   </p>
 
-                  <button
-                    onClick={() => handleReadMore(item)}
-                    className='
-    inline-flex
-    items-center
-    justify-center
-    h-7
-    px-3
-    bg-[#0F47A8]
-    text-white
-    text-[12px]
-    font-medium
-    rounded-lg
-    hover:bg-[#0C3E96]
-    transition
-  '>
-                    Read more
-                  </button>
+                  <div className='mt-auto'>
+                    <button
+                      onClick={() => handleReadMore(item)}
+                      className='inline-flex items-center justify-center h-7 px-3 bg-[#0F47A8] text-white text-[12px] font-medium rounded-lg hover:bg-[#0C3E96] transition'>
+                      Read more
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
