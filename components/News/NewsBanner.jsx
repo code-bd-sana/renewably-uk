@@ -55,19 +55,22 @@ const NewsBanner = () => {
     lg:text-[56px]
     max-w-245
   '>
-                Welcome to Renewably UK Ltd
+                Supporting Renewable
+                <br />
+                Projects with Confidence
               </h1>
 
               <p
                 className='
         text-white/90
-              leading-[1.7]
+        leading-[1.7]
         text-[14px]
         sm:text-[15px]
         lg:text-[16px]
-              max-w-full sm:max-w-105 lg:max-w-130
+        max-w-full sm:max-w-105 lg:max-w-130
       '>
-                A New Chapter. The Same Trusted Team. A Stronger Platform.
+                Insurance-backed guarantees designed to support funded renewable
+                energy installations.
               </p>
             </div>
           </div>
