@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 
 const ServicesWeHost = () => {
@@ -85,7 +86,7 @@ const ServicesWeHost = () => {
 
   return (
     <section className='w-full bg-[#0F47A8] py-24' id='services'>
-      <div className='max-w-[1200px] mx-auto px-4'>
+      <div className='max-w-388 mx-auto px-4'>
         {/* Heading */}
         <div className='text-center mb-12'>
           <h2 className='text-white text-2xl sm:text-3xl font-semibold mb-2'>
@@ -110,7 +111,7 @@ const ServicesWeHost = () => {
                   group
                   relative
                   w-full
-                  h-[265px]
+                  h-67
                   rounded-2xl
                   overflow-hidden
                   transition-all
@@ -125,7 +126,9 @@ const ServicesWeHost = () => {
                 style={{ willChange: "transform" }}>
                 {/* Image */}
                 <div className='absolute inset-0'>
-                  <img
+                  <Image
+                    height={250}
+                    width={300}
                     src={item.img}
                     alt={item.title}
                     className={`

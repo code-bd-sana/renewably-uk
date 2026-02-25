@@ -54,15 +54,14 @@ const cards = [
 
 const TrustedCompliance = () => {
   return (
-    <section className="w-full bg-[#0F47A8] py-[120px]">
-      <div className="max-w-[1280px] mx-auto px-4">
-
+    <section className='w-full bg-[#0F47A8] py-30'>
+      <div className='max-w-388 mx-auto px-4'>
         {/* Heading */}
-        <div className="text-center mb-[64px]">
-          <h2 className="text-[28px] font-semibold text-white mb-2">
+        <div className='text-center mb-16'>
+          <h2 className='text-[28px] font-semibold text-white mb-2'>
             Trusted Compliance
           </h2>
-          <p className="text-[14px] leading-[1.6] text-white/80 max-w-[560px] mx-auto">
+          <p className='text-[14px] leading-[1.6] text-white/80 max-w-140 mx-auto'>
             Everything you need to generate insurance-backed guarantees, manage
             data securely, and stay compliant – all in one digital platform.
           </p>
@@ -70,57 +69,51 @@ const TrustedCompliance = () => {
 
         {/* Cards */}
         <div
-          className="
+          className='
             grid
             grid-cols-1
             sm:grid-cols-2
             lg:grid-cols-3
-            gap-[24px]
+            gap-6
             justify-items-center
-          "
-        >
+          '>
           {cards.map((card, index) => {
             const Icon = card.icon;
             return (
               <div
                 key={index}
-                className="
+                className='
                   w-full
-                  max-w-[400px]
-                  lg:w-[400px]
                   h-auto
-                  lg:h-[222px]
+                  lg:h-56
                   bg-white
                   rounded-[14px]
                   border
                   border-[#E5E7EB]
-                  p-[24px]
+                  p-6
                   shadow-[0_1px_2px_-1px_rgba(0,0,0,0.10),0_1px_3px_0_rgba(0,0,0,0.10)]
                   flex
                   flex-col
-                "
-              >
+                '>
                 {/* Icon */}
                 <div
-                  className={`w-[40px] h-[40px] rounded-[10px] ${card.bg} flex items-center justify-center mb-[16px]`}
-                >
+                  className={`w-10 h-10 rounded-[10px] ${card.bg} flex items-center justify-center mb-4`}>
                   <Icon size={20} className={card.color} />
                 </div>
 
                 {/* Title */}
-                <h4 className="text-[16px] font-semibold leading-[1.4] text-[#0F172A] mb-[6px]">
+                <h4 className='text-[21px] font-semibold leading-[1.4] text-[#0F172A] mb-1.5'>
                   {card.title}
                 </h4>
 
                 {/* Description */}
-                <p className="text-[14px] font-medium leading-[1.6] text-[#6B7280]">
+                <p className='text-[14px] font-medium leading-[1.6] max-w-65 text-[#6B7280]'>
                   {card.text}
                 </p>
               </div>
             );
           })}
         </div>
-
       </div>
     </section>
   );
