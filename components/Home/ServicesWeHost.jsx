@@ -14,19 +14,19 @@ const ServicesWeHost = () => {
     {
       id: "data-protection",
       title: "Data Protection",
-      desc: "ICO Compliant Data and Document storage using our UK based data centre",
+      desc: "ICO Compliant Data and Document storage using our UK based data centres. Keep your data secure and compliantly held in the UK",
       img: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&q=80",
     },
     {
       id: "project-funding",
       title: "Project Funding",
-      desc: "Access to renewable energy funding for your project submissions via our network",
+      desc: "Access to renewable energy funding for your project submissions via our network of utility partners",
       img: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&q=80",
     },
     {
       id: "support-guidance",
       title: "Support and Guidance",
-      desc: "Providing you with up-to-date information on the renewable energy sector",
+      desc: "Providing you with up to date information on the renewable energy sector, and Government legislation on the UK's net zero commitment",
       img: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=80",
     },
   ];
