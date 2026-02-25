@@ -2,10 +2,10 @@ import Image from "next/image";
 
 const AboutUs = () => {
   return (
-    <section className='w-full bg-white py-[120px]'>
-      <div className='max-w-[1200px] mx-auto px-4'>
+    <section className='w-full bg-white py-30'>
+      <div className='max-w-388 mx-auto px-4'>
         {/* Heading */}
-        <div className='text-center mb-[96px]'>
+        <div className='text-center mb-24'>
           <h2 className='text-[32px] font-semibold text-[#0F172A] mb-3'>
             About Us
           </h2>
@@ -22,13 +22,13 @@ const AboutUs = () => {
           className='
             grid
             grid-cols-1
-            lg:grid-cols-[1fr_520px]
-            gap-[64px]
-            lg:gap-[80px]
+            lg:grid-cols-[1fr_570px]
+            gap-8
+            lg:gap-15
             items-center
           '>
           {/* LEFT TEXT */}
-          <div className='flex flex-col gap-[40px]'>
+          <div className=' flex flex-col gap-10'>
             {[
               {
                 title: "Who We Are",
@@ -49,8 +49,8 @@ const AboutUs = () => {
                   grid
                   grid-cols-1
                   sm:grid-cols-[120px_1fr]
-                  gap-[16px]
-                  sm:gap-[24px]
+                  gap-4
+                  sm:gap-6
                   text-center
                   sm:text-left
                 '>
@@ -71,22 +71,22 @@ const AboutUs = () => {
               flex-col
               sm:flex-row
               justify-center
-              gap-[16px]
+              gap-4
             '>
             {/* LEFT IMAGE COLUMN */}
-            <div className='flex flex-col gap-[16px] w-full sm:w-[252px]'>
-              <div className='relative h-[172px] rounded-[12px] overflow-hidden'>
+            <div className='flex flex-col gap-4 w-full sm:w-63'>
+              <div className='relative h-43 rounded-sm overflow-hidden'>
                 <Image
-                  src='/Home/About/a2.png'
+                  src='/Home/About/a3.jpg'
                   alt='Solar planning'
                   fill
                   className='object-cover'
                 />
               </div>
 
-              <div className='relative h-[172px] rounded-[12px] overflow-hidden'>
+              <div className='relative h-43 rounded-sm overflow-hidden'>
                 <Image
-                  src='/Home/About/a3.jpg'
+                  src='/Home/About/a1.png'
                   alt='Solar installation'
                   fill
                   className='object-cover'
@@ -95,10 +95,18 @@ const AboutUs = () => {
             </div>
 
             {/* RIGHT IMAGE COLUMN */}
-            <div className='flex flex-col gap-[16px] w-full sm:w-[252px]'>
-              <div className='relative h-[360px] rounded-[12px] overflow-hidden'>
+            <div className='flex flex-col gap-4 w-full sm:w-63 md:-mt-25'>
+              <div className='relative h-62 rounded-sm overflow-hidden'>
                 <Image
-                  src='/Home/About/a1.png'
+                  src='/Home/About/a2.png'
+                  alt='Solar inspection'
+                  fill
+                  className='object-cover'
+                />
+              </div>
+              <div className='relative h-38 rounded-sm overflow-hidden'>
+                <Image
+                  src='/Home/About/a4.jpg'
                   alt='Solar inspection'
                   fill
                   className='object-cover'

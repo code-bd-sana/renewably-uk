@@ -27,8 +27,8 @@ const steps = [
 
 export default function OnboardWithRenewably() {
   return (
-    <section className='w-full bg-white py-[120px]'>
-      <div className='max-w-[1200px] mx-auto px-4'>
+    <section className='w-full bg-white py-30'>
+      <div className='max-w-388 mx-auto px-4'>
         {/* Heading (UNCHANGED) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -60,14 +60,14 @@ export default function OnboardWithRenewably() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 className='flex items-center justify-end pr-6'>
-                <h3 className='text-[32px] font-semibold mr-30 text-[#0F47A8] w-[260px] leading-tight'>
+                <h3 className='text-[32px] font-semibold mr-30 text-[#0F47A8] w-65 leading-tight'>
                   {step.title}
                 </h3>
               </motion.div>
 
               {/* Center Number */}
               <div className='flex items-center justify-center'>
-                <div className='w-[32px] h-[32px] rounded-full bg-[#0F47A8] text-white text-[14px] font-semibold flex items-center justify-center z-10'>
+                <div className='w-8 h-8 rounded-full bg-[#0F47A8] text-white text-[14px] font-semibold flex items-center justify-center z-10'>
                   {step.id}
                 </div>
               </div>
@@ -79,15 +79,15 @@ export default function OnboardWithRenewably() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.15 }}
                 className='
-                  w-[498px]
-                  h-[148px]
-                  rounded-[8px]
+                  w-125
+                  h-37
+                  rounded-lg
                   border
                   border-[#0F47A8]
-                  bg-gradient-to-r
+                  bg-linear-to-r
                   from-[#F5F9FF]
                   to-[#DCEBFF]
-                  p-[32px]
+                  p-8
                   ml-10
                   flex items-center
                 '>
@@ -111,7 +111,7 @@ export default function OnboardWithRenewably() {
               className='flex flex-col gap-4'>
               {/* Number + Title */}
               <div className='flex items-center gap-3'>
-                <div className='w-[28px] h-[28px] rounded-full bg-[#0F47A8] text-white text-[13px] font-semibold flex items-center justify-center'>
+                <div className='w-7 h-7 rounded-full bg-[#0F47A8] text-white text-[13px] font-semibold flex items-center justify-center'>
                   {step.id}
                 </div>
                 <h3 className='text-[20px] font-semibold text-[#0F47A8]'>
@@ -123,13 +123,13 @@ export default function OnboardWithRenewably() {
               <div
                 className='
                   w-full
-                  rounded-[8px]
+                  rounded-lg
                   border
                   border-[#0F47A8]
-                  bg-gradient-to-r
+                  bg-linear-to-r
                   from-[#F5F9FF]
                   to-[#DCEBFF]
-                  p-[24px]
+                  p-6
                 '>
                 <p className='text-[14px] leading-[1.6] text-[#1E3A8A]'>
                   {step.text}
