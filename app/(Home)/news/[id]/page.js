@@ -6,7 +6,7 @@ const page = async ({ params }) => {
 
   return (
     <div>
-      <NewsDetails id={resolvedParams?.id} />
+      <NewsDetails id={resolvedParams?.id} subId={resolvedParams?.id} />
     </div>
   );
 };
