@@ -1,13 +1,25 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { newsBlogs } from "@/data/newsBlogs";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  Share2,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Link2,
+  Check,
+  Mail,
+} from "lucide-react";
 
 export default function NewsDetails({ id }) {
   const contentRef = useRef(null);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const shareMenuRef = useRef(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -20,6 +32,20 @@ export default function NewsDetails({ id }) {
     return () => clearTimeout(timer);
   }, [id]);
 
+  // Close share menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(event.target)
+      ) {
+        setShowShareMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Find by subId (string)
   const newsOrBlog = newsBlogs.find((item) => item.subId === id);
 
@@ -28,6 +54,45 @@ export default function NewsDetails({ id }) {
       <div className='mx-24 py-24 px-4 text-[#475569]'>News not found.</div>
     );
   }
+
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareTitle = newsOrBlog.title;
+  const shareText = `Check out this article: ${shareTitle}`;
+
+  const shareLinks = {
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+    twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
+    mail: `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText + "\n\n" + shareUrl)}`,
+  };
+
+  const handleShare = (platform) => {
+    if (platform === "copy") {
+      navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      window.open(shareLinks[platform], "_blank", "noopener,noreferrer");
+    }
+    setShowShareMenu(false);
+  };
+
+  // For native share if available (mobile)
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (error) {
+        console.log("Error sharing:", error);
+      }
+    } else {
+      setShowShareMenu(!showShareMenu);
+    }
+  };
 
   return (
     <section className='w-full py-32'>
@@ -49,11 +114,80 @@ export default function NewsDetails({ id }) {
 
         {/* Main Card */}
         <div className='bg-white rounded-2xl overflow-hidden mt-3'>
-          {/* Title */}
-          <div className=''>
-            <h1 className='text-[32px] font-bold text-[#0F172A] leading-snug'>
+          {/* Title and Share Button */}
+          <div className='flex justify-between items-start gap-4'>
+            <h1 className='text-[32px] font-bold text-[#0F172A] leading-snug flex-1'>
               {newsOrBlog.title}
             </h1>
+
+            {/* Share Button with Menu */}
+            <div className='relative' ref={shareMenuRef}>
+              <button
+                onClick={handleNativeShare}
+                className='flex items-center gap-2 px-4 py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] rounded-lg transition-colors text-[#475569] hover:text-[#0F172A] mt-1'>
+                <Share2 size={18} />
+                <span className='text-sm font-medium cursor-pointer'>
+                  Share
+                </span>
+              </button>
+
+              {/* Share Menu Dropdown */}
+              {showShareMenu && (
+                <div className='absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-[#E2E8F0] overflow-hidden z-50'>
+                  <div className='p-2'>
+                    <button
+                      onClick={() => handleShare("facebook")}
+                      className='flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#F8FAFC] rounded-lg transition-colors text-left'>
+                      <Facebook size={18} className='text-[#1877F2]' />
+                      <span className='text-sm text-[#0F172A]'>Facebook</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleShare("twitter")}
+                      className='flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#F8FAFC] rounded-lg transition-colors text-left'>
+                      <Twitter size={18} className='text-[#1DA1F2]' />
+                      <span className='text-sm text-[#0F172A]'>Twitter</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleShare("linkedin")}
+                      className='flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#F8FAFC] rounded-lg transition-colors text-left'>
+                      <Linkedin size={18} className='text-[#0A66C2]' />
+                      <span className='text-sm text-[#0F172A]'>LinkedIn</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleShare("mail")}
+                      className='flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#F8FAFC] rounded-lg transition-colors text-left'>
+                      <Mail size={18} className='text-[#64748B]' />
+                      <span className='text-sm text-[#0F172A]'>Email</span>
+                    </button>
+
+                    <div className='h-px bg-[#E2E8F0] my-1'></div>
+
+                    <button
+                      onClick={() => handleShare("copy")}
+                      className='flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#F8FAFC] rounded-lg transition-colors text-left'>
+                      {copied ? (
+                        <>
+                          <Check size={18} className='text-green-600' />
+                          <span className='text-sm text-green-600'>
+                            Copied!
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Link2 size={18} className='text-[#64748B]' />
+                          <span className='text-sm text-[#0F172A]'>
+                            Copy link
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Hero Image */}

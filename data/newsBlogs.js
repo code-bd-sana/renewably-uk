@@ -88,12 +88,6 @@ export const newsBlogs = [
           "We look forward to continuing our partnerships under Renewably UK Ltd and welcoming new organisations into the platform. For further information, please visit: https://renewably.energy or contact us at: support@renewably.energy",
           "Renewably UK Ltd — Delivering structured, compliance-led infrastructure for the UK energy efficiency sector.",
         ],
-        bullets: [
-          "Broaden our service offering",
-          "Improve digital efficiency",
-          "Enhance compliance controls",
-          "Provide greater clarity and confidence to all stakeholders",
-        ],
       },
     ],
   },
