@@ -1,6 +1,7 @@
 export const newsBlogs = [
   {
     id: 1,
+    subId: "renewably_uk",
     title: "Introducing Renewably UK Ltd",
     category: "Company Update",
     date: "February 21, 2026",
@@ -98,6 +99,7 @@ export const newsBlogs = [
   },
   {
     id: 2,
+    subId: "eco4_warm_homes_plan",
     title:
       "From ECO4 to the Warm Homes Plan: What the Transition Means for Installation Companies — and Why the Opportunity Runs to 2050",
     category: "Policy & Funding",
@@ -221,6 +223,7 @@ export const newsBlogs = [
   },
   {
     id: 3,
+    subId: "data_protection",
     title:
       "Data Protection, ICO Registration & Data Sovereignty in the Renewable Energy Sector",
     category: "Data Protection & Compliance",
@@ -295,6 +298,7 @@ export const newsBlogs = [
   },
   {
     id: 4,
+    subId: "insurance_backed_guarantees",
     title: "Insurance Backed Guarantees in Renewably Energy Schemes",
     category: "Consumer Protection & Compliance",
     date: "February 26, 2026",

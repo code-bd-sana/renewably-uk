@@ -7,13 +7,27 @@ import { newsBlogs } from "@/data/newsBlogs";
 export default function InsightsSection() {
   const router = useRouter();
 
-  const ensureEllipsis = (text) => {
+  const getFirstDetailsPreview = (item) => {
+    if (!item?.sections?.length) return "";
+    const firstSection = item.sections[0];
+    const heading = firstSection?.heading || "";
+    const firstParagraph = firstSection?.paragraphs?.[0] || "";
+    return [heading, firstParagraph].filter(Boolean).join(" ");
+  };
+
+  const ensureEllipsis = (text, isFirstItem, title, detailsPreview) => {
     if (!text) return "";
+    if (isFirstItem && title && title.length <= 35) {
+      const sourceText = detailsPreview || text;
+      return sourceText.length > 280
+        ? sourceText.slice(0, 280) + "..."
+        : sourceText;
+    }
     return text.length > 180 ? text.slice(0, 180) + "..." : text;
   };
 
   const handleReadMore = (article) => {
-    router.push(`/news/${article.id}`);
+    router.push(`/news/${article.subId}`);
   };
 
   return (
@@ -21,9 +35,9 @@ export default function InsightsSection() {
       <div className='max-w-400 mx-auto px-4'>
         {/* ===== GRID ===== */}
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-          {newsBlogs.map((item) => (
+          {newsBlogs.map((item, idx) => (
             <div
-              key={item.id}
+              key={item.subId}
               className='bg-white rounded-[14px] overflow-hidden border border-[#EEF2F7] hover:shadow-[#0F172A14] transition flex flex-col h-full'>
               <div
                 className={`relative ${
@@ -56,13 +70,18 @@ export default function InsightsSection() {
                   {item.title}
                 </h4>
 
+                <p className='text-[13px] leading-[1.7] text-[#6B7280] mb-3 flex-1'>
+                  {ensureEllipsis(
+                    item.excerpt,
+                    idx === 0,
+                    item.title,
+                    getFirstDetailsPreview(item),
+                  )}
+                </p>
                 <div className='mt-auto'>
-                  <p className='text-[13px] leading-[1.6] text-[#6B7280] mb-3 flex-1'>
-                    {ensureEllipsis(item.excerpt)}
-                  </p>
                   <button
                     onClick={() => handleReadMore(item)}
-                    className='inline-flex items-center justify-center h-7 px-3 bg-[#0F47A8] text-white text-[12px] font-medium rounded-lg hover:bg-[#0C3E96] transition'>
+                    className='inline-flex items-center justify-center h-10 px-5 bg-[#0F47A8] text-white text-[12px] font-medium rounded-lg hover:bg-[#0C3E96] transition'>
                     Read more
                   </button>
                 </div>

@@ -1,11 +1,27 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { newsBlogs } from "@/data/newsBlogs";
 import { ArrowLeft } from "lucide-react";
 
 export default function NewsDetails({ id }) {
-  const selectedId = Number(id);
-  const newsOrBlog = newsBlogs.find((item) => item.id === selectedId);
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      contentRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [id]);
+
+  // Find by subId (string)
+  const newsOrBlog = newsBlogs.find((item) => item.subId === id);
 
   if (!newsOrBlog) {
     return (
@@ -44,8 +60,8 @@ export default function NewsDetails({ id }) {
           <div
             className={`relative w-full md:w-375 mx-auto mt-4 mb-6 md:m-7 rounded-2xl overflow-hidden ${
               newsOrBlog.imageFit === "contain"
-                ? "h-64 sm:h-96 md:h-120"
-                : "h-56 sm:h-96 md:h-200"
+                ? "h-64 sm:h-96 md:h-140"
+                : "h-56 sm:h-96 md:h-220"
             }`}>
             <Image
               src={newsOrBlog.image}
@@ -62,7 +78,7 @@ export default function NewsDetails({ id }) {
           </div>
 
           {/* Meta + Body */}
-          <div className='pt-5 pb-8 flex flex-col gap-5'>
+          <div ref={contentRef} className='pt-5 pb-8 flex flex-col gap-5'>
             {/* Category + Date row */}
             <div className='flex items-center gap-3'>
               <span className='text-[11px] font-medium bg-[#EAF2FF] text-[#2563EB] px-3 py-1 rounded-full'>
